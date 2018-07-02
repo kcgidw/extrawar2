@@ -9,7 +9,7 @@
     "start-built": "node ./build/server.js",
     "start": "node ./dist/server/server.js",
     "try-server": "tsc && node ./dist/server/server.js",
-    "try": "webpack && tsc && node ./dist/server/server.js"
+    "full": "webpack && tsc && node ./dist/server/server.js"
   },
   "author": "",
   "license": "ISC",
