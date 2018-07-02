@@ -7,6 +7,7 @@ module.exports = {
 		filename: 'client.bundle.js'
 	},
 	devtool: "source-map",
+	mode: 'development', // TODO: production option
 	module: {
 		rules: [
 			{

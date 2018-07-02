@@ -1,7 +1,7 @@
 import * as express from 'express';
 import * as http from 'http';
 import * as socketio from 'socket.io';
-import { handleServerGames } from './game-server';
+import { handleServerGames } from './lobby/lobby-handler';
 
 const app = express();
 const httpServer = new http.Server(app);

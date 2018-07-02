@@ -6,11 +6,11 @@ export function isError(obj: any): boolean {
 }
 
 export const SOCKET_MESSAGES = {
-	'NUM_ONLINE': 'NUM_ONLINE',
-	'CREATE_USER': 'CREATE_USER',
-	'CREATE_ROOM': 'CREATE_ROOM',
+	'LOBBY_NUM_ONLINE': 'LOBBY_NUM_ONLINE',
+	'LOBBY_CREATE_USER': 'LOBBY_CREATE_USER',
+	'LOBBY_CREATE_ROOM': 'LOBBY_CREATE_ROOM',
+	'CHAT_POST_MESSAGE': 'CHAT_POST_MESSAGE',
 };
-
 
 export interface INumOnlineResponse {
 	count: number;
@@ -23,4 +23,11 @@ export interface ICreateUserResponse {
 }
 export interface ICreateRoomResponse {
 	roomId: string;
+}
+export interface IChatPostMessageRequest {
+	message: string;
+}
+export interface IChatPostMessageResponse {
+	user: string;
+	message: string;
 }

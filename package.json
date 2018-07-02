@@ -5,10 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build-all": "webpack && tsc",
-    "start-built": "node ./build/server.js",
-    "start": "node ./dist/server/server.js",
-    "try-server": "tsc && node ./dist/server/server.js",
+    "buildall": "webpack && tsc",
+    "server": "node ./dist/server/server.js",
     "full": "webpack && tsc && node ./dist/server/server.js"
   },
   "author": "",

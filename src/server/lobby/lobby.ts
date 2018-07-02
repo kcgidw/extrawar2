@@ -1,17 +1,19 @@
-import { Server, Socket } from 'socket.io';
+import { Server, Socket, Namespace } from 'socket.io';
 import { IErrorMessage } from '../../common/messages';
+import { GameRoom } from '../game-room/game-room';
 import * as idUtil from './id-util';
 import { User } from './user';
+import { LobbyRoom } from './lobby-room';
 
-const MAX_ROOMS = 10;
-const LOBBY_NAMESPACE = 'LOBBY';
+const MAX_USERS = 10 * 6; // TODO
 
 export class Lobby {
-	io: Server;
-	rooms: Set<string> = new Set<string>(); // names of all namespaces within the lobby
+	nsp: Namespace;
+	rooms: Set<string> = new Set<string>();
+	// rooms: Map<string, LobbyRoom> = new Map<string, LobbyRoom>(); // key = room name
 
-	constructor(io: Server) {
-		this.io = io;
+	constructor(nsp: Namespace) {
+		this.nsp = nsp;
 	}
 
 	createUser(socket: Socket, username: string): User|IErrorMessage {
@@ -22,8 +24,6 @@ export class Lobby {
 			user.username = username;
 			console.log('user created: ' + username);
 
-			socket.join(LOBBY_NAMESPACE);
-
 			return user;
 		} else {
 			return {error: 'Invalid username for new user: ' + username};
@@ -31,10 +31,6 @@ export class Lobby {
 	}
 
 	createRoom(socket: Socket): string|IErrorMessage {
-		if(this.rooms.size > MAX_ROOMS) {
-			return {error: 'Max room limit reached'};
-		}
-
 		var roomId: string;
 		do {
 			roomId = idUtil.makeId();
@@ -43,9 +39,13 @@ export class Lobby {
 		return roomId;
 	}
 
+	forgetRoom(roomId: string) {
+		this.rooms.delete(roomId);
+	}
+
 	getNumUsersOnline(): number {
-		var lob = this.io.sockets.adapter.rooms[LOBBY_NAMESPACE];
-		return lob ? lob.length : 0;
+		var nspSocketIds: string[] = Object.keys(this.nsp.sockets);
+		return nspSocketIds.length;
 	}
 }
 
