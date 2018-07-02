@@ -1,6 +1,5 @@
 node_modules/
 .vscode/
-public/*.bundle.js
 build/
 dist/
 *.log
