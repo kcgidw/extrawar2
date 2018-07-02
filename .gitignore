@@ -1,5 +1,7 @@
 node_modules/
+*.log
 .vscode/
+
 build/
 dist/
-*.log
+*.map
