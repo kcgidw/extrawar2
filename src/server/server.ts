@@ -1,6 +1,7 @@
 import * as express from 'express';
 import * as socketio from 'socket.io';
 import * as http from 'http';
+import { handleServerGames } from './game-server';
 
 const app = express();
 const httpServer = new http.Server(app);
@@ -12,3 +13,5 @@ app.use(express.static('./public'));
 httpServer.listen(port, function() {
 	console.log('listening on *:' + port);
 });
+
+handleServerGames(io);

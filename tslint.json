@@ -23,12 +23,14 @@
         "whitespace": [true, "check-preblock"],
         "no-trailing-whitespace": [false],
         "object-literal-sort-keys": [false],
+        "object-literal-key-quotes": [false],
         "only-arrow-functions": [false],
         "no-consecutive-blank-lines": [false],
         "no-string-literal": [false],
         "object-literal-shorthand": [false],
         "one-variable-per-declaration": [false],
-        "no-angle-bracket-type-assertion": [false]
+        "no-angle-bracket-type-assertion": [false],
+        "trailing-comma": [false]
     },
     "rulesDirectory": [],
     "linterOptions": {

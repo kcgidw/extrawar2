@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack --config .\\webpack.config.client.js && tsc",
-    "build-webpack-all": "webpack --config .\\webpack.config.client.js && webpack --config .\\webpack.config.server.js",
-    "start-webpack-built": "node ./build/server.js",
-    "start": "node ./dist/server/server.js"
+    "build": "webpack && tsc",
+    "start-built": "node ./build/server.js",
+    "start": "node ./dist/server/server.js",
+    "try": "webpack && tsc && node ./dist/server/server.js"
   },
   "author": "",
   "license": "ISC",

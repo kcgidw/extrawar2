@@ -4,7 +4,7 @@
         "noImplicitAny": false,
         "removeComments": false,
         "preserveConstEnums": true,
-		"sourceMap": false,
+		"sourceMap": true,
         "allowJs": true,
         "target": "es2015",
         "outDir": "dist"
@@ -13,6 +13,6 @@
         "src/**/*"
     ],
     "exclude": [
-        "node_modules"
+        "node_modules", ".vscode"
     ]
 }
