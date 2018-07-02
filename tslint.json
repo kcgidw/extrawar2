@@ -30,7 +30,8 @@
         "object-literal-shorthand": [false],
         "one-variable-per-declaration": [false],
         "no-angle-bracket-type-assertion": [false],
-        "trailing-comma": [false]
+        "trailing-comma": [false],
+        "interface-name": [false]
     },
     "rulesDirectory": [],
     "linterOptions": {

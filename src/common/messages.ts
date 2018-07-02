@@ -1,6 +1,9 @@
 export interface IErrorMessage {
 	error: string;
 }
+export function isError(obj: any): boolean {
+	return obj instanceof Object && Object.keys(obj).length === 1 && obj['error'];
+}
 
 export const SOCKET_MESSAGES = {
 	'NUM_ONLINE': 'NUM_ONLINE',

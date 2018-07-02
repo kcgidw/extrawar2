@@ -1,72 +1,56 @@
-import * as idUtil from './id-util';
-import { LobbyUser } from './user';
-import { LobbyRoom } from './room';
-import {Socket} from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { IErrorMessage } from '../../common/messages';
+import * as idUtil from './id-util';
+import { User } from './user';
 
 const MAX_ROOMS = 10;
+const LOBBY_NAMESPACE = 'LOBBY';
 
 export class Lobby {
-	private rooms: Map<string, LobbyRoom> = new Map<string, LobbyRoom>(); // key = roomid
-	private users: Map<string, LobbyUser> = new Map<string, LobbyUser>(); // key = userid
+	io: Server;
+	rooms: Set<string> = new Set<string>(); // names of all namespaces within the lobby
 
-	createUser(socket: Socket, username: string): LobbyUser|IErrorMessage {
-		var user: LobbyUser;
+	constructor(io: Server) {
+		this.io = io;
+	}
+
+	createUser(socket: Socket, username: string): User|IErrorMessage {
 		var id: string;
+		var user = <User>socket;
 
-		if(this.validateUsername(username) === true) {
-			do {
-				id = idUtil.makeId();
-			} while (this.getUser(id) !== undefined);
-
-			user = new LobbyUser(socket, id, username);
-			this.users.set(user.id, user);
+		if(validateUsername(username)) {
+			user.username = username;
 			console.log('user created: ' + username);
+
+			socket.join(LOBBY_NAMESPACE);
+
+			return user;
 		} else {
 			return {error: 'Invalid username for new user: ' + username};
 		}
-		return user;
 	}
 
-	validateUsername(str: string): boolean {
-		// alphanumeric, 4-8 chars
-		var regex = /^[a-zA-Z0-9]{4,8}$/;
-		return regex.test(str);
-	}
-
-	// removeUser(socket: Socket) {
-	// 	var user: LobbyUser = socket['user'];
-	// 	var room: LobbyRoom = user.room;
-	// }
-
-	createRoom(user: LobbyUser): LobbyRoom|IErrorMessage {
-		var id: string;
+	createRoom(socket: Socket): string|IErrorMessage {
 		if(this.rooms.size > MAX_ROOMS) {
 			return {error: 'Max room limit reached'};
 		}
 
+		var roomId: string;
 		do {
-			id = idUtil.makeId();
-		} while (this.getRoom(id) !== undefined);
+			roomId = idUtil.makeId();
+		} while (this.rooms.has(roomId));
 
-		var room: LobbyRoom = new LobbyRoom(id);
-		this.rooms.set(room.id, room);
-		return room;
+		return roomId;
 	}
 
 	getNumUsersOnline(): number {
-		return this.users.size;
+		var lob = this.io.sockets.adapter.rooms[LOBBY_NAMESPACE];
+		return lob ? lob.length : 0;
 	}
-	getRoom(id: string) {
-		return this.rooms[id];
-	}
-	getUser(id: string) {
-		return this.users[id];
-	}
-	getUserByUsername(username: string) {
-		return undefined; // TODO
-	}
-	getUserBySocket(socket: SocketIO.Socket) {
-		return undefined; // TODO
-	}
+}
+
+function validateUsername(str: string): boolean {
+	// alphanumeric, 4-8 chars
+	var regex = /^[a-zA-Z0-9]{4,8}$/;
+	return regex.test(str);
 }
