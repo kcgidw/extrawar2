@@ -1,7 +1,7 @@
 var path = require('path');
 
 module.exports = {
-	entry: __dirname + '/src/client/client.ts',
+	entry: __dirname + '/src/client/client.tsx',
 	output: {
 		path: path.resolve(__dirname, 'public'),
 		filename: 'client.bundle.js'
@@ -11,7 +11,7 @@ module.exports = {
 	module: {
 		rules: [
 			{
-				test: /\.ts?$/,
+				test: /\.tsx?$/,
 				loader: "ts-loader"
 			},{
 				test: /\.js$/, 
@@ -21,9 +21,11 @@ module.exports = {
 		],
 	},
 	resolve: {
-		extensions: [".ts", ".js", ".json"]
+		extensions: [ ".tsx", ".ts", ".jsx", ".js", ".json"]
 	},
 	externals: {
-		uws: "uws"
+		uws: "uws",
+		react: "React",
+		"react-dom": "ReactDOM"
 	}
 };

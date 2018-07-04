@@ -1,11 +1,8 @@
 import * as SocketIO from 'socket.io';
 import * as Messages from '../../common/messages';
-import { IErrorMessage } from '../../common/messages';
+import { IErrorMessage, isError, SOCKET_MESSAGES } from '../../common/messages';
 import { Lobby } from './lobby';
 import { User } from './user';
-
-const SOCKET_MESSAGES = Messages.SOCKET_MESSAGES;
-const isError = Messages.isError;
 
 var lobby: Lobby;
 
@@ -14,6 +11,7 @@ export function handleServerGames(io: SocketIO.Server) {
 	lobby = new Lobby(lobbyNsp);
 
 	lobbyNsp.on('connection', (sock) => { 
+		lobbyNsp.emit(SOCKET_MESSAGES.LOBBY_NUM_ONLINE, <Messages.INumOnlineResponse>{count: lobby.getNumUsersOnline()});
 
 		sock.on('disconnect', () => {
 			// TODO: if socket not connected to lobby, no-op
@@ -36,7 +34,6 @@ export function handleServerGames(io: SocketIO.Server) {
 			}
 
 			sock.emit(SOCKET_MESSAGES.LOBBY_CREATE_USER, response);
-			lobbyNsp.emit(SOCKET_MESSAGES.LOBBY_NUM_ONLINE, <Messages.INumOnlineResponse>{count: lobby.getNumUsersOnline()});
 		});
 
 		sock.on(SOCKET_MESSAGES.LOBBY_CREATE_ROOM, () => {

@@ -1,9 +1,10 @@
 import { Server, Socket, Namespace } from 'socket.io';
 import { IErrorMessage } from '../../common/messages';
-import { GameRoom } from '../game-room/game-room';
+import { ChatRoom } from '../game-room/chat-room';
 import * as idUtil from './id-util';
 import { User } from './user';
 import { LobbyRoom } from './lobby-room';
+import { validateUsername } from '../../common/validate';
 
 const MAX_USERS = 10 * 6; // TODO
 
@@ -49,8 +50,3 @@ export class Lobby {
 	}
 }
 
-function validateUsername(str: string): boolean {
-	// alphanumeric, 4-8 chars
-	var regex = /^[a-zA-Z0-9]{4,8}$/;
-	return regex.test(str);
-}

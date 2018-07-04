@@ -7,7 +7,9 @@
     "jsRules": {},
     "rules": {
         "quotemark": [false],
-        "semicolon": [true],
+        "semicolon": {
+            "severity": "warn"
+        },
         "ordered-imports": [false],
         "no-dupe-args": [true],
         "no-console": [false],
@@ -19,7 +21,6 @@
         },
         "max-classes-per-file": [false],
         "indent": [true, "tabs"],
-        "ter-indent": [true, "tab"],
         "whitespace": [true, "check-preblock"],
         "no-trailing-whitespace": [false],
         "object-literal-sort-keys": [false],
@@ -31,7 +32,11 @@
         "one-variable-per-declaration": [false],
         "no-angle-bracket-type-assertion": [false],
         "trailing-comma": [false],
-        "interface-name": [false]
+        "interface-name": [false],
+        "no-empty-interface": {
+            "severity": "warn"
+        },
+        "max-line-length": [false]
     },
     "rulesDirectory": [],
     "linterOptions": {

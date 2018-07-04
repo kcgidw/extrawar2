@@ -1,6 +1,6 @@
 import * as SocketIO from 'socket.io';
-import { GameRoom } from '../game-room/game-room';
+import { ChatRoom } from '../game-room/chat-room';
 
 export interface LobbyRoom extends SocketIO.Namespace {
-	gameRoom: GameRoom;
+	gameRoom: ChatRoom;
 }

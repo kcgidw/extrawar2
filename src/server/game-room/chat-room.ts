@@ -1,15 +1,18 @@
 import * as SocketIO from 'socket.io';
 import { ChatMessage } from './chat-message';
 import { User } from '../lobby/user';
+import * as Messages from '../../common/messages';
 
 const CHAT_LOG_CAPACITY = 15;
 
-export class GameRoom {
-	namespaceName: string;
+export class ChatRoom {
+	nsp: SocketIO.Namespace;
+	roomId: string;
 	chatLog: ChatMessage[];
 
-	constructor(namespaceName: string) {
-		this.namespaceName = namespaceName;
+	constructor(nsp: SocketIO.Namespace, roomId: string) {
+		this.nsp = nsp;
+		this.roomId = roomId;
 	}
 
 	addChatLog(user: User, post: string) {
@@ -22,5 +25,12 @@ export class GameRoom {
 
 	getRecentChatMessages(numMessages: number): ChatMessage[] {
 		return this.chatLog.slice(numMessages * -1);
+	}
+
+	createMessage(user: User, message: string): Messages.IChatPostMessageResponse {
+		return {
+			user: user.username,
+			message: message,
+		};
 	}
 }
