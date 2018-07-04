@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as Handler from './handler';
 import { SOCKET_MSG } from '../common/messages';
 import * as Msgs from '../common/messages';
-import { validateUsername } from '../common/validate';
+import { validateUsername, maxUsernameLength } from '../common/validate';
 import { OnlineCounter } from './online-counter';
 
 enum VIEW {
@@ -112,11 +112,13 @@ class UsernameView extends React.Component<{}, IUsernameViewState> {
 
 	render() {
 		return (
-			<div id="username-entry">
+			<div id="username-entry" className="lobby-menu">
 				<form id="username-form" onSubmit={this.onSubmit}>
-					<label htmlFor="username">Username</label>
-					<input type="text" id="username" value={this.state.username} onChange={this.updateUsername}/>
-					<input type="submit" value="Submit"></input>
+					<label htmlFor="username" id="username-label">Username</label>
+					<br />
+					<input type="text" id="username-input" maxLength={maxUsernameLength} value={this.state.username} onChange={this.updateUsername}/>
+					<br />
+					<input type="submit" id="submit-btn" value="Submit"></input>
 				</form>
 			</div>
 		);
@@ -154,14 +156,17 @@ class RoomOptionsView extends React.Component<{}, IRoomOptionsViewState> {
 
 	render() {
 		return (
-			<div id="room-options">
+			<div id="room-options" className="lobby-menu">
 				<div id="room-creation">
 					<button type="button" onClick={this.onSubmitCreate}>Create a Room</button>
 				</div>
 				<div id="room-joining">
+					Or, join a room. Enter room ID:
 					<form id="username-form" onSubmit={this.onSubmitJoin}>
-						<label htmlFor="roomId">Room ID</label>
+						{/* <label htmlFor="roomId">Room ID</label>
+						<br /> */}
 						<input type="text" id="roomId" value={this.state.joinRoomId} onChange={this.updateJoinRoomId}/>
+						<br />
 						<input type="submit" value="Join"></input>
 					</form>
 				</div>
@@ -196,15 +201,17 @@ class WaitingRoomView extends React.Component<IWaitingRoomViewProps, {}> {
 
 	render() {
 		return (
-			<div id="waiting-room">
-				Room ID: {this.props.roomId}
+			<div id="waiting-room" className="lobby-menu">
+				<div>Room ID:</div>
+				<h1>{this.props.roomId}</h1>
 				<br />
-				Waiting for players...
-				<br />
-				Current players:
-				<ul>
-					{renderPlayersList(this.props.usernames)}
-				</ul>
+				<div>Waiting for players...</div>
+				<div>
+					Current players:
+					<ul>
+						{renderPlayersList(this.props.usernames)}
+					</ul>
+				</div>
 			</div>
 		);
 	}

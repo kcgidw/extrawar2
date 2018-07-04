@@ -1,7 +1,51 @@
+html, body {
+	font-family: 'Arimo', sans-serif;
+	background-color: #212f25;
+	color: #ddd;
+}
+input {
+	color: #ddd;
+}
+
 .hiddden {
 	display: none;
 }
 
 #online-counter {
 	float: right;
+}
+
+.lobby-menu {
+	margin: auto;
+	text-align: center;
+	width: 30%;
+	font-size: 16px;
+}
+.lobby-menu div {
+	padding: 12px;
+}
+
+#room-options #room-creation {
+	border-bottom: solid 2px #555;
+}
+.lobby-menu input[type="text"] {
+	padding: 4px 4px;
+	font-size: 18px;
+	font-family: 'Arimo', sans-serif;
+	background-color: #2b3d30;
+	border: solid 2px #555;
+	border-radius: 2px;
+}
+.lobby-menu button, .lobby-menu input[type="button"], .lobby-menu input[type="submit"] {
+	padding: 8px 8px;
+	margin: 5px;
+	font-size: 16px;
+	font-family: 'Arimo', sans-serif;
+	background-color: #2b3d30;
+	color: #ddd;
+	border: solid 2px #555;
+	border-radius: 2px;
+}
+.lobby-menu ul, .lobby-menu ol {
+	text-align: left;
 }

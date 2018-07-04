@@ -300,11 +300,13 @@ class UsernameView extends React.Component {
         this.updateUsername = this.updateUsername.bind(this);
     }
     render() {
-        return (React.createElement("div", { id: "username-entry" },
+        return (React.createElement("div", { id: "username-entry", className: "lobby-menu" },
             React.createElement("form", { id: "username-form", onSubmit: this.onSubmit },
-                React.createElement("label", { htmlFor: "username" }, "Username"),
-                React.createElement("input", { type: "text", id: "username", value: this.state.username, onChange: this.updateUsername }),
-                React.createElement("input", { type: "submit", value: "Submit" }))));
+                React.createElement("label", { htmlFor: "username", id: "username-label" }, "Username"),
+                React.createElement("br", null),
+                React.createElement("input", { type: "text", id: "username-input", maxLength: validate_1.maxUsernameLength, value: this.state.username, onChange: this.updateUsername }),
+                React.createElement("br", null),
+                React.createElement("input", { type: "submit", id: "submit-btn", value: "Submit" }))));
     }
     updateUsername(e) {
         this.setState({
@@ -330,13 +332,14 @@ class RoomOptionsView extends React.Component {
         this.updateJoinRoomId = this.updateJoinRoomId.bind(this);
     }
     render() {
-        return (React.createElement("div", { id: "room-options" },
+        return (React.createElement("div", { id: "room-options", className: "lobby-menu" },
             React.createElement("div", { id: "room-creation" },
                 React.createElement("button", { type: "button", onClick: this.onSubmitCreate }, "Create a Room")),
             React.createElement("div", { id: "room-joining" },
+                "Or, join a room. Enter room ID:",
                 React.createElement("form", { id: "username-form", onSubmit: this.onSubmitJoin },
-                    React.createElement("label", { htmlFor: "roomId" }, "Room ID"),
                     React.createElement("input", { type: "text", id: "roomId", value: this.state.joinRoomId, onChange: this.updateJoinRoomId }),
+                    React.createElement("br", null),
                     React.createElement("input", { type: "submit", value: "Join" })))));
     }
     updateJoinRoomId(e) {
@@ -359,14 +362,14 @@ class WaitingRoomView extends React.Component {
         super(props);
     }
     render() {
-        return (React.createElement("div", { id: "waiting-room" },
-            "Room ID: ",
-            this.props.roomId,
+        return (React.createElement("div", { id: "waiting-room", className: "lobby-menu" },
+            React.createElement("div", null, "Room ID:"),
+            React.createElement("h1", null, this.props.roomId),
             React.createElement("br", null),
-            "Waiting for players...",
-            React.createElement("br", null),
-            "Current players:",
-            React.createElement("ul", null, renderPlayersList(this.props.usernames))));
+            React.createElement("div", null, "Waiting for players..."),
+            React.createElement("div", null,
+                "Current players:",
+                React.createElement("ul", null, renderPlayersList(this.props.usernames)))));
     }
 }
 function renderPlayersList(usernames) {
@@ -411,6 +414,7 @@ exports.SOCKET_MSG = {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.maxUsernameLength = 12;
 function validateUsername(str) {
     // alphanumeric, 3-12 chars
     var regex = /^[a-zA-Z0-9]{3,12}$/;
