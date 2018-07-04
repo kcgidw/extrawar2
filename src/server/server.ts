@@ -1,7 +1,7 @@
 import * as express from 'express';
 import * as http from 'http';
 import * as socketio from 'socket.io';
-import { handleServerGames } from './lobby/lobby-handler';
+import { handleLobby } from './lobby/lobby-handler';
 
 const app = express();
 const httpServer = new http.Server(app);
@@ -14,4 +14,4 @@ httpServer.listen(port, function() {
 	console.log('listening on *:' + port);
 });
 
-handleServerGames(io);
+handleLobby(io);

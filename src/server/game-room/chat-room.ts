@@ -5,14 +5,26 @@ import * as Messages from '../../common/messages';
 
 const CHAT_LOG_CAPACITY = 15;
 
+/*
+Since socketio rooms aren't really useful objects afaik, ChatRooms are a sort of room abstraction.
+They're linked to socketio rooms only by roomId.
+For now, this is basically JUST A DATA STORE. Leave socketio interactions to the Lobby.
+*/
+
 export class ChatRoom {
 	nsp: SocketIO.Namespace;
 	roomId: string;
-	chatLog: ChatMessage[];
+	chatLog: ChatMessage[] = [];
+	users: User[] = [];
 
 	constructor(nsp: SocketIO.Namespace, roomId: string) {
 		this.nsp = nsp;
 		this.roomId = roomId;
+	}
+
+	admitUser(user: User) {
+		this.users.push(user);
+		user.gameRoom = this;
 	}
 
 	addChatLog(user: User, post: string) {
@@ -33,4 +45,9 @@ export class ChatRoom {
 			message: message,
 		};
 	}
+
+	getUsernames(): string[] {
+		return this.users.map((u)=>u.username);
+	}
 }
+

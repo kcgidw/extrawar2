@@ -4,6 +4,6 @@ import * as Views from './views';
 import * as Handler from './handler';
 
 ReactDOM.render(
-	<Views.Views handler={Handler} />,
+	<Views.Views />,
 	document.getElementById('root')
 );

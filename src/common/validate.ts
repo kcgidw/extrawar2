@@ -1,6 +1,6 @@
 
 export function validateUsername(str: string): boolean {
-	// alphanumeric, 4-8 chars
-	var regex = /^[a-zA-Z0-9]{4,8}$/;
+	// alphanumeric, 3-12 chars
+	var regex = /^[a-zA-Z0-9]{3,12}$/;
 	return regex.test(str);
 }

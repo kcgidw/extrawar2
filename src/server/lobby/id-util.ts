@@ -1,5 +1,5 @@
-const ID_LENGTH = 5;
-const CHARS = 'ABCDEF0123456789';
+const ID_LENGTH = 4;
+const CHARS = 'abcdefgh123456789'; // 0 is confusing
 
 function randInt(min: number, max: number): number {
 	return Math.floor(Math.random() * (max - min)) + min;
@@ -14,7 +14,7 @@ function makeId(): string {
 		let char = randChar(CHARS);
 		id += char;
 	}
-	return id;
+	return id; // TODO add prefix for debugging clarity
 }
 
 export {
