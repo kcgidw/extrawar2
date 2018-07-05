@@ -6,6 +6,8 @@ interface IOnlineCounterState {
 	count: string|number;
 }
 export class OnlineCounter extends React.Component<{}, IOnlineCounterState> {
+	handlerOff: any;
+
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -14,9 +16,15 @@ export class OnlineCounter extends React.Component<{}, IOnlineCounterState> {
 	}
 
 	componentDidMount() {
-		Handler.onNumOnlineReceived((data: Messages.INumOnlineResponse) => {
-			this.updateCount(data.count);
+		this.handlerOff = Handler.generateHandler(Messages.SOCKET_MSG.LOBBY_NUM_ONLINE,
+		(data: Messages.INumOnlineResponse) => {
+			this.setState({
+				count: data.count
+			});
 		});
+	}
+	componentWillUnmount() {
+		this.handlerOff();
 	}
 
 	render() {

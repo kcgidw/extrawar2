@@ -1,14 +1,18 @@
 html, body {
 	font-family: 'Arimo', sans-serif;
-	background-color: #212f25;
+	background-color: hsl(133, 9%, 20%);
 	color: #ddd;
 }
 input {
 	color: #ddd;
 }
 
-.hiddden {
+.hidden {
 	display: none;
+}
+
+.error {
+	color: red;
 }
 
 #online-counter {
@@ -17,6 +21,7 @@ input {
 
 .lobby-menu {
 	margin: auto;
+	padding-top: 30px;
 	text-align: center;
 	width: 30%;
 	font-size: 16px;
@@ -32,19 +37,23 @@ input {
 	padding: 4px 4px;
 	font-size: 18px;
 	font-family: 'Arimo', sans-serif;
-	background-color: #2b3d30;
-	border: solid 2px #555;
+	background-color: hsl(136, 9%, 15%);
+	border: solid 1px #555;
 	border-radius: 2px;
+	width: 300px;
 }
 .lobby-menu button, .lobby-menu input[type="button"], .lobby-menu input[type="submit"] {
-	padding: 8px 8px;
-	margin: 5px;
+	padding: 10px 20px;
+	margin: 10px;
 	font-size: 16px;
 	font-family: 'Arimo', sans-serif;
-	background-color: #2b3d30;
+	background-color: hsl(125, 9%, 25%);
 	color: #ddd;
-	border: solid 2px #555;
+	border: solid 1px #555;
 	border-radius: 2px;
+}
+.lobby-menu input[type="text"]#join-room-id-input {
+	width: 90px;
 }
 .lobby-menu ul, .lobby-menu ol {
 	text-align: left;

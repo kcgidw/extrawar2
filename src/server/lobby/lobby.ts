@@ -1,10 +1,10 @@
 import { Namespace, Socket } from 'socket.io';
-import { IErrorMessage, IJoinRoomResponse } from '../../common/messages';
+import { ICreateRoomResponse, ICreateUserResponse, IJoinRoomResponse, SOCKET_MSG } from '../../common/messages';
 import { validateUsername } from '../../common/validate';
-import * as idUtil from './id-util';
-import { User } from './user';
 import { ChatRoom } from '../game-room/chat-room';
 import { getUsersInNsp } from '../socket-util';
+import * as idUtil from './id-util';
+import { User } from './user';
 
 const MAX_USERS = 10 * 6; // TODO
 const ROOM_MAX_USERS: number = 6;
@@ -17,7 +17,7 @@ export class Lobby {
 		this.nsp = nsp;
 	}
 
-	createUser(socket: Socket, username: string): User|IErrorMessage {
+	createUser(socket: Socket, username: string): ICreateUserResponse {
 		var id: string;
 		var user = <User>socket;
 
@@ -25,13 +25,19 @@ export class Lobby {
 			user.username = username;
 			console.log('create user: ' + username);
 
-			return user;
-		} else {
-			return {error: 'Invalid username for new user: ' + username};
+			return {
+				messageName: SOCKET_MSG.LOBBY_CREATE_USER,
+				username: username
+			};
 		}
+		return {
+			messageName: SOCKET_MSG.LOBBY_CREATE_USER,
+			username: undefined,
+			error: 'Invalid username'
+		};
 	}
 
-	createRoom(socket: Socket): string|IErrorMessage {
+	createRoom(socket: Socket): ICreateRoomResponse {
 		var roomId: string;
 		do {
 			roomId = idUtil.makeId();
@@ -44,21 +50,30 @@ export class Lobby {
 
 		console.log('create room: ' + roomId);
 
-		return roomId;
+		return {
+			messageName: SOCKET_MSG.LOBBY_CREATE_ROOM,
+			roomId: roomId,
+		};
 	}
 
-	joinRoom(socket: Socket, roomId: string): IJoinRoomResponse|IErrorMessage {
+	joinRoom(socket: Socket, roomId: string): IJoinRoomResponse {
 		roomId = roomId.toLowerCase();
 		var rm: ChatRoom = this.rooms.get(roomId);
 		if(rm && rm.users.length < ROOM_MAX_USERS) {
 			socket.join(roomId);
 			rm.admitUser(<User>socket);
 			return {
+				messageName: SOCKET_MSG.LOBBY_JOIN_ROOM,
 				roomId: roomId,
 				users: rm.getUsernames(),
 			};
 		}
-		return { error: 'Cannot enter room' }; // Hide reason from user
+		return {
+			messageName: SOCKET_MSG.LOBBY_JOIN_ROOM,
+			roomId: undefined,
+			users: undefined,
+			error: 'Cannot enter room', // Hide reason from user
+		};
 	}
 
 	forgetRoom(roomId: string) {

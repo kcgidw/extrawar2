@@ -114,55 +114,48 @@ ReactDOM.render(React.createElement(Views.Views, null), document.getElementById(
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Msgs = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
-const socket = io('/lobby');
-socket.emit(messages_1.SOCKET_MSG.LOBBY_NUM_ONLINE);
-function onNumOnlineReceived(fn) {
-    handleResponse(messages_1.SOCKET_MSG.LOBBY_NUM_ONLINE, fn);
-}
-exports.onNumOnlineReceived = onNumOnlineReceived;
+exports.socket = io('/lobby');
+exports.clientSocket = exports.socket;
+exports.socket.emit(messages_1.SOCKET_MSG.LOBBY_NUM_ONLINE);
 function sendUsername(username) {
-    socket.emit(messages_1.SOCKET_MSG.LOBBY_CREATE_USER, { username: username });
+    exports.socket.emit(messages_1.SOCKET_MSG.LOBBY_CREATE_USER, { username: username });
 }
 exports.sendUsername = sendUsername;
-function onUsernameResponse(fn, errorFn) {
-    handleResponse(messages_1.SOCKET_MSG.LOBBY_CREATE_USER, fn, errorFn);
-}
-exports.onUsernameResponse = onUsernameResponse;
 function sendCreateRoom() {
-    socket.emit(messages_1.SOCKET_MSG.LOBBY_CREATE_ROOM);
+    exports.socket.emit(messages_1.SOCKET_MSG.LOBBY_CREATE_ROOM);
 }
 exports.sendCreateRoom = sendCreateRoom;
-function onCreateRoomResponse(fn, errorFn) {
-    handleResponse(messages_1.SOCKET_MSG.LOBBY_CREATE_ROOM, fn, errorFn);
-}
-exports.onCreateRoomResponse = onCreateRoomResponse;
 function sendJoinRoom(roomId) {
-    socket.emit(messages_1.SOCKET_MSG.LOBBY_JOIN_ROOM, { roomId: roomId });
+    exports.socket.emit(messages_1.SOCKET_MSG.LOBBY_JOIN_ROOM, { roomId: roomId });
 }
 exports.sendJoinRoom = sendJoinRoom;
-function onJoinRoomResponse(fn, errorFn) {
-    handleResponse(messages_1.SOCKET_MSG.LOBBY_JOIN_ROOM, fn, errorFn);
-}
-exports.onJoinRoomResponse = onJoinRoomResponse;
 function sendChatMessage(msg) {
-    socket.emit(messages_1.SOCKET_MSG.CHAT_POST_MESSAGE, { message: msg });
+    exports.socket.emit(messages_1.SOCKET_MSG.CHAT_POST_MESSAGE, { message: msg });
 }
 exports.sendChatMessage = sendChatMessage;
-function handleResponse(messageType, fn, errorFn) {
-    socket.on(messageType, (data) => {
-        if (Msgs.isError(data)) {
+// returns a function to turn off the handler. Make to save that function and call it on the unmount.
+function generateHandler(messageType, fn, errorFn) {
+    var handler = (data) => {
+        if (data.error === undefined) {
+            fn(data);
+        }
+        else {
             if (errorFn) {
                 errorFn(data);
             }
-            console.warn('Unhandled error message: ' + data.error);
+            else {
+                console.warn('Unhandled error message: ' + data.error);
+            }
         }
-        else {
-            fn(data);
-        }
-    });
+    };
+    exports.socket.on(messageType, handler);
+    var offCallback = () => {
+        exports.socket.off(messageType, handler);
+    };
+    return offCallback;
 }
+exports.generateHandler = generateHandler;
 
 
 /***/ }),
@@ -178,6 +171,7 @@ function handleResponse(messageType, fn, errorFn) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
+const Messages = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 const Handler = __webpack_require__(/*! ./handler */ "./src/client/handler.ts");
 class OnlineCounter extends React.Component {
     constructor(props) {
@@ -187,9 +181,14 @@ class OnlineCounter extends React.Component {
         };
     }
     componentDidMount() {
-        Handler.onNumOnlineReceived((data) => {
-            this.updateCount(data.count);
+        this.handlerOff = Handler.generateHandler(Messages.SOCKET_MSG.LOBBY_NUM_ONLINE, (data) => {
+            this.setState({
+                count: data.count
+            });
         });
+    }
+    componentWillUnmount() {
+        this.handlerOff();
     }
     render() {
         return (React.createElement("div", { id: "online-counter" },
@@ -219,6 +218,7 @@ exports.OnlineCounter = OnlineCounter;
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
 const Handler = __webpack_require__(/*! ./handler */ "./src/client/handler.ts");
+const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 const validate_1 = __webpack_require__(/*! ../common/validate */ "./src/common/validate.ts");
 const online_counter_1 = __webpack_require__(/*! ./online-counter */ "./src/client/online-counter.tsx");
 var VIEW;
@@ -239,27 +239,25 @@ class Views extends React.Component {
         };
     }
     componentDidMount() {
-        Handler.onUsernameResponse((data) => {
+        Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_CREATE_USER, (data) => {
             this.setState({
                 myUsername: data.username,
             });
             this.setView(VIEW.ROOM_OPTIONS);
         });
-        Handler.onCreateRoomResponse((data) => {
+        Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_CREATE_ROOM, (data) => {
             this.setState({
                 roomId: data.roomId,
                 roomUsernames: [this.state.myUsername],
             });
             this.setView(VIEW.WAITING_ROOM);
         });
-        Handler.onJoinRoomResponse((data) => {
+        Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_JOIN_ROOM, (data) => {
             this.setState({
                 roomId: data.roomId,
                 roomUsernames: data.users,
             });
-            if (this.state.curView !== VIEW.WAITING_ROOM) {
-                this.setView(VIEW.WAITING_ROOM);
-            }
+            this.setView(VIEW.WAITING_ROOM);
         });
     }
     render() {
@@ -326,21 +324,36 @@ class RoomOptionsView extends React.Component {
         super(props);
         this.state = {
             joinRoomId: '',
+            joinErr: undefined,
         };
         this.onSubmitCreate = this.onSubmitCreate.bind(this);
         this.onSubmitJoin = this.onSubmitJoin.bind(this);
         this.updateJoinRoomId = this.updateJoinRoomId.bind(this);
     }
+    componentDidMount() {
+        this.handlerOff = Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_JOIN_ROOM, (data) => {
+            return;
+        }, (data) => {
+            this.setState({
+                joinErr: data.error,
+            });
+        });
+    }
+    componentWillUnmount() {
+        this.handlerOff();
+    }
     render() {
+        var showError = this.state.joinErr ? 'error' : 'hidden';
         return (React.createElement("div", { id: "room-options", className: "lobby-menu" },
             React.createElement("div", { id: "room-creation" },
                 React.createElement("button", { type: "button", onClick: this.onSubmitCreate }, "Create a Room")),
             React.createElement("div", { id: "room-joining" },
                 "Or, join a room. Enter room ID:",
                 React.createElement("form", { id: "username-form", onSubmit: this.onSubmitJoin },
-                    React.createElement("input", { type: "text", id: "roomId", value: this.state.joinRoomId, onChange: this.updateJoinRoomId }),
+                    React.createElement("input", { type: "text", id: "join-room-id-input", minLength: 4, maxLength: 4, value: this.state.joinRoomId, onChange: this.updateJoinRoomId }),
                     React.createElement("br", null),
-                    React.createElement("input", { type: "submit", value: "Join" })))));
+                    React.createElement("input", { type: "submit", id: "join-room-submit-btn", value: "Join" }),
+                    React.createElement("div", { className: showError }, "Error: Room full or not found.")))));
     }
     updateJoinRoomId(e) {
         this.setState({
@@ -389,10 +402,6 @@ function renderPlayersList(usernames) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-function isError(obj) {
-    return obj instanceof Object && Object.keys(obj).length === 1 && obj['error'];
-}
-exports.isError = isError;
 exports.SOCKET_MSG = {
     'LOBBY_NUM_ONLINE': 'LOBBY_NUM_ONLINE',
     'LOBBY_CREATE_USER': 'LOBBY_CREATE_USER',

@@ -1,9 +1,9 @@
 import * as SocketIO from 'socket.io';
 import * as Msgs from '../../common/messages';
-import { IErrorMessage, isError, SOCKET_MSG, IJoinRoomResponse } from '../../common/messages';
+import { SOCKET_MSG } from '../../common/messages';
+import { ChatRoom } from '../game-room/chat-room';
 import { Lobby } from './lobby';
 import { User } from './user';
-import { ChatRoom } from '../game-room/chat-room';
 
 var lobby: Lobby;
 
@@ -15,6 +15,9 @@ export function handleLobby(io: SocketIO.Server) {
 		lobbyNsp.emit(SOCKET_MSG.LOBBY_NUM_ONLINE, <Msgs.INumOnlineResponse>{count: lobby.getNumUsersOnline()});
 
 		sock.on('disconnect', () => {
+			// update gameroom to forget user.
+			// If gameroomexists and  is now empty, also force socket.io to delete the room and update
+			// the lobby to forget the gameroom
 			var user = (<User>sock);
 			var rm: ChatRoom = user.gameRoom;
 			if(rm !== undefined) {
@@ -37,43 +40,20 @@ export function handleLobby(io: SocketIO.Server) {
 		});
 
 		sock.on(SOCKET_MSG.LOBBY_CREATE_USER, (data: Msgs.ICreateUserRequest) => {
-			let response: Msgs.ICreateUserResponse|Msgs.IErrorMessage;
-
-			let result: User|Msgs.IErrorMessage = lobby.createUser(sock, data.username);
-
-			if(!isError(result)) {
-				response = { username: (<User>result).username };
-			} else {
-				response = <IErrorMessage>result;
-			}
-
-			sock.emit(SOCKET_MSG.LOBBY_CREATE_USER, response);
+			let result: Msgs.ICreateUserResponse = lobby.createUser(sock, data.username);
+			sock.emit(SOCKET_MSG.LOBBY_CREATE_USER, result);
 		});
 
 		sock.on(SOCKET_MSG.LOBBY_CREATE_ROOM, () => {
-			let response: Msgs.ICreateRoomResponse|Msgs.IErrorMessage;
-
-			let result: string|Msgs.IErrorMessage = lobby.createRoom(sock);
-
-			if(!isError(result)) {
-				response = <Msgs.ICreateRoomResponse>{ roomId: result };
-			} else {
-				response = <IErrorMessage>result;
-			}
-
+			let response: Msgs.ICreateRoomResponse  = lobby.createRoom(sock);
 			sock.emit(SOCKET_MSG.LOBBY_CREATE_ROOM, response);
 		});
 
 		sock.on(SOCKET_MSG.LOBBY_JOIN_ROOM, (data: Msgs.IJoinRoomRequest) => {
-			var response: Msgs.IJoinRoomResponse|Msgs.IErrorMessage;
-
-			var result: Msgs.IJoinRoomResponse|Msgs.IErrorMessage = lobby.joinRoom(sock, data.roomId);
-			if(!isError(result)) {
-				response = result;
-				let roomId = (<IJoinRoomResponse>result).roomId;
-				lobbyNsp.to(roomId).emit(SOCKET_MSG.LOBBY_JOIN_ROOM, response);
+			var response: Msgs.IJoinRoomResponse = lobby.joinRoom(sock, data.roomId);
+			if(response.error === undefined) {
+				lobbyNsp.to(response.roomId).emit(SOCKET_MSG.LOBBY_JOIN_ROOM, response);
 			} else {
-				response = <IErrorMessage>result;
 				sock.emit(SOCKET_MSG.LOBBY_JOIN_ROOM, response);
 			}
 		});

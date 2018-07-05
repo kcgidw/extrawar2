@@ -1,9 +1,3 @@
-export interface IErrorMessage {
-	error: string;
-}
-export function isError(obj: any): boolean {
-	return obj instanceof Object && Object.keys(obj).length === 1 && obj['error'];
-}
 
 export const SOCKET_MSG = {
 	'LOBBY_NUM_ONLINE': 'LOBBY_NUM_ONLINE',
@@ -13,33 +7,38 @@ export const SOCKET_MSG = {
 	'CHAT_POST_MESSAGE': 'CHAT_POST_MESSAGE',
 };
 
-export interface INumOnlineResponse {
+export interface IErrorableResponse {
+	messageName: string;
+	error?: string;
+}
+
+export interface INumOnlineResponse extends IErrorableResponse {
 	count: number;
 }
 export interface ICreateUserRequest {
 	username: string;
 }
-export interface ICreateUserResponse {
+export interface ICreateUserResponse extends IErrorableResponse {
 	username: string;
 }
 // no create room request obj
-export interface ICreateRoomResponse {
+export interface ICreateRoomResponse extends IErrorableResponse {
 	roomId: string;
 }
 export interface IJoinRoomRequest {
 	roomId: string;
 }
-export interface IJoinRoomResponse {
+export interface IJoinRoomResponse extends IErrorableResponse {
 	roomId: string;
 	users: string[];
 }
-export interface IListRoomUsersResponse {
+export interface IListRoomUsersResponse extends IErrorableResponse {
 	users: string[];
 }
 export interface IChatPostMessageRequest {
 	message: string;
 }
-export interface IChatPostMessageResponse {
+export interface IChatPostMessageResponse extends IErrorableResponse {
 	user: string;
 	message: string;
 }

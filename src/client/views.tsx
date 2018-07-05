@@ -30,27 +30,25 @@ export class Views extends React.Component<{}, IViewsState> {
 	}
 
 	componentDidMount() {
-		Handler.onUsernameResponse((data: Msgs.ICreateUserResponse) => {
+		Handler.generateHandler<Msgs.ICreateUserResponse>(SOCKET_MSG.LOBBY_CREATE_USER, (data) => {
 			this.setState({
 				myUsername: data.username,
 			});
 			this.setView(VIEW.ROOM_OPTIONS);
 		});
-		Handler.onCreateRoomResponse((data: Msgs.ICreateRoomResponse) => {
+		Handler.generateHandler<Msgs.ICreateRoomResponse>(SOCKET_MSG.LOBBY_CREATE_ROOM, (data) => {
 			this.setState({
 				roomId: data.roomId,
 				roomUsernames: [this.state.myUsername],
 			});
 			this.setView(VIEW.WAITING_ROOM);
 		});
-		Handler.onJoinRoomResponse((data: Msgs.IJoinRoomResponse) => {
+		Handler.generateHandler<Msgs.IJoinRoomResponse>(SOCKET_MSG.LOBBY_JOIN_ROOM, (data) => {
 			this.setState({
 				roomId: data.roomId,
 				roomUsernames: data.users,
 			});
-			if(this.state.curView !== VIEW.WAITING_ROOM) {
-				this.setView(VIEW.WAITING_ROOM);
-			}
+			this.setView(VIEW.WAITING_ROOM);
 		});
 	}
 
@@ -141,12 +139,16 @@ class UsernameView extends React.Component<{}, IUsernameViewState> {
 
 interface IRoomOptionsViewState {
 	joinRoomId: string;
+	joinErr: string;
 }
 class RoomOptionsView extends React.Component<{}, IRoomOptionsViewState> {
+	handlerOff: ()=>any;
+
 	constructor(props) {
 		super(props);
 		this.state = {
 			joinRoomId: '',
+			joinErr: undefined,
 		};
 
 		this.onSubmitCreate = this.onSubmitCreate.bind(this);
@@ -154,7 +156,24 @@ class RoomOptionsView extends React.Component<{}, IRoomOptionsViewState> {
 		this.updateJoinRoomId = this.updateJoinRoomId.bind(this);
 	}
 
+	componentDidMount() {
+		this.handlerOff = Handler.generateHandler<Msgs.IJoinRoomResponse>(SOCKET_MSG.LOBBY_JOIN_ROOM,
+			(data) => {
+				return;
+			},
+			(data) => {
+				this.setState({
+					joinErr: data.error,
+				});
+			}
+		);
+	}
+	componentWillUnmount() {
+		this.handlerOff();
+	}
+
 	render() {
+		var showError = this.state.joinErr ? 'error' : 'hidden';
 		return (
 			<div id="room-options" className="lobby-menu">
 				<div id="room-creation">
@@ -163,11 +182,10 @@ class RoomOptionsView extends React.Component<{}, IRoomOptionsViewState> {
 				<div id="room-joining">
 					Or, join a room. Enter room ID:
 					<form id="username-form" onSubmit={this.onSubmitJoin}>
-						{/* <label htmlFor="roomId">Room ID</label>
-						<br /> */}
-						<input type="text" id="roomId" value={this.state.joinRoomId} onChange={this.updateJoinRoomId}/>
+						<input type="text" id="join-room-id-input" minLength={4} maxLength={4} value={this.state.joinRoomId} onChange={this.updateJoinRoomId}/>
 						<br />
-						<input type="submit" value="Join"></input>
+						<input type="submit" id="join-room-submit-btn" value="Join"></input>
+						<div className={showError}>Error: Room full or not found.</div>
 					</form>
 				</div>
 			</div>

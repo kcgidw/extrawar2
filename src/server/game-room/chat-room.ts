@@ -51,6 +51,7 @@ export class ChatRoom {
 
 	createMessage(user: User, message: string): Messages.IChatPostMessageResponse {
 		return {
+			messageName: Messages.SOCKET_MSG.CHAT_POST_MESSAGE,
 			user: user.username,
 			message: message,
 		};
