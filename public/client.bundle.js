@@ -414,10 +414,10 @@ exports.SOCKET_MSG = {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.minUsernameLength = 2;
 exports.maxUsernameLength = 12;
 function validateUsername(str) {
-    // alphanumeric, 3-12 chars
-    var regex = /^[a-zA-Z0-9]{3,12}$/;
+    var regex = /^[a-zA-Z0-9]{2,12}$/;
     return regex.test(str);
 }
 exports.validateUsername = validateUsername;

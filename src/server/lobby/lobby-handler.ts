@@ -3,6 +3,7 @@ import * as Msgs from '../../common/messages';
 import { IErrorMessage, isError, SOCKET_MSG, IJoinRoomResponse } from '../../common/messages';
 import { Lobby } from './lobby';
 import { User } from './user';
+import { ChatRoom } from '../game-room/chat-room';
 
 var lobby: Lobby;
 
@@ -14,7 +15,20 @@ export function handleLobby(io: SocketIO.Server) {
 		lobbyNsp.emit(SOCKET_MSG.LOBBY_NUM_ONLINE, <Msgs.INumOnlineResponse>{count: lobby.getNumUsersOnline()});
 
 		sock.on('disconnect', () => {
-			// TODO: if socket not connected to lobby, no-op
+			var user = (<User>sock);
+			var rm: ChatRoom = user.gameRoom;
+			if(rm !== undefined) {
+				let forgetResult: string[] = rm.forgetUser(user);
+				let roomBroadcast = <Msgs.IJoinRoomResponse>{
+					roomId: rm.roomId,
+					users: forgetResult,
+				};
+				if(rm.users.length > 0) {
+					lobbyNsp.to(rm.roomId).emit(SOCKET_MSG.LOBBY_JOIN_ROOM, roomBroadcast);
+				} else {
+					lobby.forgetRoom(rm.roomId);
+				}
+			}
 			lobbyNsp.emit(SOCKET_MSG.LOBBY_NUM_ONLINE, <Msgs.INumOnlineResponse>{count: lobby.getNumUsersOnline()});
 		});
 		

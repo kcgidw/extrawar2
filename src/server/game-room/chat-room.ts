@@ -26,6 +26,16 @@ export class ChatRoom {
 		this.users.push(user);
 		user.gameRoom = this;
 	}
+	forgetUser(user: User): string[] {
+		var idx: number = this.users.findIndex((u: User) => {
+			return u.username === user.username;
+		});
+		if(idx !== -1) {
+			this.users.splice(idx, 1);
+			user.gameRoom = undefined;
+		}
+		return this.getUsernames();
+	}
 
 	addChatLog(user: User, post: string) {
 		var cp: ChatMessage = new ChatMessage(user, post);

@@ -62,7 +62,10 @@ export class Lobby {
 	}
 
 	forgetRoom(roomId: string) {
-		this.rooms.delete(roomId);
+		if(this.rooms.has(roomId)) {
+			this.rooms.delete(roomId);
+			delete this.nsp.adapter.rooms[roomId];
+		}
 	}
 
 	getNumUsersOnline(): number {
