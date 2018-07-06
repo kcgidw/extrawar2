@@ -49,11 +49,12 @@ export class ChatRoom {
 		return this.chatLog.slice(numMessages * -1);
 	}
 
-	createMessage(user: User, message: string): Messages.IChatPostMessageResponse {
+	createMessage(user: User, req: Messages.IChatPostMessageRequest): Messages.IChatPostMessageResponse {
 		return {
 			messageName: Messages.SOCKET_MSG.CHAT_POST_MESSAGE,
-			user: user.username,
-			message: message,
+			username: user.username,
+			timestamp: req.timestamp,
+			message: req.message,
 		};
 	}
 

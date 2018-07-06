@@ -36,9 +36,11 @@ export interface IListRoomUsersResponse extends IErrorableResponse {
 	users: string[];
 }
 export interface IChatPostMessageRequest {
+	timestamp: Date;
 	message: string;
 }
 export interface IChatPostMessageResponse extends IErrorableResponse {
-	user: string;
+	username: string;
+	timestamp: Date;
 	message: string;
 }

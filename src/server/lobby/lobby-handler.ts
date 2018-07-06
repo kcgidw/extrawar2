@@ -4,6 +4,7 @@ import { SOCKET_MSG } from '../../common/messages';
 import { ChatRoom } from '../game-room/chat-room';
 import { Lobby } from './lobby';
 import { User } from './user';
+import { handleChat } from '../game-room/chat-handler';
 
 var lobby: Lobby;
 
@@ -12,6 +13,9 @@ export function handleLobby(io: SocketIO.Server) {
 	lobby = new Lobby(lobbyNsp);
 
 	lobbyNsp.on('connection', (sock) => { 
+
+		handleChat(lobbyNsp, lobby, sock);
+		
 		lobbyNsp.emit(SOCKET_MSG.LOBBY_NUM_ONLINE, <Msgs.INumOnlineResponse>{count: lobby.getNumUsersOnline()});
 
 		sock.on('disconnect', () => {

@@ -16,7 +16,10 @@ export function sendJoinRoom(roomId: string) {
 }
 
 export function sendChatMessage(msg: string) {
-	socket.emit(SOCKET_MSG.CHAT_POST_MESSAGE, {message: msg} as Msgs.IChatPostMessageRequest);
+	socket.emit(SOCKET_MSG.CHAT_POST_MESSAGE, {
+		message: msg,
+		timestamp: new Date(),
+	} as Msgs.IChatPostMessageRequest);
 }
 
 // returns a function to turn off the handler. Make to save that function and call it on the unmount.
