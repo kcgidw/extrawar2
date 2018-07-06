@@ -1,6 +1,6 @@
 html, body {
 	font-family: 'Arimo', sans-serif;
-	background-color: hsl(133, 9%, 20%);
+	background-color: hsl(133, 6%, 20%);
 	color: #ddd;
 }
 input {
@@ -37,7 +37,7 @@ input {
 	padding: 4px 4px;
 	font-size: 18px;
 	font-family: 'Arimo', sans-serif;
-	background-color: hsl(136, 9%, 15%);
+	background-color: hsl(136, 9%, 16%);
 	border: solid 1px #555;
 	border-radius: 2px;
 	width: 300px;
@@ -47,10 +47,13 @@ input {
 	margin: 10px;
 	font-size: 16px;
 	font-family: 'Arimo', sans-serif;
-	background-color: hsl(125, 9%, 25%);
+	background-color: hsl(128, 9%, 24%);
 	color: #ddd;
 	border: solid 1px #555;
 	border-radius: 2px;
+}
+button, input[type="button"], input[type="submit"] {
+	cursor: pointer;
 }
 .lobby-menu input[type="text"]#join-room-id-input {
 	width: 90px;
