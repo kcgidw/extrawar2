@@ -26,10 +26,7 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 	componentDidMount() {
 		var handlerOff1 = Handler.generateHandler<Msgs.IChatPostMessageResponse>(SOCKET_MSG.CHAT_POST_MESSAGE,
 			(data) => {
-				// post message
-				this.setState({
-					logs: [... this.state.logs, data]
-				});
+				this.addMessage(data);
 			},
 			(data) => {
 				this.setState({
@@ -45,9 +42,7 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 					message: data.username + (data.joined ? ' joined the room.' : ' left the room.'),
 					timestamp: new Date() // TODO do this server-side
 				};
-				this.setState({
-					logs: [... this.state.logs, chatMsg]
-				});
+				this.addMessage(chatMsg);
 			}
 		);
 		var handlerOff3 = Handler.generateHandler<Msgs.IStartGameResponse>(SOCKET_MSG.START_GAME,
@@ -56,12 +51,10 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 				var chatMsg: Msgs.IChatPostMessageResponse = {
 					messageName: SOCKET_MSG.START_GAME,
 					username: undefined,
-					message: data.username + ' has started the game.',
+					message: data.username + ' started the game.',
 					timestamp: new Date() // TODO do this server-side
 				};
-				this.setState({
-					logs: [... this.state.logs, chatMsg]
-				});
+				this.addMessage(chatMsg);
 			},
 			(data) => {
 				this.setState({
@@ -72,6 +65,7 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 		this.handlerOff = () => {
 			handlerOff1();
 			handlerOff2();
+			handlerOff3();
 		};
 	}
 	componentWillUnmount() {
@@ -81,7 +75,7 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 	render() {
 		return (
 			<div id="game-chat">
-				<div className="messages-container">
+				<div id="messages-container" className="messages-container">
 					<ol>{renderChatLog(this.state.logs)}</ol>
 				</div>
 				<form className="chat-form" action="" onSubmit={this.onSubmit}>
@@ -106,6 +100,19 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 			});
 		}
 		e.preventDefault();
+	}
+	addMessage(msg: Msgs.IChatPostMessageResponse) {
+		// if scroll is at bottom, scroll down again to show new message
+		var container = document.getElementById('messages-container');
+		var scrollDown = container.scrollTop + container.clientHeight === container.scrollHeight;
+
+		this.setState({
+			logs: [... this.state.logs, msg]
+		});
+		
+		if(scrollDown) {
+			container.scrollTop = container.scrollHeight;
+		}
 	}
 }
 

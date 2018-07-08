@@ -112,10 +112,7 @@ class ChatWindow extends React.Component {
     }
     componentDidMount() {
         var handlerOff1 = Handler.generateHandler(messages_1.SOCKET_MSG.CHAT_POST_MESSAGE, (data) => {
-            // post message
-            this.setState({
-                logs: [...this.state.logs, data]
-            });
+            this.addMessage(data);
         }, (data) => {
             this.setState({
                 err: data.error,
@@ -128,21 +125,17 @@ class ChatWindow extends React.Component {
                 message: data.username + (data.joined ? ' joined the room.' : ' left the room.'),
                 timestamp: new Date() // TODO do this server-side
             };
-            this.setState({
-                logs: [...this.state.logs, chatMsg]
-            });
+            this.addMessage(chatMsg);
         });
         var handlerOff3 = Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
             // create system message
             var chatMsg = {
                 messageName: messages_1.SOCKET_MSG.START_GAME,
                 username: undefined,
-                message: data.username + ' has started the game.',
+                message: data.username + ' started the game.',
                 timestamp: new Date() // TODO do this server-side
             };
-            this.setState({
-                logs: [...this.state.logs, chatMsg]
-            });
+            this.addMessage(chatMsg);
         }, (data) => {
             this.setState({
                 err: data.error,
@@ -151,6 +144,7 @@ class ChatWindow extends React.Component {
         this.handlerOff = () => {
             handlerOff1();
             handlerOff2();
+            handlerOff3();
         };
     }
     componentWillUnmount() {
@@ -158,7 +152,7 @@ class ChatWindow extends React.Component {
     }
     render() {
         return (React.createElement("div", { id: "game-chat" },
-            React.createElement("div", { className: "messages-container" },
+            React.createElement("div", { id: "messages-container", className: "messages-container" },
                 React.createElement("ol", null, renderChatLog(this.state.logs))),
             React.createElement("form", { className: "chat-form", action: "", onSubmit: this.onSubmit },
                 React.createElement("input", { type: "text", id: "chat-input", autoComplete: "off", maxLength: 40, placeholder: "Write a chat message", onChange: this.updateMessage, value: this.state.message }))));
@@ -177,6 +171,17 @@ class ChatWindow extends React.Component {
             });
         }
         e.preventDefault();
+    }
+    addMessage(msg) {
+        // if scroll is at bottom, scroll down again to show new message
+        var container = document.getElementById('messages-container');
+        var scrollDown = container.scrollTop + container.clientHeight === container.scrollHeight;
+        this.setState({
+            logs: [...this.state.logs, msg]
+        });
+        if (scrollDown) {
+            container.scrollTop = container.scrollHeight;
+        }
     }
 }
 exports.ChatWindow = ChatWindow;
@@ -560,6 +565,11 @@ class Views extends React.Component {
                         console.warn('Bad view: ' + this.state.curView);
                 }
             }
+        });
+        Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_ROOM_USERS, (data) => {
+            this.setState({
+                roomUsernames: data.users,
+            });
         });
         Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
             if (this.state.curView === VIEW.WAITING_ROOM) {
