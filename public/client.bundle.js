@@ -111,7 +111,8 @@ class ChatWindow extends React.Component {
         this.updateMessage = this.updateMessage.bind(this);
     }
     componentDidMount() {
-        this.handlerOff = Handler.generateHandler(messages_1.SOCKET_MSG.CHAT_POST_MESSAGE, (data) => {
+        var handlerOff1 = Handler.generateHandler(messages_1.SOCKET_MSG.CHAT_POST_MESSAGE, (data) => {
+            // post message
             this.setState({
                 logs: [...this.state.logs, data]
             });
@@ -120,12 +121,24 @@ class ChatWindow extends React.Component {
                 err: data.error,
             });
         });
-        this.handlerOff = Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
+        var handlerOff2 = Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_ROOM_USERS, (data) => {
+            var chatMsg = {
+                messageName: messages_1.SOCKET_MSG.LOBBY_ROOM_USERS,
+                username: undefined,
+                message: data.username + (data.joined ? ' joined the room.' : ' left the room.'),
+                timestamp: new Date() // TODO do this server-side
+            };
+            this.setState({
+                logs: [...this.state.logs, chatMsg]
+            });
+        });
+        var handlerOff3 = Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
+            // create system message
             var chatMsg = {
                 messageName: messages_1.SOCKET_MSG.START_GAME,
                 username: undefined,
                 message: data.username + ' has started the game.',
-                timestamp: new Date() // TODO?
+                timestamp: new Date() // TODO do this server-side
             };
             this.setState({
                 logs: [...this.state.logs, chatMsg]
@@ -135,6 +148,10 @@ class ChatWindow extends React.Component {
                 err: data.error,
             });
         });
+        this.handlerOff = () => {
+            handlerOff1();
+            handlerOff2();
+        };
     }
     componentWillUnmount() {
         this.handlerOff();
@@ -526,20 +543,22 @@ class Views extends React.Component {
             this.setView(VIEW.WAITING_ROOM);
         });
         Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_JOIN_ROOM, (data) => {
-            this.setState({
-                roomId: data.roomId,
-                roomUsernames: data.users,
-            });
-            switch (this.state.curView) {
-                case (VIEW.ROOM_OPTIONS):
-                    this.setView(VIEW.WAITING_ROOM);
-                    break;
-                case (VIEW.WAITING_ROOM):
-                    break;
-                case (VIEW.GAME):
-                    break;
-                default:
-                    console.warn('Bad view: ' + this.state.curView);
+            if (data.username === this.state.myUsername) {
+                this.setState({
+                    roomId: data.roomId,
+                    roomUsernames: data.users,
+                });
+                switch (this.state.curView) {
+                    case (VIEW.ROOM_OPTIONS):
+                        this.setView(VIEW.WAITING_ROOM);
+                        break;
+                    case (VIEW.WAITING_ROOM):
+                        break;
+                    case (VIEW.GAME):
+                        break;
+                    default:
+                        console.warn('Bad view: ' + this.state.curView);
+                }
             }
         });
         Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
@@ -600,14 +619,16 @@ exports.Views = Views;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SOCKET_MSG = {
-    'LOBBY_NUM_ONLINE': 'LOBBY_NUM_ONLINE',
-    'LOBBY_CREATE_USER': 'LOBBY_CREATE_USER',
-    'LOBBY_CREATE_ROOM': 'LOBBY_CREATE_ROOM',
-    'LOBBY_JOIN_ROOM': 'LOBBY_JOIN_ROOM',
-    'CHAT_POST_MESSAGE': 'CHAT_POST_MESSAGE',
-    'START_GAME': 'START_GAME',
-};
+var SOCKET_MSG;
+(function (SOCKET_MSG) {
+    SOCKET_MSG["LOBBY_NUM_ONLINE"] = "LOBBY_NUM_ONLINE";
+    SOCKET_MSG["LOBBY_CREATE_USER"] = "LOBBY_CREATE_USER";
+    SOCKET_MSG["LOBBY_CREATE_ROOM"] = "LOBBY_CREATE_ROOM";
+    SOCKET_MSG["LOBBY_JOIN_ROOM"] = "LOBBY_JOIN_ROOM";
+    SOCKET_MSG["LOBBY_ROOM_USERS"] = "LOBBY_ROOM_USERS";
+    SOCKET_MSG["CHAT_POST_MESSAGE"] = "CHAT_POST_MESSAGE";
+    SOCKET_MSG["START_GAME"] = "START_GAME";
+})(SOCKET_MSG = exports.SOCKET_MSG || (exports.SOCKET_MSG = {}));
 
 
 /***/ }),

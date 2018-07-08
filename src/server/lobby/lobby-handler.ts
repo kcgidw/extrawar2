@@ -27,9 +27,11 @@ export function handleLobby(io: SocketIO.Server) {
 			var rm: ChatRoom = user.gameRoom;
 			if(rm !== undefined) {
 				let forgetResult: string[] = rm.forgetUser(user);
-				let roomBroadcast = <Msgs.IJoinRoomResponse>{
+				let roomBroadcast = <Msgs.IRoomUsersResponse>{
 					roomId: rm.roomId,
 					users: forgetResult,
+					username: user.username,
+					joined: false,
 				};
 				if(rm.users.length > 0) {
 					lobbyNsp.to(rm.roomId).emit(SOCKET_MSG.LOBBY_JOIN_ROOM, roomBroadcast);
@@ -55,9 +57,14 @@ export function handleLobby(io: SocketIO.Server) {
 		});
 
 		sock.on(SOCKET_MSG.LOBBY_JOIN_ROOM, (data: Msgs.IJoinRoomRequest) => {
-			var response: Msgs.IJoinRoomResponse = lobby.joinRoom(sock, data.roomId);
+			var response: Msgs.IRoomUsersResponse = lobby.joinRoom(sock, data.roomId);
 			if(response.error === undefined) {
-				lobbyNsp.to(response.roomId).emit(SOCKET_MSG.LOBBY_JOIN_ROOM, response);
+				sock.emit(SOCKET_MSG.LOBBY_JOIN_ROOM, <Msgs.IJoinRoomResponse>{
+					roomId: response.roomId,
+					users: response.users,
+					username: response.username,
+				});
+				sock.to(response.roomId).emit(SOCKET_MSG.LOBBY_ROOM_USERS, response);
 			} else {
 				sock.emit(SOCKET_MSG.LOBBY_JOIN_ROOM, response);
 			}

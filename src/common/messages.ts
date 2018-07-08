@@ -1,15 +1,16 @@
 
-export const SOCKET_MSG = {
-	'LOBBY_NUM_ONLINE': 'LOBBY_NUM_ONLINE',
-	'LOBBY_CREATE_USER': 'LOBBY_CREATE_USER',
-	'LOBBY_CREATE_ROOM': 'LOBBY_CREATE_ROOM',
-	'LOBBY_JOIN_ROOM': 'LOBBY_JOIN_ROOM',
-	'CHAT_POST_MESSAGE': 'CHAT_POST_MESSAGE',
-	'START_GAME': 'START_GAME',
-};
+export enum SOCKET_MSG {
+	'LOBBY_NUM_ONLINE'=  'LOBBY_NUM_ONLINE',
+	'LOBBY_CREATE_USER'= 'LOBBY_CREATE_USER',
+	'LOBBY_CREATE_ROOM'= 'LOBBY_CREATE_ROOM',
+	'LOBBY_JOIN_ROOM'= 'LOBBY_JOIN_ROOM',
+	'LOBBY_ROOM_USERS'= 'LOBBY_ROOM_USERS',
+	'CHAT_POST_MESSAGE'= 'CHAT_POST_MESSAGE',
+	'START_GAME'= 'START_GAME',
+}
 
 export interface IErrorableResponse {
-	messageName: string;
+	messageName: SOCKET_MSG;
 	error?: string;
 }
 
@@ -32,9 +33,14 @@ export interface IJoinRoomRequest {
 export interface IJoinRoomResponse extends IErrorableResponse {
 	roomId: string;
 	users: string[];
+	username: string;
+	// prevChat: IChatPostMessageResponse[]; // TODO
 }
-export interface IListRoomUsersResponse extends IErrorableResponse {
+export interface IRoomUsersResponse extends IErrorableResponse {
+	roomId: string;
 	users: string[];
+	username: string;
+	joined: boolean; // else, left the room
 }
 export interface IChatPostMessageRequest {
 	timestamp: Date;

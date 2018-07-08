@@ -1,5 +1,5 @@
 import { Namespace, Socket } from 'socket.io';
-import { ICreateRoomResponse, ICreateUserResponse, IJoinRoomResponse, SOCKET_MSG } from '../../common/messages';
+import { ICreateRoomResponse, ICreateUserResponse, SOCKET_MSG, IRoomUsersResponse } from '../../common/messages';
 import { validateUsername } from '../../common/validate';
 import { ChatRoom } from '../game-room/chat-room';
 import { getUsersInNsp } from '../socket-util';
@@ -58,7 +58,7 @@ export class Lobby {
 		};
 	}
 
-	joinRoom(socket: Socket, roomId: string): IJoinRoomResponse {
+	joinRoom(socket: Socket, roomId: string): IRoomUsersResponse {
 		roomId = roomId.toLowerCase();
 		var rm: ChatRoom = this.rooms.get(roomId);
 		if(rm && rm.users.length < ROOM_MAX_USERS) {
@@ -68,12 +68,16 @@ export class Lobby {
 				messageName: SOCKET_MSG.LOBBY_JOIN_ROOM,
 				roomId: roomId,
 				users: rm.getUsernames(),
+				username: (<User>socket).username,
+				joined: true
 			};
 		}
 		return {
 			messageName: SOCKET_MSG.LOBBY_JOIN_ROOM,
 			roomId: undefined,
 			users: undefined,
+			username: undefined,
+			joined: undefined,
 			error: 'Cannot enter room', // Hide reason from user
 		};
 	}

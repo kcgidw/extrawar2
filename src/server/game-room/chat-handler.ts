@@ -44,12 +44,13 @@ export function handleChat(nsp: SocketIO.Namespace, lobby: Lobby, sock: SocketIO
 		var chatRoom: ChatRoom = user.gameRoom;
 		if(chatRoom) {
 			var rmId: string = chatRoom.roomId;
-			
-			nsp.to(rmId).emit(SOCKET_MSG.CHAT_POST_MESSAGE, <Msgs.IChatPostMessageResponse>{
-				messageName: SOCKET_MSG.CHAT_POST_MESSAGE,
-				username: undefined,
-				message: user.username + ' has disconnected.',
-				timestamp: new Date(),
+
+			nsp.to(rmId).emit(SOCKET_MSG.LOBBY_ROOM_USERS, <Msgs.IRoomUsersResponse>{
+				messageName:  SOCKET_MSG.LOBBY_ROOM_USERS,
+				roomId: rmId,
+				users: chatRoom.getUsernames(),
+				username: user.username,
+				joined: false,
 			});
 		}
 	});

@@ -46,20 +46,22 @@ export class Views extends React.Component<{}, IViewsState> {
 			this.setView(VIEW.WAITING_ROOM);
 		});
 		Handler.generateHandler<Msgs.IJoinRoomResponse>(SOCKET_MSG.LOBBY_JOIN_ROOM, (data) => {
-			this.setState({
-				roomId: data.roomId,
-				roomUsernames: data.users,
-			});
-			switch(this.state.curView) {
-				case (VIEW.ROOM_OPTIONS):
-					this.setView(VIEW.WAITING_ROOM);
-					break;
-				case (VIEW.WAITING_ROOM):
-					break;
-				case (VIEW.GAME):
-					break;
-				default:
-					console.warn('Bad view: ' + this.state.curView);
+			if(data.username === this.state.myUsername) {
+				this.setState({
+					roomId: data.roomId,
+					roomUsernames: data.users,
+				});
+				switch(this.state.curView) {
+					case (VIEW.ROOM_OPTIONS):
+						this.setView(VIEW.WAITING_ROOM);
+						break;
+					case (VIEW.WAITING_ROOM):
+						break;
+					case (VIEW.GAME):
+						break;
+					default:
+						console.warn('Bad view: ' + this.state.curView);
+				}
 			}
 		});
 		Handler.generateHandler<Msgs.IStartGameResponse>(SOCKET_MSG.START_GAME, (data) => {

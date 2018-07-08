@@ -24,8 +24,9 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 	}
 
 	componentDidMount() {
-		this.handlerOff = Handler.generateHandler<Msgs.IChatPostMessageResponse>(SOCKET_MSG.CHAT_POST_MESSAGE,
+		var handlerOff1 = Handler.generateHandler<Msgs.IChatPostMessageResponse>(SOCKET_MSG.CHAT_POST_MESSAGE,
 			(data) => {
+				// post message
 				this.setState({
 					logs: [... this.state.logs, data]
 				});
@@ -36,13 +37,27 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 				});
 			}
 		);
-		this.handlerOff = Handler.generateHandler<Msgs.IStartGameResponse>(SOCKET_MSG.START_GAME,
+		var handlerOff2 = Handler.generateHandler<Msgs.IRoomUsersResponse>(SOCKET_MSG.LOBBY_ROOM_USERS,
 			(data) => {
+				var chatMsg: Msgs.IChatPostMessageResponse = {
+					messageName: SOCKET_MSG.LOBBY_ROOM_USERS,
+					username: undefined,
+					message: data.username + (data.joined ? ' joined the room.' : ' left the room.'),
+					timestamp: new Date() // TODO do this server-side
+				};
+				this.setState({
+					logs: [... this.state.logs, chatMsg]
+				});
+			}
+		);
+		var handlerOff3 = Handler.generateHandler<Msgs.IStartGameResponse>(SOCKET_MSG.START_GAME,
+			(data) => {
+				// create system message
 				var chatMsg: Msgs.IChatPostMessageResponse = {
 					messageName: SOCKET_MSG.START_GAME,
 					username: undefined,
 					message: data.username + ' has started the game.',
-					timestamp: new Date() // TODO?
+					timestamp: new Date() // TODO do this server-side
 				};
 				this.setState({
 					logs: [... this.state.logs, chatMsg]
@@ -54,6 +69,10 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 				});
 			}
 		);
+		this.handlerOff = () => {
+			handlerOff1();
+			handlerOff2();
+		};
 	}
 	componentWillUnmount() {
 		this.handlerOff();
