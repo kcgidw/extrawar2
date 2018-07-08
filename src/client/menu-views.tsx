@@ -125,6 +125,7 @@ interface IWaitingRoomViewProps {
 export class WaitingRoomView extends React.Component<IWaitingRoomViewProps, {}> {
 	constructor(props) {
 		super(props);
+		this.startGame = this.startGame.bind(this);
 	}
 
 	render() {
@@ -140,8 +141,13 @@ export class WaitingRoomView extends React.Component<IWaitingRoomViewProps, {}> 
 						{renderPlayersList(this.props.usernames)}
 					</ul>
 				</div>
+				<button type="button" id="start-game-btn" onClick={this.startGame}>Start Game</button>
 			</div>
 		);
+	}
+
+	startGame() {
+		Handler.sendStartGame();
 	}
 }
 

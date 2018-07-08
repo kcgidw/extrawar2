@@ -5,6 +5,7 @@ import * as Handler from './handler';
 import { RoomOptionsView, UsernameView, WaitingRoomView } from './menu-views';
 import { OnlineCounter } from './online-counter';
 import { GameView } from './game-view';
+import { ChatWindow } from './chat-window';
 
 enum VIEW {
 	USERNAME = 'username-entry',
@@ -52,23 +53,20 @@ export class Views extends React.Component<{}, IViewsState> {
 			switch(this.state.curView) {
 				case (VIEW.ROOM_OPTIONS):
 					this.setView(VIEW.WAITING_ROOM);
-					if(data.users.length === 2) {
-						setTimeout(() => {
-							this.setView(VIEW.GAME);
-						}, 1 * 1000);
-					}
 					break;
 				case (VIEW.WAITING_ROOM):
-					if(data.users.length === 2) {
-						setTimeout(() => {
-							this.setView(VIEW.GAME);
-						}, 1 * 1000);
-					}
 					break;
 				case (VIEW.GAME):
 					break;
 				default:
-					console.warn('Bad room');
+					console.warn('Bad view: ' + this.state.curView);
+			}
+		});
+		Handler.generateHandler<Msgs.IStartGameResponse>(SOCKET_MSG.START_GAME, (data) => {
+			if(this.state.curView === VIEW.WAITING_ROOM) {
+				this.setView(VIEW.GAME);
+			} else {
+				console.warn('Bad view: ' + this.state.curView);
 			}
 		});
 	}
@@ -78,10 +76,15 @@ export class Views extends React.Component<{}, IViewsState> {
 		if(this.state.curView === VIEW.USERNAME || this.state.curView === VIEW.ROOM_OPTIONS) {
 			showCounter = <OnlineCounter />;
 		}
+		var showChat;
+		if(this.state.curView === VIEW.WAITING_ROOM || this.state.curView === VIEW.GAME) {
+			showChat = <ChatWindow />;
+		}
 
 		return (
 			<div id="view">
 				{showCounter}
+				{showChat}
 				{this.getViewComponent()}
 			</div>
 		);

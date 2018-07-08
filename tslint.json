@@ -36,7 +36,8 @@
         "no-empty-interface": {
             "severity": "warn"
         },
-        "max-line-length": [false]
+        "max-line-length": [false],
+        "eofline": [false]
     },
     "rulesDirectory": [],
     "linterOptions": {

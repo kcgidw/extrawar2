@@ -21,6 +21,8 @@ export class Lobby {
 		var id: string;
 		var user = <User>socket;
 
+		// TODO no duplciate names
+
 		if(validateUsername(username)) {
 			user.username = username;
 			console.log('create user: ' + username);

@@ -22,6 +22,23 @@ export function handleChat(nsp: SocketIO.Namespace, lobby: Lobby, sock: SocketIO
 			});
 		}
 	});
+	sock.on(SOCKET_MSG.START_GAME, () => {
+		var user: User = (<User>sock);
+		var chatRoom: ChatRoom = user.gameRoom;
+		if(chatRoom) {
+			var rmId: string = chatRoom.roomId;
+			nsp.to(rmId).emit(SOCKET_MSG.START_GAME, <Msgs.IStartGameResponse>{
+				messageName: SOCKET_MSG.START_GAME,
+				username: user.username,
+				timestamp: new Date()
+			} as Msgs.IStartGameResponse);
+		} else {
+			sock.emit(SOCKET_MSG.START_GAME, <Msgs.IStartGameResponse>{
+				messageName: SOCKET_MSG.START_GAME,
+				error: 'Undefined room',
+			});
+		}
+	});
 	sock.on('disconnect', () => {
 		var user: User = (<User>sock);
 		var chatRoom: ChatRoom = user.gameRoom;

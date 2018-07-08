@@ -14,6 +14,7 @@ export function handleLobby(io: SocketIO.Server) {
 
 	lobbyNsp.on('connection', (sock) => { 
 
+		// handle sub-handlers before main lobby handlers
 		handleChat(lobbyNsp, lobby, sock);
 		
 		lobbyNsp.emit(SOCKET_MSG.LOBBY_NUM_ONLINE, <Msgs.INumOnlineResponse>{count: lobby.getNumUsersOnline()});

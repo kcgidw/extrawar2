@@ -30,7 +30,7 @@ export class GameView extends React.Component<{},{}> {
 
 	render() {
 		return (
-			<ChatWindow/>
+			<div>Game</div>
 		);
 	}
 }

@@ -14,6 +14,9 @@ export function sendCreateRoom() {
 export function sendJoinRoom(roomId: string) {
 	socket.emit(SOCKET_MSG.LOBBY_JOIN_ROOM, {roomId: roomId} as Msgs.IJoinRoomRequest);
 }
+export function sendStartGame() {
+	socket.emit(SOCKET_MSG.START_GAME);
+}
 
 export function sendChatMessage(msg: string) {
 	socket.emit(SOCKET_MSG.CHAT_POST_MESSAGE, {
@@ -22,7 +25,7 @@ export function sendChatMessage(msg: string) {
 	} as Msgs.IChatPostMessageRequest);
 }
 
-// returns a function to turn off the handler. Make to save that function and call it on the unmount.
+// returns a function to turn off the handler. SAVE that function and CALL it on the unmount.
 export function generateHandler<T extends Msgs.IErrorableResponse>(messageType: string, fn: (data: T)=>any, errorFn?: (data: T)=>any) {
 	var handler = (data: T) => {
 		if(data.error === undefined) {

@@ -5,6 +5,7 @@ export const SOCKET_MSG = {
 	'LOBBY_CREATE_ROOM': 'LOBBY_CREATE_ROOM',
 	'LOBBY_JOIN_ROOM': 'LOBBY_JOIN_ROOM',
 	'CHAT_POST_MESSAGE': 'CHAT_POST_MESSAGE',
+	'START_GAME': 'START_GAME',
 };
 
 export interface IErrorableResponse {
@@ -43,4 +44,8 @@ export interface IChatPostMessageResponse extends IErrorableResponse {
 	username: string;
 	timestamp: Date;
 	message: string;
+}
+export interface IStartGameResponse extends IErrorableResponse {
+	username: string; // who requested
+	timestamp: Date;
 }

@@ -120,6 +120,21 @@ class ChatWindow extends React.Component {
                 err: data.error,
             });
         });
+        this.handlerOff = Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
+            var chatMsg = {
+                messageName: messages_1.SOCKET_MSG.START_GAME,
+                username: undefined,
+                message: data.username + ' has started the game.',
+                timestamp: new Date() // TODO?
+            };
+            this.setState({
+                logs: [...this.state.logs, chatMsg]
+            });
+        }, (data) => {
+            this.setState({
+                err: data.error,
+            });
+        });
     }
     componentWillUnmount() {
         this.handlerOff();
@@ -129,7 +144,7 @@ class ChatWindow extends React.Component {
             React.createElement("div", { className: "messages-container" },
                 React.createElement("ol", null, renderChatLog(this.state.logs))),
             React.createElement("form", { className: "chat-form", action: "", onSubmit: this.onSubmit },
-                React.createElement("input", { type: "text", id: "chat-input", autoComplete: "off", maxLength: 40, onChange: this.updateMessage, value: this.state.message }))));
+                React.createElement("input", { type: "text", id: "chat-input", autoComplete: "off", maxLength: 40, placeholder: "Write a chat message", onChange: this.updateMessage, value: this.state.message }))));
     }
     updateMessage(e) {
         this.setState({
@@ -198,7 +213,6 @@ ReactDOM.render(React.createElement(Views.Views, null), document.getElementById(
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
-const chat_window_1 = __webpack_require__(/*! ./chat-window */ "./src/client/chat-window.tsx");
 class GameView extends React.Component {
     constructor(props) {
         super(props);
@@ -220,7 +234,7 @@ class GameView extends React.Component {
         this.handlerOff();
     }
     render() {
-        return (React.createElement(chat_window_1.ChatWindow, null));
+        return (React.createElement("div", null, "Game"));
     }
 }
 exports.GameView = GameView;
@@ -254,6 +268,10 @@ function sendJoinRoom(roomId) {
     exports.socket.emit(messages_1.SOCKET_MSG.LOBBY_JOIN_ROOM, { roomId: roomId });
 }
 exports.sendJoinRoom = sendJoinRoom;
+function sendStartGame() {
+    exports.socket.emit(messages_1.SOCKET_MSG.START_GAME);
+}
+exports.sendStartGame = sendStartGame;
 function sendChatMessage(msg) {
     exports.socket.emit(messages_1.SOCKET_MSG.CHAT_POST_MESSAGE, {
         message: msg,
@@ -261,7 +279,7 @@ function sendChatMessage(msg) {
     });
 }
 exports.sendChatMessage = sendChatMessage;
-// returns a function to turn off the handler. Make to save that function and call it on the unmount.
+// returns a function to turn off the handler. SAVE that function and CALL it on the unmount.
 function generateHandler(messageType, fn, errorFn) {
     var handler = (data) => {
         if (data.error === undefined) {
@@ -388,6 +406,7 @@ exports.RoomOptionsView = RoomOptionsView;
 class WaitingRoomView extends React.Component {
     constructor(props) {
         super(props);
+        this.startGame = this.startGame.bind(this);
     }
     render() {
         return (React.createElement("div", { id: "waiting-room", className: "lobby-menu" },
@@ -397,7 +416,11 @@ class WaitingRoomView extends React.Component {
             React.createElement("div", null, "Waiting for players..."),
             React.createElement("div", null,
                 "Current players:",
-                React.createElement("ul", null, renderPlayersList(this.props.usernames)))));
+                React.createElement("ul", null, renderPlayersList(this.props.usernames))),
+            React.createElement("button", { type: "button", id: "start-game-btn", onClick: this.startGame }, "Start Game")));
+    }
+    startGame() {
+        Handler.sendStartGame();
     }
 }
 exports.WaitingRoomView = WaitingRoomView;
@@ -470,6 +493,7 @@ const Handler = __webpack_require__(/*! ./handler */ "./src/client/handler.ts");
 const menu_views_1 = __webpack_require__(/*! ./menu-views */ "./src/client/menu-views.tsx");
 const online_counter_1 = __webpack_require__(/*! ./online-counter */ "./src/client/online-counter.tsx");
 const game_view_1 = __webpack_require__(/*! ./game-view */ "./src/client/game-view.tsx");
+const chat_window_1 = __webpack_require__(/*! ./chat-window */ "./src/client/chat-window.tsx");
 var VIEW;
 (function (VIEW) {
     VIEW["USERNAME"] = "username-entry";
@@ -509,23 +533,21 @@ class Views extends React.Component {
             switch (this.state.curView) {
                 case (VIEW.ROOM_OPTIONS):
                     this.setView(VIEW.WAITING_ROOM);
-                    if (data.users.length === 2) {
-                        setTimeout(() => {
-                            this.setView(VIEW.GAME);
-                        }, 1 * 1000);
-                    }
                     break;
                 case (VIEW.WAITING_ROOM):
-                    if (data.users.length === 2) {
-                        setTimeout(() => {
-                            this.setView(VIEW.GAME);
-                        }, 1 * 1000);
-                    }
                     break;
                 case (VIEW.GAME):
                     break;
                 default:
-                    console.warn('Bad room');
+                    console.warn('Bad view: ' + this.state.curView);
+            }
+        });
+        Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
+            if (this.state.curView === VIEW.WAITING_ROOM) {
+                this.setView(VIEW.GAME);
+            }
+            else {
+                console.warn('Bad view: ' + this.state.curView);
             }
         });
     }
@@ -534,8 +556,13 @@ class Views extends React.Component {
         if (this.state.curView === VIEW.USERNAME || this.state.curView === VIEW.ROOM_OPTIONS) {
             showCounter = React.createElement(online_counter_1.OnlineCounter, null);
         }
+        var showChat;
+        if (this.state.curView === VIEW.WAITING_ROOM || this.state.curView === VIEW.GAME) {
+            showChat = React.createElement(chat_window_1.ChatWindow, null);
+        }
         return (React.createElement("div", { id: "view" },
             showCounter,
+            showChat,
             this.getViewComponent()));
     }
     getViewComponent() {
@@ -579,6 +606,7 @@ exports.SOCKET_MSG = {
     'LOBBY_CREATE_ROOM': 'LOBBY_CREATE_ROOM',
     'LOBBY_JOIN_ROOM': 'LOBBY_JOIN_ROOM',
     'CHAT_POST_MESSAGE': 'CHAT_POST_MESSAGE',
+    'START_GAME': 'START_GAME',
 };
 
 

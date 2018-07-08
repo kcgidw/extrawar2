@@ -36,6 +36,24 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 				});
 			}
 		);
+		this.handlerOff = Handler.generateHandler<Msgs.IStartGameResponse>(SOCKET_MSG.START_GAME,
+			(data) => {
+				var chatMsg: Msgs.IChatPostMessageResponse = {
+					messageName: SOCKET_MSG.START_GAME,
+					username: undefined,
+					message: data.username + ' has started the game.',
+					timestamp: new Date() // TODO?
+				};
+				this.setState({
+					logs: [... this.state.logs, chatMsg]
+				});
+			},
+			(data) => {
+				this.setState({
+					err: data.error,
+				});
+			}
+		);
 	}
 	componentWillUnmount() {
 		this.handlerOff();
@@ -48,7 +66,8 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 					<ol>{renderChatLog(this.state.logs)}</ol>
 				</div>
 				<form className="chat-form" action="" onSubmit={this.onSubmit}>
-					<input type="text" id="chat-input" autoComplete="off" maxLength={40} onChange={this.updateMessage} value={this.state.message}></input>
+					<input type="text" id="chat-input" autoComplete="off" maxLength={40} placeholder="Write a chat message"
+					onChange={this.updateMessage} value={this.state.message}></input>
 				</form>
 			</div>
 		);

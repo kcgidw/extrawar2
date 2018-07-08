@@ -31,6 +31,9 @@
 	font-size: 12px;
 	line-height: 14px;
 } 
+.chat-form input[type="text"]::placeholder {
+	font-style: italic;
+} 
 
 span.chat-user-tag {
 	color: yellow;

@@ -4,6 +4,7 @@ import { User } from '../lobby/user';
 import * as Messages from '../../common/messages';
 
 const CHAT_LOG_CAPACITY = 15;
+const MAX_PLAYERS = 6; // any more = spectators
 
 /*
 Since socketio rooms aren't really useful objects afaik, ChatRooms are a sort of room abstraction.
@@ -14,8 +15,12 @@ For now, this is basically JUST A DATA STORE. Leave socketio interactions to the
 export class ChatRoom {
 	nsp: SocketIO.Namespace;
 	roomId: string;
+	
 	chatLog: ChatMessage[] = [];
+
 	users: User[] = [];
+	players: User[] = [];
+	spectators: User[] = [];
 
 	constructor(nsp: SocketIO.Namespace, roomId: string) {
 		this.nsp = nsp;
@@ -25,6 +30,11 @@ export class ChatRoom {
 	admitUser(user: User) {
 		this.users.push(user);
 		user.gameRoom = this;
+		if(this.users.length <= MAX_PLAYERS) {
+			this.players.push(user);
+		} else {
+			this.spectators.push(user);
+		}
 	}
 	forgetUser(user: User): string[] {
 		var idx: number = this.users.findIndex((u: User) => {
