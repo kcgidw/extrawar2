@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as Msgs from '../common/messages';
 import { SOCKET_MSG } from "../common/messages";
 import { maxUsernameLength, validateUsername } from "../common/validate";
-import * as Handler from './handler';
+import * as Handler from './client-handler';
 
 interface IUsernameViewState { 
 	username: string;

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import * as Handler from './handler';
+import * as Handler from './client-handler';
 import { SOCKET_MSG } from '../common/messages';
 import * as Msgs from '../common/messages';
 

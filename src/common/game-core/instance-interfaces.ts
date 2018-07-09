@@ -1,12 +1,17 @@
-import { IStatusEffectDef } from "./rule-interfaces";
+import { IStefDef } from "./rule-interfaces";
+
+export type Team = 1|2;
 
 export interface IEntityState {
 	entityId: number;
+	ready: boolean;
 
+	maxHp: number;
 	hp: number;
 	ap: number;
 	deaths: number;
 	respawn: number;
+	nextRespawn: number;
 
 	passiveSlots: number;
 	activeSlots: number;
@@ -19,12 +24,12 @@ export interface IEntityState {
 }
 
 export interface ICooldown {
-	skillId: number;
+	skill: string;
 	cooldown: number;
 }
 
 export interface IStefInstance {
-	stef: IStatusEffectDef;
+	stefId: string;
 	duration: number;
 	invokerId: number; // entity that applied this stef
 }
@@ -35,7 +40,3 @@ export interface ILaneState {
 	stefs2: IStefInstance[];
 }
 
-export interface ILane {
-	y: number;
-	side: 1|2; 
-}

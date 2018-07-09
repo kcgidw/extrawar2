@@ -1,9 +1,9 @@
 import { Namespace, Socket } from 'socket.io';
 import { ICreateRoomResponse, ICreateUserResponse, SOCKET_MSG, IRoomUsersResponse } from '../../common/messages';
 import { validateUsername } from '../../common/validate';
-import { ChatRoom } from '../game-room/chat-room';
+import { ChatRoom } from '../chat-room/chat-room';
 import { getUsersInNsp } from '../socket-util';
-import * as idUtil from './id-util';
+import * as idUtil from './util';
 import { User } from './user';
 
 const MAX_USERS = 10 * 6; // TODO

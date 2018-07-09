@@ -97,7 +97,7 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
-const Handler = __webpack_require__(/*! ./handler */ "./src/client/handler.ts");
+const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
 const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 class ChatWindow extends React.Component {
     constructor(props) {
@@ -206,68 +206,10 @@ function renderChatLog(messages) {
 
 /***/ }),
 
-/***/ "./src/client/client.tsx":
-/*!*******************************!*\
-  !*** ./src/client/client.tsx ***!
-  \*******************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(/*! react */ "react");
-const ReactDOM = __webpack_require__(/*! react-dom */ "react-dom");
-const Views = __webpack_require__(/*! ./views */ "./src/client/views.tsx");
-ReactDOM.render(React.createElement(Views.Views, null), document.getElementById('root'));
-
-
-/***/ }),
-
-/***/ "./src/client/game-view.tsx":
-/*!**********************************!*\
-  !*** ./src/client/game-view.tsx ***!
-  \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const React = __webpack_require__(/*! react */ "react");
-class GameView extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {};
-    }
-    componentDidMount() {
-        // this.handlerOff = Handler.generateHandler<Msgs.IJoinRoomResponse>(SOCKET_MSG.LOBBY_JOIN_ROOM,
-        // 	(data) => {
-        // 		return;
-        // 	},
-        // 	(data) => {
-        // 		this.setState({
-        // 			joinErr: data.error,
-        // 		});
-        // 	}
-        // );
-    }
-    componentWillUnmount() {
-        this.handlerOff();
-    }
-    render() {
-        return (React.createElement("div", null, "Game"));
-    }
-}
-exports.GameView = GameView;
-
-
-/***/ }),
-
-/***/ "./src/client/handler.ts":
-/*!*******************************!*\
-  !*** ./src/client/handler.ts ***!
-  \*******************************/
+/***/ "./src/client/client-handler.ts":
+/*!**************************************!*\
+  !*** ./src/client/client-handler.ts ***!
+  \**************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -301,6 +243,13 @@ function sendChatMessage(msg) {
     });
 }
 exports.sendChatMessage = sendChatMessage;
+/* game */
+function chooseCharacter(entProfile) {
+    exports.socket.emit(messages_1.SOCKET_MSG.CHOOSE_CHARACTER, {
+        entityProfileId: entProfile.id,
+    });
+}
+exports.chooseCharacter = chooseCharacter;
 // returns a function to turn off the handler. SAVE that function and CALL it on the unmount.
 function generateHandler(messageType, fn, errorFn) {
     var handler = (data) => {
@@ -327,6 +276,107 @@ exports.generateHandler = generateHandler;
 
 /***/ }),
 
+/***/ "./src/client/client.tsx":
+/*!*******************************!*\
+  !*** ./src/client/client.tsx ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "react");
+const ReactDOM = __webpack_require__(/*! react-dom */ "react-dom");
+const Views = __webpack_require__(/*! ./views */ "./src/client/views.tsx");
+ReactDOM.render(React.createElement(Views.Views, null), document.getElementById('root'));
+
+
+/***/ }),
+
+/***/ "./src/client/game-ui/character-choices.tsx":
+/*!**************************************************!*\
+  !*** ./src/client/game-ui/character-choices.tsx ***!
+  \**************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "react");
+const characters_1 = __webpack_require__(/*! ../../common/game-info/characters */ "./src/common/game-info/characters.ts");
+class CharacterChoices extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+    render() {
+        return (React.createElement("div", { className: "character-choices" },
+            React.createElement("ul", null, renderCharacterChoices(this.props.choices))));
+    }
+}
+exports.CharacterChoices = CharacterChoices;
+function renderCharacterChoices(choices) {
+    return choices.map((entProfId) => React.createElement("li", { key: entProfId },
+        React.createElement(CharacterChoicePanel, { entProfile: characters_1.Characters[entProfId] })));
+}
+class CharacterChoicePanel extends React.Component {
+    constructor(props) {
+        super(props);
+        this.onClick = this.onClick.bind(this);
+    }
+    render() {
+        return (React.createElement("div", { className: "character-choice" },
+            this.props.entProfile.name,
+            React.createElement("br", null),
+            "FACTION ",
+            this.props.entProfile.faction,
+            React.createElement("br", null),
+            "HP ",
+            this.props.entProfile.maxHp,
+            React.createElement("br", null),
+            "STR ",
+            this.props.entProfile.str,
+            React.createElement("button", { type: "button", onClick: this.onClick })));
+    }
+    onClick(e) {
+    }
+}
+
+
+/***/ }),
+
+/***/ "./src/client/game-view.tsx":
+/*!**********************************!*\
+  !*** ./src/client/game-view.tsx ***!
+  \**********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "react");
+const character_choices_1 = __webpack_require__(/*! ./game-ui/character-choices */ "./src/client/game-ui/character-choices.tsx");
+class GameView extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+    componentDidMount() {
+    }
+    componentWillUnmount() {
+        this.handlerOff();
+    }
+    render() {
+        return (React.createElement("div", { id: "game-view" },
+            React.createElement(character_choices_1.CharacterChoices, { choices: this.props.characterChoiceIds })));
+    }
+}
+exports.GameView = GameView;
+
+
+/***/ }),
+
 /***/ "./src/client/menu-views.tsx":
 /*!***********************************!*\
   !*** ./src/client/menu-views.tsx ***!
@@ -340,7 +390,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
 const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 const validate_1 = __webpack_require__(/*! ../common/validate */ "./src/common/validate.ts");
-const Handler = __webpack_require__(/*! ./handler */ "./src/client/handler.ts");
+const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
 class UsernameView extends React.Component {
     constructor(props) {
         super(props);
@@ -465,7 +515,7 @@ function renderPlayersList(usernames) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
 const Messages = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
-const Handler = __webpack_require__(/*! ./handler */ "./src/client/handler.ts");
+const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
 class OnlineCounter extends React.Component {
     constructor(props) {
         super(props);
@@ -511,7 +561,7 @@ exports.OnlineCounter = OnlineCounter;
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
 const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
-const Handler = __webpack_require__(/*! ./handler */ "./src/client/handler.ts");
+const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
 const menu_views_1 = __webpack_require__(/*! ./menu-views */ "./src/client/menu-views.tsx");
 const online_counter_1 = __webpack_require__(/*! ./online-counter */ "./src/client/online-counter.tsx");
 const game_view_1 = __webpack_require__(/*! ./game-view */ "./src/client/game-view.tsx");
@@ -531,6 +581,7 @@ class Views extends React.Component {
             roomId: undefined,
             roomUsernames: undefined,
             myUsername: undefined,
+            characterChoiceIds: undefined,
         };
     }
     componentDidMount() {
@@ -573,6 +624,10 @@ class Views extends React.Component {
         });
         Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
             if (this.state.curView === VIEW.WAITING_ROOM) {
+                var charChoices = data.characterChoiceIds;
+                this.setState({
+                    characterChoiceIds: charChoices,
+                });
                 this.setView(VIEW.GAME);
             }
             else {
@@ -603,7 +658,7 @@ class Views extends React.Component {
             case (VIEW.WAITING_ROOM):
                 return (React.createElement(menu_views_1.WaitingRoomView, { roomId: this.state.roomId, usernames: this.state.roomUsernames }));
             case (VIEW.GAME):
-                return (React.createElement(game_view_1.GameView, null));
+                return (React.createElement(game_view_1.GameView, { characterChoiceIds: this.state.characterChoiceIds }));
             default:
                 console.error('Bad view ' + this.state.curView);
         }
@@ -615,6 +670,133 @@ class Views extends React.Component {
     }
 }
 exports.Views = Views;
+
+
+/***/ }),
+
+/***/ "./src/common/game-core/rule-interfaces.ts":
+/*!*************************************************!*\
+  !*** ./src/common/game-core/rule-interfaces.ts ***!
+  \*************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ROOM_SIZE = 4;
+var Phase;
+(function (Phase) {
+    Phase[Phase["CHOOSE_CHARACTER"] = 0] = "CHOOSE_CHARACTER";
+    Phase[Phase["PLAN"] = 1] = "PLAN";
+    Phase[Phase["RESOLVE"] = 2] = "RESOLVE";
+    Phase[Phase["GAME_OVER"] = 3] = "GAME_OVER";
+})(Phase = exports.Phase || (exports.Phase = {}));
+var Faction;
+(function (Faction) {
+    Faction[Faction["FERALIST"] = 0] = "FERALIST";
+    Faction[Faction["MOLTEN"] = 1] = "MOLTEN";
+    Faction[Faction["ABERRANT"] = 2] = "ABERRANT";
+    Faction[Faction["ETHER"] = 3] = "ETHER";
+    Faction[Faction["KINDRED"] = 4] = "KINDRED";
+    Faction[Faction["GLOOMER"] = 5] = "GLOOMER";
+    Faction[Faction["NONE"] = 6] = "NONE";
+})(Faction = exports.Faction || (exports.Faction = {}));
+var TargetWhat;
+(function (TargetWhat) {
+    TargetWhat[TargetWhat["NONE"] = 0] = "NONE";
+    TargetWhat[TargetWhat["ENTITY"] = 1] = "ENTITY";
+    TargetWhat[TargetWhat["ALLY"] = 2] = "ALLY";
+    TargetWhat[TargetWhat["ENEMY"] = 3] = "ENEMY";
+    TargetWhat[TargetWhat["LANE"] = 4] = "LANE";
+})(TargetWhat = exports.TargetWhat || (exports.TargetWhat = {}));
+var TargetRange;
+(function (TargetRange) {
+    TargetRange[TargetRange["IN_LANE"] = 0] = "IN_LANE";
+    TargetRange[TargetRange["NEARBY"] = 1] = "NEARBY";
+    TargetRange[TargetRange["ANY"] = 2] = "ANY";
+})(TargetRange = exports.TargetRange || (exports.TargetRange = {}));
+
+
+/***/ }),
+
+/***/ "./src/common/game-info/characters.ts":
+/*!********************************************!*\
+  !*** ./src/common/game-info/characters.ts ***!
+  \********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const rule_interfaces_1 = __webpack_require__(/*! ../game-core/rule-interfaces */ "./src/common/game-core/rule-interfaces.ts");
+exports.Characters = {
+    UNKNOWN: {
+        id: 'UNKNOWN',
+        faction: undefined,
+        name: 'UNKNOWN',
+        maxHp: undefined,
+        str: undefined
+    },
+    GENERIC_FER: {
+        id: 'GENERIC_FER',
+        faction: rule_interfaces_1.Faction.FERALIST,
+        name: 'Generic Feralist',
+        maxHp: 140,
+        str: 20
+    },
+    GENERIC_MOL: {
+        id: 'GENERIC_MOL',
+        faction: rule_interfaces_1.Faction.MOLTEN,
+        name: 'Generic Molten',
+        maxHp: 160,
+        str: 20
+    },
+    GENERIC_ABE: {
+        id: 'GENERIC_ABE',
+        faction: rule_interfaces_1.Faction.ABERRANT,
+        name: 'Generic Aberrant',
+        maxHp: 175,
+        str: 18
+    },
+    GENERIC_KIN: {
+        id: 'GENERIC_KIN',
+        faction: rule_interfaces_1.Faction.KINDRED,
+        name: 'Generic Kindred',
+        maxHp: 180,
+        str: 18
+    },
+    GENERIC_ETH: {
+        id: 'GENERIC_ETH',
+        faction: rule_interfaces_1.Faction.ETHER,
+        name: 'Generic Ether',
+        maxHp: 130,
+        str: 20
+    },
+    GENERIC_GLO: {
+        id: 'GENERIC_GLO',
+        faction: rule_interfaces_1.Faction.GLOOMER,
+        name: 'Generic Gloomer',
+        maxHp: 140,
+        str: 18
+    },
+    GENERIC_NONE: {
+        id: 'GENERIC_NONE',
+        faction: rule_interfaces_1.Faction.NONE,
+        name: 'Neutralbot',
+        maxHp: 160,
+        str: 20
+    },
+};
+exports.PlayableCharacters = {
+    GENERIC_FER: exports.Characters.GENERIC_FER,
+    GENERIC_MOL: exports.Characters.GENERIC_MOL,
+    GENERIC_ABE: exports.Characters.GENERIC_ABE,
+    GENERIC_KIN: exports.Characters.GENERIC_KIN,
+    GENERIC_ETH: exports.Characters.GENERIC_ETH,
+    GENERIC_GLO: exports.Characters.GENERIC_GLO,
+};
 
 
 /***/ }),
@@ -638,6 +820,8 @@ var SOCKET_MSG;
     SOCKET_MSG["LOBBY_ROOM_USERS"] = "LOBBY_ROOM_USERS";
     SOCKET_MSG["CHAT_POST_MESSAGE"] = "CHAT_POST_MESSAGE";
     SOCKET_MSG["START_GAME"] = "START_GAME";
+    SOCKET_MSG["CHOOSE_CHARACTER"] = "CHOOSE_CHARACTER";
+    SOCKET_MSG["PLAYER_DECISION"] = "PLAYER_DECISION";
 })(SOCKET_MSG = exports.SOCKET_MSG || (exports.SOCKET_MSG = {}));
 
 

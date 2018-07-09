@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as Messages from '../common/messages';
-import * as Handler from './handler';
+import * as Handler from './client-handler';
 
 interface IOnlineCounterState {
 	count: string|number;

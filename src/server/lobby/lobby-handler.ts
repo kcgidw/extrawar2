@@ -1,10 +1,10 @@
 import * as SocketIO from 'socket.io';
 import * as Msgs from '../../common/messages';
 import { SOCKET_MSG } from '../../common/messages';
-import { ChatRoom } from '../game-room/chat-room';
+import { ChatRoom } from '../chat-room/chat-room';
 import { Lobby } from './lobby';
 import { User } from './user';
-import { handleChat } from '../game-room/chat-handler';
+import { handleChat } from '../chat-room/chat-handler';
 
 var lobby: Lobby;
 

@@ -1,3 +1,4 @@
+import { IEntityProfile, Phase } from "./game-core/rule-interfaces";
 
 export enum SOCKET_MSG {
 	'LOBBY_NUM_ONLINE'=  'LOBBY_NUM_ONLINE',
@@ -7,6 +8,8 @@ export enum SOCKET_MSG {
 	'LOBBY_ROOM_USERS'= 'LOBBY_ROOM_USERS',
 	'CHAT_POST_MESSAGE'= 'CHAT_POST_MESSAGE',
 	'START_GAME'= 'START_GAME',
+	'CHOOSE_CHARACTER' = 'CHOOSE_CHARACTER',
+	'PLAYER_DECISION' = 'PLAYER_DECISION',
 }
 
 export interface IErrorableResponse {
@@ -53,4 +56,25 @@ export interface IChatPostMessageResponse extends IErrorableResponse {
 export interface IStartGameResponse extends IErrorableResponse {
 	username: string; // who requested
 	timestamp: Date;
+	characterChoiceIds: string[];
+}
+
+export interface IPlayerDecisionRequest {
+	actionId: string;
+	targetLane?: number;
+	targetEntity?: number;
+	entityProfileId?: string; // choose character
+}
+export interface IPlayerDecisionResponse extends IErrorableResponse {
+	targetLane?: number;
+	targetEntity?: number;
+	entityProfileId?: string;
+	usernames: string[]; // players ready
+}
+export interface IPlayersReady {
+	usernames: string[];
+}
+export interface IPresentGamePhase {
+	phase: Phase;
+	choices?: IEntityProfile[];
 }

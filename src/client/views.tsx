@@ -1,11 +1,13 @@
 import * as React from 'react';
 import * as Msgs from '../common/messages';
 import { SOCKET_MSG } from '../common/messages';
-import * as Handler from './handler';
+import * as Handler from './client-handler';
 import { RoomOptionsView, UsernameView, WaitingRoomView } from './menu-views';
 import { OnlineCounter } from './online-counter';
 import { GameView } from './game-view';
 import { ChatWindow } from './chat-window';
+import { IEntityProfile } from '../common/game-core/rule-interfaces';
+import { Characters } from '../common/game-info/characters';
 
 enum VIEW {
 	USERNAME = 'username-entry',
@@ -19,6 +21,8 @@ interface IViewsState {
 	roomId: string;
 	roomUsernames: string[];
 	myUsername: string;
+	
+	characterChoiceIds: string[];
 }
 export class Views extends React.Component<{}, IViewsState> {
 	constructor(props) {
@@ -28,6 +32,7 @@ export class Views extends React.Component<{}, IViewsState> {
 			roomId: undefined,
 			roomUsernames: undefined,
 			myUsername: undefined,
+			characterChoiceIds: undefined,
 		};
 	}
 
@@ -71,6 +76,10 @@ export class Views extends React.Component<{}, IViewsState> {
 		});
 		Handler.generateHandler<Msgs.IStartGameResponse>(SOCKET_MSG.START_GAME, (data) => {
 			if(this.state.curView === VIEW.WAITING_ROOM) {
+				var charChoices: string[] = data.characterChoiceIds;
+				this.setState({
+					characterChoiceIds: charChoices,
+				});
 				this.setView(VIEW.GAME);
 			} else {
 				console.warn('Bad view: ' + this.state.curView);
@@ -113,7 +122,7 @@ export class Views extends React.Component<{}, IViewsState> {
 				);
 			case(VIEW.GAME):
 				return (
-					< GameView />
+					< GameView characterChoiceIds={this.state.characterChoiceIds} />
 				);
 			default:
 				console.error('Bad view ' + this.state.curView);

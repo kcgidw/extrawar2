@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io';
-import { ChatRoom } from '../game-room/chat-room';
+import { ChatRoom } from '../chat-room/chat-room';
 
 export interface User extends Socket {
 	username: string;

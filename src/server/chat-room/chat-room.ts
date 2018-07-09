@@ -1,9 +1,9 @@
 import * as SocketIO from 'socket.io';
 import { User } from '../lobby/user';
 import * as Messages from '../../common/messages';
+import { Match } from '../../common/game-core/match';
 
 const CHAT_LOG_CAPACITY = 15;
-const MAX_PLAYERS = 6; // any more = spectators
 
 /*
 Since socketio rooms aren't really useful objects afaik, ChatRooms are a sort of room abstraction.
@@ -18,8 +18,8 @@ export class ChatRoom {
 	chatLog: Messages.IChatPostMessageResponse[] = [];
 
 	users: User[] = [];
-	players: User[] = [];
-	spectators: User[] = [];
+
+	match?: Match;
 
 	constructor(nsp: SocketIO.Namespace, roomId: string) {
 		this.nsp = nsp;
@@ -29,11 +29,6 @@ export class ChatRoom {
 	admitUser(user: User) {
 		this.users.push(user);
 		user.gameRoom = this;
-		if(this.users.length <= MAX_PLAYERS) {
-			this.players.push(user);
-		} else {
-			this.spectators.push(user);
-		}
 	}
 	forgetUser(user: User): string[] {
 		var idx: number = this.users.findIndex((u: User) => {
@@ -67,6 +62,11 @@ export class ChatRoom {
 
 	getUsernames(): string[] {
 		return this.users.map((u)=>u.username);
+	}
+
+	createMatch(): Match {
+		this.match = new Match(this);
+		return this.match;
 	}
 }
 

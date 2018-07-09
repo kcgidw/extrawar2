@@ -1,5 +1,6 @@
+import { IEntityProfile } from '../common/game-core/rule-interfaces';
 import * as Msgs from '../common/messages';
-import {SOCKET_MSG} from '../common/messages';
+import { SOCKET_MSG } from '../common/messages';
 
 export const socket = io('/lobby');
 export const clientSocket = socket;
@@ -23,6 +24,14 @@ export function sendChatMessage(msg: string) {
 		message: msg,
 		timestamp: new Date(),
 	} as Msgs.IChatPostMessageRequest);
+}
+
+/* game */
+
+export function chooseCharacter(entProfile: IEntityProfile) {
+	socket.emit(SOCKET_MSG.CHOOSE_CHARACTER, {
+		entityProfileId: entProfile.id,
+	} as Msgs.IPlayerDecisionRequest);
 }
 
 // returns a function to turn off the handler. SAVE that function and CALL it on the unmount.

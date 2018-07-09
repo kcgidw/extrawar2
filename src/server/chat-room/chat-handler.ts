@@ -4,8 +4,11 @@ import { SOCKET_MSG } from '../../common/messages';
 import { Lobby } from '../lobby/lobby';
 import { User } from '../lobby/user';
 import { ChatRoom } from './chat-room';
+import { handleMatch } from './match-handler';
 
 export function handleChat(nsp: SocketIO.Namespace, lobby: Lobby, sock: SocketIO.Socket) {
+	handleMatch(nsp, sock);
+
 	sock.on(SOCKET_MSG.CHAT_POST_MESSAGE, (data: Msgs.IChatPostMessageRequest) => {
 		var user: User = (<User>sock);
 		var chatRoom: ChatRoom = user.gameRoom;
@@ -19,23 +22,6 @@ export function handleChat(nsp: SocketIO.Namespace, lobby: Lobby, sock: SocketIO
 				messageName: SOCKET_MSG.CHAT_POST_MESSAGE,
 				message: undefined,
 				error: 'Undefined room'
-			});
-		}
-	});
-	sock.on(SOCKET_MSG.START_GAME, () => {
-		var user: User = (<User>sock);
-		var chatRoom: ChatRoom = user.gameRoom;
-		if(chatRoom) {
-			var rmId: string = chatRoom.roomId;
-			nsp.to(rmId).emit(SOCKET_MSG.START_GAME, <Msgs.IStartGameResponse>{
-				messageName: SOCKET_MSG.START_GAME,
-				username: user.username,
-				timestamp: new Date()
-			} as Msgs.IStartGameResponse);
-		} else {
-			sock.emit(SOCKET_MSG.START_GAME, <Msgs.IStartGameResponse>{
-				messageName: SOCKET_MSG.START_GAME,
-				error: 'Undefined room',
 			});
 		}
 	});
