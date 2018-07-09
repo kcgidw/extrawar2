@@ -43,7 +43,6 @@ export interface IRoomUsersResponse extends IErrorableResponse {
 	joined: boolean; // else, left the room
 }
 export interface IChatPostMessageRequest {
-	timestamp: Date;
 	message: string;
 }
 export interface IChatPostMessageResponse extends IErrorableResponse {

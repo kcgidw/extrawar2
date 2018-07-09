@@ -1,5 +1,4 @@
 import * as SocketIO from 'socket.io';
-import { ChatMessage } from './chat-message';
 import { User } from '../lobby/user';
 import * as Messages from '../../common/messages';
 
@@ -16,7 +15,7 @@ export class ChatRoom {
 	nsp: SocketIO.Namespace;
 	roomId: string;
 	
-	chatLog: ChatMessage[] = [];
+	chatLog: Messages.IChatPostMessageResponse[] = [];
 
 	users: User[] = [];
 	players: User[] = [];
@@ -47,25 +46,23 @@ export class ChatRoom {
 		return this.getUsernames();
 	}
 
-	addChatLog(user: User, post: string) {
-		var cp: ChatMessage = new ChatMessage(user, post);
-		this.chatLog.push(cp);
-		while(this.chatLog.length > CHAT_LOG_CAPACITY) { // should happen just once, but to be safe
-			this.chatLog.shift();
-		}
-	}
-
-	getRecentChatMessages(numMessages: number): ChatMessage[] {
+	getRecentChatMessages(numMessages: number): Messages.IChatPostMessageResponse[] {
 		return this.chatLog.slice(numMessages * -1);
 	}
 
-	createMessage(user: User, req: Messages.IChatPostMessageRequest): Messages.IChatPostMessageResponse {
-		return {
+	addMessage(user: User, req: Messages.IChatPostMessageRequest): Messages.IChatPostMessageResponse {
+		var msg: Messages.IChatPostMessageResponse = {
 			messageName: Messages.SOCKET_MSG.CHAT_POST_MESSAGE,
 			username: user.username,
-			timestamp: req.timestamp,
+			timestamp: new Date(),
 			message: req.message,
 		};
+		this.chatLog.push(msg);
+		while(this.chatLog.length > CHAT_LOG_CAPACITY) { // should happen just once, but to be safe
+			this.chatLog.shift();
+		}
+
+		return msg;
 	}
 
 	getUsernames(): string[] {

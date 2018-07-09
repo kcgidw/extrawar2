@@ -14,6 +14,8 @@ export interface IEntityState {
 	actives: number[];
 
 	stefs: IStefInstance[];
+
+	y: number;
 }
 
 export interface ICooldown {
@@ -33,28 +35,7 @@ export interface ILaneState {
 	stefs2: IStefInstance[];
 }
 
-export interface IEntityTargetingDecision {
-	targetId: number;
-}
-export interface ILaneTargetingDecision {
+export interface ILane {
 	y: number;
 	side: 1|2; 
-}
-
-export interface ITurnEventCause {
-	entityId: number;
-	actionId: number;
-	target: IEntityTargetingDecision|ILaneTargetingDecision;
-	results: ITurnEventResult[];
-}
-
-export enum TurnEventResultType {
-	NONE, HP_CHANGE, GAIN_STEF, LOSE_STEF, DEATH, RESPAWN, AP_CHANGE,
-}
-
-export interface ITurnEventResult {
-	type: TurnEventResultType;
-	entityId?: number;
-	stefId?: number;
-	value?: number;
 }

@@ -1,11 +1,15 @@
+import { Entity } from "./entity";
+import { ILane } from "./instance-interfaces";
+import { ITurnEventCause } from "./event-interfaces";
+
 export const ROOM_SIZE = 4;
 
 export enum Phase {
-	CHOOSE_CHARACTER, PLAN, RESOLVE,
+	CHOOSE_CHARACTER, PLAN, RESOLVE, GAME_OVER
 }
 
 export enum Faction {
-	FERALIST, 
+	FERALIST, MOLTEN, ABERRANT, ETHER, KINDRED, GLOOMER, NONE
 }
 
 // character info & base stats
@@ -26,13 +30,13 @@ export interface IStatusEffectDef {
 export enum ITargetWhat {
 	NONE, ENTITY, ALLY, ENEMY, LANE,
 }
-export enum ITargetLimitation {
+export enum ITargetRange {
 	IN_LANE, NEARBY, ANY,
 }
 
 export interface ITargetInfo {
 	what: ITargetWhat;
-	limitation: ITargetLimitation;
+	range: ITargetRange;
 }
 
 export interface ISkillDef {
@@ -42,5 +46,6 @@ export interface ISkillDef {
 	desc: string;
 	keywords: string[]; // supplementary descriptons for stefs and whatnot
 	target: ITargetInfo;
+	fn: (user: Entity, target: Entity|Entity[]|ILane, custom?: object)=>ITurnEventCause;
 }
 

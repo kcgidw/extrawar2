@@ -11,7 +11,7 @@ export function handleChat(nsp: SocketIO.Namespace, lobby: Lobby, sock: SocketIO
 		var chatRoom: ChatRoom = user.gameRoom;
 		if(chatRoom) {
 			var rmId: string = chatRoom.roomId;
-			var result: Msgs.IChatPostMessageResponse = chatRoom.createMessage(user, data);
+			var result: Msgs.IChatPostMessageResponse = chatRoom.addMessage(user, data);
 			
 			nsp.to(rmId).emit(SOCKET_MSG.CHAT_POST_MESSAGE, result);
 		} else {
