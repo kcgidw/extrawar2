@@ -35,7 +35,7 @@ export const skills: {[key: string]: ISkillDef} = {
 			return {results: results};
 		},
 		resultMessage: (user, targetEntity: Entity) => {
-			return user.owner.username + ' attacks.';
+			return user.username + ' attacks.';
 		}
 	},
 	'FLANK_ASSAULT': {

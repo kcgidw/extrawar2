@@ -8,6 +8,7 @@ import { GameView } from './game-view';
 import { ChatWindow } from './chat-window';
 import { IEntityProfile } from '../common/game-core/rule-interfaces';
 import { Characters } from '../common/game-info/characters';
+import { IMatchState } from '../common/game-core/match';
 
 enum VIEW {
 	USERNAME = 'username-entry',
@@ -22,7 +23,7 @@ interface IViewsState {
 	roomUsernames: string[];
 	myUsername: string;
 	
-	characterChoiceIds: string[];
+	matchState: IMatchState;
 }
 export class Views extends React.Component<{}, IViewsState> {
 	constructor(props) {
@@ -32,7 +33,7 @@ export class Views extends React.Component<{}, IViewsState> {
 			roomId: undefined,
 			roomUsernames: undefined,
 			myUsername: undefined,
-			characterChoiceIds: undefined,
+			matchState: undefined,
 		};
 	}
 
@@ -78,7 +79,7 @@ export class Views extends React.Component<{}, IViewsState> {
 			if(this.state.curView === VIEW.WAITING_ROOM) {
 				var charChoices: string[] = data.characterChoiceIds;
 				this.setState({
-					characterChoiceIds: charChoices,
+					matchState: data.matchState,
 				});
 				this.setView(VIEW.GAME);
 			} else {
@@ -122,7 +123,7 @@ export class Views extends React.Component<{}, IViewsState> {
 				);
 			case(VIEW.GAME):
 				return (
-					< GameView characterChoiceIds={this.state.characterChoiceIds} />
+					< GameView username={this.state.myUsername} matchState={this.state.matchState} />
 				);
 			default:
 				console.error('Bad view ' + this.state.curView);

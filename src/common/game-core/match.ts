@@ -15,11 +15,12 @@ interface ICharacterChoice {
 
 export interface IMatchState {
 	players: {[username: string]: Entity};
-	team1: User[];
-	team2: User[];
+	team1: string[];
+	team2: string[];
 	turn: number;
 	phase: Phase;
 	lanes: Lane[];
+	characterChoicesIds: {[key: string]: string[]};
 }
 
 export class Match implements IMatchState {
@@ -27,13 +28,13 @@ export class Match implements IMatchState {
 
 	// IMatchState implementations
 	players: {[username: string]: Entity} = {};
-	team1: User[] = [];
-	team2: User[] = [];
+	team1: string[] = [];
+	team2: string[] = [];
 	turn: number;
 	phase: Phase;
 	lanes: Lane[] = [];
 
-	characterChoices: {[key: string]: string[]} = {};
+	characterChoicesIds: {[key: string]: string[]} = {};
 	characterChoiceQueue: ICharacterChoice[] = [];
 
 	constructor(room: ChatRoom) {
@@ -46,10 +47,10 @@ export class Match implements IMatchState {
 		room.users.forEach((usr: User, idx: number) => {
 			if(idx <= MAX_PLAYERS / 2) {
 				team = 1;
-				this.team1.push(usr);
+				this.team1.push(usr.username);
 			} else {
 				team = 2;
-				this.team2.push(usr);
+				this.team2.push(usr.username);
 			}
 			char = new Entity(usr, team, Characters.UNKNOWN);
 			this.players[usr.username] = char;
@@ -81,7 +82,7 @@ export class Match implements IMatchState {
 
 	setCharacterChoices(): {[key: string]: string[]} {
 		this.phase = Phase.CHOOSE_CHARACTER;
-		this.characterChoices = {};
+		this.characterChoicesIds = {};
 
 		// TODO better character destribution?
 
@@ -96,19 +97,27 @@ export class Match implements IMatchState {
 			idx %= pcs.length;
 			var b = pcs[idx++];
 			idx %= pcs.length;
-			this.characterChoices[usr.username] = [a, b];
+			this.characterChoicesIds[usr.username] = [a, b];
 		});
 
-		
-		console.log('Character choices: ');
-		console.log(this.characterChoices);
-
-		return this.characterChoices;
+		return this.characterChoicesIds;
 	}
 
 	beginFight() {
 		this.turn = 1;
 		this.phase = Phase.PLAN;
+	}
+
+	exportState(): IMatchState {
+		return {
+			players: this.players,
+			team1: this.team1,
+			team2: this.team2,
+			turn: this.turn,
+			phase: this.phase,
+			lanes: this.lanes,
+			characterChoicesIds: this.characterChoicesIds
+		};
 	}
 }
 

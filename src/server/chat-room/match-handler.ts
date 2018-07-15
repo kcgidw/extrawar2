@@ -3,6 +3,7 @@ import * as Msgs from '../../common/messages';
 import { SOCKET_MSG } from "../../common/messages";
 import { User } from "../lobby/user";
 import { ChatRoom } from "./chat-room";
+import { IMatchState } from "../../common/game-core/match";
 
 export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 	sock.on(SOCKET_MSG.START_GAME, () => {
@@ -12,13 +13,14 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 			let rmId: string = chatRoom.roomId;
 
 			let match = chatRoom.createMatch();
+			let mstate = match.exportState();
 			
 			chatRoom.users.forEach((curUsr) => {
 				curUsr.emit(SOCKET_MSG.START_GAME, <Msgs.IStartGameResponse>{
 					messageName: SOCKET_MSG.START_GAME,
 					username: user.username,
 					timestamp: new Date(),
-					characterChoiceIds: match.characterChoices[curUsr.username],
+					matchState: mstate,
 				});
 			});
 		} else {

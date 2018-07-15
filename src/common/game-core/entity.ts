@@ -5,16 +5,20 @@ import { IEventResult, TurnEventResultType, INoneResult, IHpChangeResult, IDeath
 import { ALL_STEFS, MAX_STEF_DURATION } from "../game-info/stefs";
 
 export class Entity {
+	isPlayer: boolean;
+
 	entityId: number;
-	owner: User;
 	username: string;
-	profile: IEntityProfile;
+	profileId: string;
 	state: IEntityState;
 	team: Team;
 
+	profile: IEntityProfile;
+
 	constructor(user: User, team: Team, character: IEntityProfile) {
-		this.owner = user;
 		this.username = user.username;
+		this.isPlayer = user !== undefined;
+		this.profileId = character.id;
 		this.profile = character;
 
 		this.team = team;
@@ -35,10 +39,6 @@ export class Entity {
 			stefs: [],
 			y: 0,
 		};
-	}
-
-	isPlayer(): boolean {
-		return this.owner !== undefined;
 	}
 
 	get curStr() {

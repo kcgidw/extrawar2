@@ -244,13 +244,14 @@ function sendChatMessage(msg) {
 }
 exports.sendChatMessage = sendChatMessage;
 /* game */
-function chooseCharacter(entProfile) {
+function chooseCharacter(entProfileId) {
     exports.socket.emit(messages_1.SOCKET_MSG.CHOOSE_CHARACTER, {
-        entityProfileId: entProfile.id,
+        entityProfileId: entProfileId,
     });
 }
 exports.chooseCharacter = chooseCharacter;
-// returns a function to turn off the handler. SAVE that function and CALL it on the unmount.
+// returns a function to turn off the handler.
+// remember to SAVE that function and CALL it on the unmount.
 function generateHandler(messageType, fn, errorFn) {
     var handler = (data) => {
         if (data.error === undefined) {
@@ -306,19 +307,18 @@ ReactDOM.render(React.createElement(Views.Views, null), document.getElementById(
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
 const characters_1 = __webpack_require__(/*! ../../common/game-info/characters */ "./src/common/game-info/characters.ts");
+const Handler = __webpack_require__(/*! ../client-handler */ "./src/client/client-handler.ts");
 class CharacterChoices extends React.Component {
     constructor(props) {
         super(props);
     }
     render() {
-        return (React.createElement("div", { className: "character-choices" },
-            React.createElement("ul", null, renderCharacterChoices(this.props.choices))));
+        return (React.createElement("div", { className: "character-choices" }, renderCharacterChoices(this.props.choices)));
     }
 }
 exports.CharacterChoices = CharacterChoices;
 function renderCharacterChoices(choices) {
-    return choices.map((entProfId) => React.createElement("li", { key: entProfId },
-        React.createElement(CharacterChoicePanel, { entProfile: characters_1.Characters[entProfId] })));
+    return choices.map((entProfId) => React.createElement(CharacterChoicePanel, { entProfile: characters_1.Characters[entProfId] }));
 }
 class CharacterChoicePanel extends React.Component {
     constructor(props) {
@@ -326,7 +326,7 @@ class CharacterChoicePanel extends React.Component {
         this.onClick = this.onClick.bind(this);
     }
     render() {
-        return (React.createElement("div", { className: "character-choice" },
+        return (React.createElement("div", { className: "character-choice", onClick: this.onClick },
             this.props.entProfile.name,
             React.createElement("br", null),
             "FACTION ",
@@ -336,12 +336,36 @@ class CharacterChoicePanel extends React.Component {
             this.props.entProfile.maxHp,
             React.createElement("br", null),
             "STR ",
-            this.props.entProfile.str,
-            React.createElement("button", { type: "button", onClick: this.onClick })));
+            this.props.entProfile.str));
     }
     onClick(e) {
+        Handler.chooseCharacter(this.props.entProfile.id);
     }
 }
+
+
+/***/ }),
+
+/***/ "./src/client/game-ui/lane.tsx":
+/*!*************************************!*\
+  !*** ./src/client/game-ui/lane.tsx ***!
+  \*************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "react");
+class Lane extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+    render() {
+        return (React.createElement("div", { id: "lane-" + this.props.id, className: "lane" }));
+    }
+}
+exports.Lane = Lane;
 
 
 /***/ }),
@@ -357,10 +381,15 @@ class CharacterChoicePanel extends React.Component {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
+const rule_interfaces_1 = __webpack_require__(/*! ../common/game-core/rule-interfaces */ "./src/common/game-core/rule-interfaces.ts");
 const character_choices_1 = __webpack_require__(/*! ./game-ui/character-choices */ "./src/client/game-ui/character-choices.tsx");
+const lane_1 = __webpack_require__(/*! ./game-ui/lane */ "./src/client/game-ui/lane.tsx");
 class GameView extends React.Component {
     constructor(props) {
         super(props);
+        this.state = {
+            matchState: this.props.matchState
+        };
     }
     componentDidMount() {
     }
@@ -369,7 +398,25 @@ class GameView extends React.Component {
     }
     render() {
         return (React.createElement("div", { id: "game-view" },
-            React.createElement(character_choices_1.CharacterChoices, { choices: this.props.characterChoiceIds })));
+            React.createElement("div", { id: "game-prompt" }, this.getPrompt()),
+            React.createElement(character_choices_1.CharacterChoices, { choices: this.props.matchState.characterChoicesIds[this.props.username] }),
+            React.createElement("div", { id: "lanes" },
+                React.createElement(lane_1.Lane, { id: 0 }),
+                React.createElement(lane_1.Lane, { id: 1 }),
+                React.createElement(lane_1.Lane, { id: 2 }),
+                React.createElement(lane_1.Lane, { id: 3 }))));
+    }
+    getPrompt() {
+        switch (this.state.matchState.phase) {
+            case (rule_interfaces_1.Phase.CHOOSE_CHARACTER):
+                return 'Choose a character.';
+            case (rule_interfaces_1.Phase.PLAN):
+                return 'Choose an action.';
+            case (rule_interfaces_1.Phase.RESOLVE):
+                return '';
+            case (rule_interfaces_1.Phase.GAME_OVER):
+                return 'Game over!';
+        }
     }
 }
 exports.GameView = GameView;
@@ -581,7 +628,7 @@ class Views extends React.Component {
             roomId: undefined,
             roomUsernames: undefined,
             myUsername: undefined,
-            characterChoiceIds: undefined,
+            matchState: undefined,
         };
     }
     componentDidMount() {
@@ -626,7 +673,7 @@ class Views extends React.Component {
             if (this.state.curView === VIEW.WAITING_ROOM) {
                 var charChoices = data.characterChoiceIds;
                 this.setState({
-                    characterChoiceIds: charChoices,
+                    matchState: data.matchState,
                 });
                 this.setView(VIEW.GAME);
             }
@@ -658,7 +705,7 @@ class Views extends React.Component {
             case (VIEW.WAITING_ROOM):
                 return (React.createElement(menu_views_1.WaitingRoomView, { roomId: this.state.roomId, usernames: this.state.roomUsernames }));
             case (VIEW.GAME):
-                return (React.createElement(game_view_1.GameView, { characterChoiceIds: this.state.characterChoiceIds }));
+                return (React.createElement(game_view_1.GameView, { username: this.state.myUsername, matchState: this.state.matchState }));
             default:
                 console.error('Bad view ' + this.state.curView);
         }

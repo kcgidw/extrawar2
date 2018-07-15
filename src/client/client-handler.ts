@@ -28,13 +28,14 @@ export function sendChatMessage(msg: string) {
 
 /* game */
 
-export function chooseCharacter(entProfile: IEntityProfile) {
+export function chooseCharacter(entProfileId: string) {
 	socket.emit(SOCKET_MSG.CHOOSE_CHARACTER, {
-		entityProfileId: entProfile.id,
+		entityProfileId: entProfileId,
 	} as Msgs.IPlayerDecisionRequest);
 }
 
-// returns a function to turn off the handler. SAVE that function and CALL it on the unmount.
+// returns a function to turn off the handler.
+// remember to SAVE that function and CALL it on the unmount.
 export function generateHandler<T extends Msgs.IErrorableResponse>(messageType: string, fn: (data: T)=>any, errorFn?: (data: T)=>any) {
 	var handler = (data: T) => {
 		if(data.error === undefined) {

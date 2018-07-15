@@ -2,9 +2,10 @@ import * as React from 'react';
 import { } from '../client-handler';
 import { IEntityProfile } from '../../common/game-core/rule-interfaces';
 import { Characters } from '../../common/game-info/characters';
+import * as Handler from '../client-handler';
 
 interface ICharacterChoicesProps {
-	choices: string[]
+	choices: string[];
 }
 
 export class CharacterChoices extends React.Component<ICharacterChoicesProps,{}> {
@@ -15,9 +16,7 @@ export class CharacterChoices extends React.Component<ICharacterChoicesProps,{}>
 	render() {
 		return (
 			<div className="character-choices">
-				<ul>
 					{renderCharacterChoices(this.props.choices)}
-				</ul>
 			</div>
 		);
 	}
@@ -25,9 +24,7 @@ export class CharacterChoices extends React.Component<ICharacterChoicesProps,{}>
 
 function renderCharacterChoices(choices: string[]) {
 	return choices.map((entProfId) => 
-		<li key={entProfId}>
-			<CharacterChoicePanel entProfile={Characters[entProfId]} />
-		</li>
+		<CharacterChoicePanel entProfile={Characters[entProfId]} />
 	);
 }
 
@@ -39,7 +36,7 @@ class CharacterChoicePanel extends React.Component<{entProfile: IEntityProfile},
 
 	render() {
 		return (
-			<div className="character-choice">
+			<div className="character-choice" onClick={this.onClick}>
 				{this.props.entProfile.name}
 				<br />
 				FACTION {this.props.entProfile.faction}
@@ -47,11 +44,11 @@ class CharacterChoicePanel extends React.Component<{entProfile: IEntityProfile},
 				HP {this.props.entProfile.maxHp}
 				<br />
 				STR {this.props.entProfile.str}
-				<button type="button" onClick={this.onClick}></button>
 			</div>
-		)
+		);
 	}
 
 	onClick(e) {
+		Handler.chooseCharacter(this.props.entProfile.id);
 	}
 }

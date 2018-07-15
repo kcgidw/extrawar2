@@ -1,4 +1,5 @@
 import { IEntityProfile, Phase } from "./game-core/rule-interfaces";
+import { IMatchState } from "./game-core/match";
 
 export enum SOCKET_MSG {
 	'LOBBY_NUM_ONLINE'=  'LOBBY_NUM_ONLINE',
@@ -57,6 +58,7 @@ export interface IStartGameResponse extends IErrorableResponse {
 	username: string; // who requested
 	timestamp: Date;
 	characterChoiceIds: string[];
+	matchState: IMatchState;
 }
 
 export interface IPlayerDecisionRequest {
