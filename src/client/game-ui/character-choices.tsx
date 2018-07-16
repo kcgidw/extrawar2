@@ -24,7 +24,7 @@ export class CharacterChoices extends React.Component<ICharacterChoicesProps,{}>
 
 function renderCharacterChoices(choices: string[]) {
 	return choices.map((entProfId) => 
-		<CharacterChoicePanel entProfile={Characters[entProfId]} />
+		<CharacterChoicePanel key={entProfId} entProfile={Characters[entProfId]} />
 	);
 }
 

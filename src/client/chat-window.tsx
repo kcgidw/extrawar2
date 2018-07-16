@@ -45,13 +45,13 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 				this.addMessage(chatMsg);
 			}
 		);
-		var handlerOff3 = Handler.generateHandler<Msgs.IStartGameResponse>(SOCKET_MSG.START_GAME,
+		var handlerOff3 = Handler.generateHandler<Msgs.IPresentGamePhase>(SOCKET_MSG.START_GAME,
 			(data) => {
 				// create system message
 				var chatMsg: Msgs.IChatPostMessageResponse = {
 					messageName: SOCKET_MSG.START_GAME,
 					username: undefined,
-					message: data.username + ' started the game.',
+					message: data.requestorUsername + ' started the game.',
 					timestamp: new Date() // TODO do this server-side
 				};
 				this.addMessage(chatMsg);

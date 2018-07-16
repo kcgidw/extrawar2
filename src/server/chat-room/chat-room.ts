@@ -40,6 +40,9 @@ export class ChatRoom {
 		}
 		return this.getUsernames();
 	}
+	findUser(username: string): User {
+		return this.users.find((u)=>(u.username === username));
+	}
 
 	getRecentChatMessages(numMessages: number): Messages.IChatPostMessageResponse[] {
 		return this.chatLog.slice(numMessages * -1);

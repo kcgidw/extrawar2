@@ -3,7 +3,6 @@ import * as Msgs from '../../common/messages';
 import { SOCKET_MSG } from "../../common/messages";
 import { User } from "../lobby/user";
 import { ChatRoom } from "./chat-room";
-import { IMatchState } from "../../common/game-core/match";
 
 export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 	sock.on(SOCKET_MSG.START_GAME, () => {
@@ -16,16 +15,18 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 			let mstate = match.exportState();
 			
 			chatRoom.users.forEach((curUsr) => {
-				curUsr.emit(SOCKET_MSG.START_GAME, <Msgs.IStartGameResponse>{
+				curUsr.emit(SOCKET_MSG.START_GAME, <Msgs.IPresentGamePhase>{
 					messageName: SOCKET_MSG.START_GAME,
-					username: user.username,
-					timestamp: new Date(),
+					requestorUsername: user.username,
+					phase: Phase.CHOOSE_CHARACTER,
 					matchState: mstate,
 				});
 			});
 		} else {
-			sock.emit(SOCKET_MSG.START_GAME, <Msgs.IStartGameResponse>{
+			sock.emit(SOCKET_MSG.START_GAME, <Msgs.IPresentGamePhase>{
 				messageName: SOCKET_MSG.START_GAME,
+				phase: undefined,
+				matchState: undefined,
 				error: 'Undefined room',
 			});
 		}
@@ -40,10 +41,7 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 		if(chatRoom) {
 			if(chatRoom.match) {
 				if(chatRoom.match.phase === Phase.CHOOSE_CHARACTER) {
-					result = chatRoom.match.enqueueCharacterChoice(user, data.entityProfileId);
-					if(!result) {
-						errMsg = 'Unhandled character choice error';
-					}
+					chatRoom.match.enqueuePlayerDecision(user, data);
 				} else {
 					errMsg = 'Game phase mismatch';
 				}
@@ -55,10 +53,11 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 		}
 
 		if(errMsg || result !== true) {
-			sock.emit(SOCKET_MSG.CHOOSE_CHARACTER, <Msgs.IPlayerDecisionResponse>{
-				messageName: SOCKET_MSG.CHOOSE_CHARACTER,
-				error: errMsg
-			});
+			// sock.emit(SOCKET_MSG.CHOOSE_CHARACTER, <Msgs.IPlayerDecisionResponse>{
+			// 	messageName: SOCKET_MSG.CHOOSE_CHARACTER,
+			// 	error: errMsg
+			// });
+			nsp.to(chatRoom.roomId).emit(SOCKET_MSG.PLAYERS_READY, {matchState: chatRoom.match.exportState()});
 		} else {
 			sock.emit(SOCKET_MSG.CHOOSE_CHARACTER, <Msgs.IPlayerDecisionResponse>{
 				messageName: SOCKET_MSG.CHOOSE_CHARACTER,

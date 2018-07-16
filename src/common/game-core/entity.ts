@@ -6,12 +6,12 @@ import { ALL_STEFS, MAX_STEF_DURATION } from "../game-info/stefs";
 
 export class Entity {
 	isPlayer: boolean;
-
 	entityId: number;
 	username: string;
 	profileId: string;
 	state: IEntityState;
 	team: Team;
+	ready: boolean = false;
 
 	profile: IEntityProfile;
 

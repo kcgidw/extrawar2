@@ -5,6 +5,7 @@ import { Characters, PlayableCharacters } from "../game-info/characters";
 import { Entity } from "./entity";
 import { ILaneState, Team } from "./instance-interfaces";
 import { IEntityProfile, Phase } from "./rule-interfaces";
+import { IPlayerDecisionRequest, SOCKET_MSG, IPlayersReady } from "../messages";
 
 const MAX_PLAYERS = 6; // TODO: any more = spectators. Make sure to update the const in lobby.ts too
 
@@ -21,6 +22,7 @@ export interface IMatchState {
 	phase: Phase;
 	lanes: Lane[];
 	characterChoicesIds: {[key: string]: string[]};
+	playersReady: {[key: string]: boolean};
 }
 
 export class Match implements IMatchState {
@@ -34,8 +36,9 @@ export class Match implements IMatchState {
 	phase: Phase;
 	lanes: Lane[] = [];
 
+	playersReady: {};
 	characterChoicesIds: {[key: string]: string[]} = {};
-	characterChoiceQueue: ICharacterChoice[] = [];
+	playerDecisions: {[key: string]: IPlayerDecisionRequest} = {};
 
 	constructor(room: ChatRoom) {
 		this.room = room;
@@ -60,24 +63,44 @@ export class Match implements IMatchState {
 	}
 
 	getUserTeam(user: User): Team {
-		return this.players[user.username].team;
+		return this.getUsernameTeam(user.username);
+	}
+	getUsernameTeam(username: string): Team {
+		return this.players[username].team;
 	}
 
-	enqueueCharacterChoice(user: User, characterId: string): boolean {
-		// TODO validate character chosen was a given option
-
-		var entProfile = Characters[characterId];
-		var newLen: number = this.characterChoiceQueue.push({user: user, entProfile: entProfile});
-		if(newLen === Object.keys(this.players).length) {
-			return true; // ready for processing
+	enqueuePlayerDecision(user: User, decision: IPlayerDecisionRequest) {
+		this.playerDecisions[user.username] = decision;
+		if(this.phase === Phase.CHOOSE_CHARACTER) {
+			if(Object.keys(this.playerDecisions).length === Object.keys(this.players).length) {
+				this.resolveDecisionsChooseCharacter();
+			}
 		}
-		return false;
+
 	}
 
-	processCharacterChoices() {
-		this.characterChoiceQueue.forEach((choice: ICharacterChoice) => {
-			this.players[choice.user.username] = new Entity(choice.user, this.getUserTeam(choice.user), choice.entProfile);
-		});
+	resolveDecisionsChooseCharacter() {
+		for(let username of Object.keys(this.playerDecisions)) {
+			let choice = this.playerDecisions[username];
+			let entProfile = Characters[choice.entityProfileId];
+			this.players[username] = new Entity(this.room.findUser(username), this.getUsernameTeam(username), entProfile);
+		}
+
+		setTimeout(() => {
+			this.resetDecisions();
+			// this.presentPhase(Phase.CHOOSE_STARTING_LANE);
+		}, 1*1000);
+	}
+
+	presentPhase(phase: Phase) {
+		this.phase = phase;
+		for(let user of this.room.users) {
+			user.emit(SOCKET_MSG.CHOOSE_STARTING_LANE, this.exportState());
+		}
+	}
+
+	resetDecisions() {
+		this.playerDecisions = {};
 	}
 
 	setCharacterChoices(): {[key: string]: string[]} {
@@ -116,8 +139,16 @@ export class Match implements IMatchState {
 			turn: this.turn,
 			phase: this.phase,
 			lanes: this.lanes,
-			characterChoicesIds: this.characterChoicesIds
+			characterChoicesIds: this.characterChoicesIds,
+			playersReady: this.exportPlayersReady()
 		};
+	}
+	exportPlayersReady(): {[key: string]: boolean} {
+		var x = {};
+		for(let username of Object.keys(this.players)) {
+			x[username] = this.playerDecisions[username] !== undefined;
+		}
+		return x;
 	}
 }
 

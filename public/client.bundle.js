@@ -132,7 +132,7 @@ class ChatWindow extends React.Component {
             var chatMsg = {
                 messageName: messages_1.SOCKET_MSG.START_GAME,
                 username: undefined,
-                message: data.username + ' started the game.',
+                message: data.requestorUsername + ' started the game.',
                 timestamp: new Date() // TODO do this server-side
             };
             this.addMessage(chatMsg);
@@ -254,15 +254,13 @@ exports.chooseCharacter = chooseCharacter;
 // remember to SAVE that function and CALL it on the unmount.
 function generateHandler(messageType, fn, errorFn) {
     var handler = (data) => {
-        if (data.error === undefined) {
+        if (data['error'] === undefined) {
             fn(data);
         }
         else {
+            console.warn('Error message: ' + data['error']);
             if (errorFn) {
                 errorFn(data);
-            }
-            else {
-                console.warn('Unhandled error message: ' + data.error);
             }
         }
     };
@@ -318,7 +316,7 @@ class CharacterChoices extends React.Component {
 }
 exports.CharacterChoices = CharacterChoices;
 function renderCharacterChoices(choices) {
-    return choices.map((entProfId) => React.createElement(CharacterChoicePanel, { entProfile: characters_1.Characters[entProfId] }));
+    return choices.map((entProfId) => React.createElement(CharacterChoicePanel, { key: entProfId, entProfile: characters_1.Characters[entProfId] }));
 }
 class CharacterChoicePanel extends React.Component {
     constructor(props) {
@@ -370,6 +368,39 @@ exports.Lane = Lane;
 
 /***/ }),
 
+/***/ "./src/client/game-ui/team-panel.tsx":
+/*!*******************************************!*\
+  !*** ./src/client/game-ui/team-panel.tsx ***!
+  \*******************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "react");
+class TeamPanel extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+    render() {
+        return (React.createElement("div", { id: "team-panel-" + this.props.team, className: "team-panel" }, this.renderReady()));
+    }
+    renderReady() {
+        var teamUsernames = this.props.matchState['team' + this.props.team];
+        return teamUsernames.map((username) => {
+            var ready = this.props.matchState.playersReady[username];
+            return React.createElement("p", { key: username },
+                username,
+                ready ? " - READY!" : '');
+        });
+    }
+}
+exports.TeamPanel = TeamPanel;
+
+
+/***/ }),
+
 /***/ "./src/client/game-view.tsx":
 /*!**********************************!*\
   !*** ./src/client/game-view.tsx ***!
@@ -381,9 +412,12 @@ exports.Lane = Lane;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
+const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
+const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 const rule_interfaces_1 = __webpack_require__(/*! ../common/game-core/rule-interfaces */ "./src/common/game-core/rule-interfaces.ts");
 const character_choices_1 = __webpack_require__(/*! ./game-ui/character-choices */ "./src/client/game-ui/character-choices.tsx");
 const lane_1 = __webpack_require__(/*! ./game-ui/lane */ "./src/client/game-ui/lane.tsx");
+const team_panel_1 = __webpack_require__(/*! ./game-ui/team-panel */ "./src/client/game-ui/team-panel.tsx");
 class GameView extends React.Component {
     constructor(props) {
         super(props);
@@ -392,24 +426,58 @@ class GameView extends React.Component {
         };
     }
     componentDidMount() {
+        var han1 = Handler.generateHandler(messages_1.SOCKET_MSG.PLAYERS_READY, (data) => {
+            this.setState({
+                matchState: data.matchState
+            });
+        });
+        var han2 = Handler.generateHandler(messages_1.SOCKET_MSG.CHOOSE_STARTING_LANE, (data) => {
+            this.setState({
+                matchState: data.matchState
+            });
+        });
+        this.handlerOff = () => {
+            han1();
+            han2();
+        };
     }
     componentWillUnmount() {
         this.handlerOff();
     }
     render() {
+        var innerView;
+        switch (this.state.matchState.phase) {
+            case (rule_interfaces_1.Phase.CHOOSE_CHARACTER):
+                innerView = (React.createElement("div", { id: "menu" },
+                    React.createElement(team_panel_1.TeamPanel, { matchState: this.state.matchState, team: 1 }),
+                    React.createElement(team_panel_1.TeamPanel, { matchState: this.state.matchState, team: 2 }),
+                    React.createElement(character_choices_1.CharacterChoices, { choices: this.props.matchState.characterChoicesIds[this.props.username] })));
+                break;
+            case (rule_interfaces_1.Phase.CHOOSE_STARTING_LANE):
+                break;
+            case (rule_interfaces_1.Phase.PLAN):
+                break;
+            case (rule_interfaces_1.Phase.RESOLVE):
+                break;
+            default:
+                console.warn('Bad phase ' + this.state.matchState.phase);
+        }
         return (React.createElement("div", { id: "game-view" },
             React.createElement("div", { id: "game-prompt" }, this.getPrompt()),
-            React.createElement(character_choices_1.CharacterChoices, { choices: this.props.matchState.characterChoicesIds[this.props.username] }),
-            React.createElement("div", { id: "lanes" },
-                React.createElement(lane_1.Lane, { id: 0 }),
-                React.createElement(lane_1.Lane, { id: 1 }),
-                React.createElement(lane_1.Lane, { id: 2 }),
-                React.createElement(lane_1.Lane, { id: 3 }))));
+            innerView,
+            React.createElement("div", { id: "lanes-container" },
+                React.createElement("div", { id: "lanes" },
+                    React.createElement(lane_1.Lane, { id: 0 }),
+                    React.createElement(lane_1.Lane, { id: 1 }),
+                    React.createElement(lane_1.Lane, { id: 2 }),
+                    React.createElement(lane_1.Lane, { id: 3 })))));
     }
     getPrompt() {
         switch (this.state.matchState.phase) {
             case (rule_interfaces_1.Phase.CHOOSE_CHARACTER):
                 return 'Choose a character.';
+            case (rule_interfaces_1.Phase.CHOOSE_STARTING_LANE):
+                return 'Choose a starting lane.';
             case (rule_interfaces_1.Phase.PLAN):
                 return 'Choose an action.';
             case (rule_interfaces_1.Phase.RESOLVE):
@@ -735,9 +803,10 @@ exports.ROOM_SIZE = 4;
 var Phase;
 (function (Phase) {
     Phase[Phase["CHOOSE_CHARACTER"] = 0] = "CHOOSE_CHARACTER";
-    Phase[Phase["PLAN"] = 1] = "PLAN";
-    Phase[Phase["RESOLVE"] = 2] = "RESOLVE";
-    Phase[Phase["GAME_OVER"] = 3] = "GAME_OVER";
+    Phase[Phase["CHOOSE_STARTING_LANE"] = 1] = "CHOOSE_STARTING_LANE";
+    Phase[Phase["PLAN"] = 2] = "PLAN";
+    Phase[Phase["RESOLVE"] = 3] = "RESOLVE";
+    Phase[Phase["GAME_OVER"] = 4] = "GAME_OVER";
 })(Phase = exports.Phase || (exports.Phase = {}));
 var Faction;
 (function (Faction) {
@@ -868,7 +937,9 @@ var SOCKET_MSG;
     SOCKET_MSG["CHAT_POST_MESSAGE"] = "CHAT_POST_MESSAGE";
     SOCKET_MSG["START_GAME"] = "START_GAME";
     SOCKET_MSG["CHOOSE_CHARACTER"] = "CHOOSE_CHARACTER";
+    SOCKET_MSG["CHOOSE_STARTING_LANE"] = "CHOOSE_STARTING_LANE";
     SOCKET_MSG["PLAYER_DECISION"] = "PLAYER_DECISION";
+    SOCKET_MSG["PLAYERS_READY"] = "PLAYERS_READY";
 })(SOCKET_MSG = exports.SOCKET_MSG || (exports.SOCKET_MSG = {}));
 
 

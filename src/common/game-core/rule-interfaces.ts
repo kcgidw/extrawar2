@@ -5,7 +5,7 @@ import { Lane } from "./match";
 export const ROOM_SIZE = 4;
 
 export enum Phase {
-	CHOOSE_CHARACTER, PLAN, RESOLVE, GAME_OVER
+	CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, PLAN, RESOLVE, GAME_OVER
 }
 
 export enum Faction {

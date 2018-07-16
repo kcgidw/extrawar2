@@ -36,15 +36,14 @@ export function chooseCharacter(entProfileId: string) {
 
 // returns a function to turn off the handler.
 // remember to SAVE that function and CALL it on the unmount.
-export function generateHandler<T extends Msgs.IErrorableResponse>(messageType: string, fn: (data: T)=>any, errorFn?: (data: T)=>any) {
+export function generateHandler<T>(messageType: string, fn: (data: T)=>any, errorFn?: (data: T)=>any) {
 	var handler = (data: T) => {
-		if(data.error === undefined) {
+		if(data['error'] === undefined) {
 			fn(data);
 		} else {
+			console.warn('Error message: ' + data['error']);
 			if(errorFn) {
 				errorFn(data);
-			} else {
-				console.warn('Unhandled error message: ' + data.error);
 			}
 		}
 	};

@@ -10,7 +10,9 @@ export enum SOCKET_MSG {
 	'CHAT_POST_MESSAGE'= 'CHAT_POST_MESSAGE',
 	'START_GAME'= 'START_GAME',
 	'CHOOSE_CHARACTER' = 'CHOOSE_CHARACTER',
+	'CHOOSE_STARTING_LANE' = 'CHOOSE_STARTING_LANE',
 	'PLAYER_DECISION' = 'PLAYER_DECISION',
+	'PLAYERS_READY' = 'PLAYERS_READY',
 }
 
 export interface IErrorableResponse {
@@ -54,29 +56,28 @@ export interface IChatPostMessageResponse extends IErrorableResponse {
 	timestamp: Date;
 	message: string;
 }
-export interface IStartGameResponse extends IErrorableResponse {
-	username: string; // who requested
-	timestamp: Date;
-	characterChoiceIds: string[];
-	matchState: IMatchState;
-}
 
 export interface IPlayerDecisionRequest {
 	actionId: string;
 	targetLane?: number;
 	targetEntity?: number;
 	entityProfileId?: string; // choose character
+	targetStartingLane?: number; // choose starting lane
 }
 export interface IPlayerDecisionResponse extends IErrorableResponse {
 	targetLane?: number;
 	targetEntity?: number;
 	entityProfileId?: string;
+	targetStartingLane?: number;
 	usernames: string[]; // players ready
 }
 export interface IPlayersReady {
-	usernames: string[];
+	matchState: IMatchState;
 }
-export interface IPresentGamePhase {
+
+export interface IPresentGamePhase extends IErrorableResponse {
 	phase: Phase;
-	choices?: IEntityProfile[];
+	matchState: IMatchState;
+	requestorUsername?: string;
+	characterChoiceIds?: string[];
 }

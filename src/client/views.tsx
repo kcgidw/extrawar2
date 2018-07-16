@@ -75,8 +75,8 @@ export class Views extends React.Component<{}, IViewsState> {
 				roomUsernames: data.users,
 			});
 		});
-		Handler.generateHandler<Msgs.IStartGameResponse>(SOCKET_MSG.START_GAME, (data) => {
-			if(this.state.curView === VIEW.WAITING_ROOM) {
+		Handler.generateHandler<Msgs.IPresentGamePhase>(SOCKET_MSG.START_GAME, (data) => {
+			if(this.state.curView === VIEW.WAITING_ROOM ) {
 				var charChoices: string[] = data.characterChoiceIds;
 				this.setState({
 					matchState: data.matchState,
