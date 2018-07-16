@@ -1,4 +1,4 @@
-import { Phase } from "../../common/game-core/rule-interfaces";
+import { Phase } from "../../common/game-core/common";
 import * as Msgs from '../../common/messages';
 import { SOCKET_MSG } from "../../common/messages";
 import { User } from "../lobby/user";

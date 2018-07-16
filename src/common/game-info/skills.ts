@@ -1,9 +1,7 @@
-import { Faction, TargetWhat, TargetRange, IStefDef, ITargetInfo } from "../game-core/rule-interfaces";
+import { Faction, IStefInstance, ITargetInfo, TargetRange, TargetWhat, Team } from "../game-core/common";
 import { Entity } from "../game-core/entity";
-import { IEventResult, IEventCause } from "../game-core/event-interfaces";
-import { IStefInstance, Team } from "../game-core/instance-interfaces";
+import { IEventCause, IEventResult } from "../game-core/event-interfaces";
 import { Lane } from "../game-core/match";
-import { userInfo } from "os";
 
 export interface ISkillDef {
 	id: string;

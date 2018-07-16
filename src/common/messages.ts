@@ -1,5 +1,5 @@
 import { IMatchState } from "./game-core/match";
-import { Phase } from "./game-core/rule-interfaces";
+import { Phase } from "./game-core/common";
 
 export enum SOCKET_MSG {
 	'LOBBY_NUM_ONLINE'=  'LOBBY_NUM_ONLINE',

@@ -1,7 +1,7 @@
 import * as SocketIO from 'socket.io';
-import { User } from '../lobby/user';
 import * as Messages from '../../common/messages';
-import { Match } from '../../common/game-core/match';
+import { User } from '../lobby/user';
+import { Match } from './match';
 
 const CHAT_LOG_CAPACITY = 15;
 

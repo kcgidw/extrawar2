@@ -1,8 +1,7 @@
 import { User } from "../../server/lobby/user";
-import { IEntityState, IStefInstance, Team } from "./instance-interfaces";
-import { IEntityProfile, IStefDef } from "./rule-interfaces";
-import { IEventResult, TurnEventResultType, INoneResult, IHpChangeResult, IDeathResult, IEventCause } from "./event-interfaces";
 import { ALL_STEFS, MAX_STEF_DURATION } from "../game-info/stefs";
+import { IEntityProfile, IEntityState, IStefDef, IStefInstance, Team } from "./common";
+import { IDeathResult, IEventResult, IHpChangeResult, INoneResult, TurnEventResultType } from "./event-interfaces";
 
 export class Entity {
 	isPlayer: boolean;

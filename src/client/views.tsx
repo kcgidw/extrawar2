@@ -1,14 +1,12 @@
 import * as React from 'react';
+import { IMatchState } from '../common/game-core/match';
 import * as Msgs from '../common/messages';
 import { SOCKET_MSG } from '../common/messages';
+import { ChatWindow } from './chat-window';
 import * as Handler from './client-handler';
+import { GameView } from './game-view';
 import { RoomOptionsView, UsernameView, WaitingRoomView } from './menu-views';
 import { OnlineCounter } from './online-counter';
-import { GameView } from './game-view';
-import { ChatWindow } from './chat-window';
-import { IEntityProfile } from '../common/game-core/rule-interfaces';
-import { Characters } from '../common/game-info/characters';
-import { IMatchState } from '../common/game-core/match';
 
 enum VIEW {
 	USERNAME = 'username-entry',

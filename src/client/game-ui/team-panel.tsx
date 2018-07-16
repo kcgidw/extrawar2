@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Team } from "../../common/game-core/instance-interfaces";
+import { Team } from "../../common/game-core/common";
 import { IMatchState } from "../../common/game-core/match";
 
 interface ITeamProps {

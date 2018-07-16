@@ -1,4 +1,4 @@
-import { IEntityProfile, Faction } from "../game-core/rule-interfaces";
+import { Faction, IEntityProfile } from "../game-core/common";
 
 export const Characters: {[key: string]: IEntityProfile} = {
 	UNKNOWN: {

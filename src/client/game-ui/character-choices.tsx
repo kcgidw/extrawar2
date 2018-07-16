@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { } from '../client-handler';
-import { IEntityProfile } from '../../common/game-core/rule-interfaces';
+import { IEntityProfile } from '../../common/game-core/common';
 import { Characters } from '../../common/game-info/characters';
 import * as Handler from '../client-handler';
+import { } from '../client-handler';
 
 interface ICharacterChoicesProps {
 	choices: string[];

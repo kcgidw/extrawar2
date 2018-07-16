@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { IMatchState } from '../common/game-core/match';
-import { Phase } from '../common/game-core/rule-interfaces';
+import { Phase } from '../common/game-core/common';
 import * as Msgs from '../common/messages';
 import { SOCKET_MSG } from '../common/messages';
 import * as Handler from './client-handler';

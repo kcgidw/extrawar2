@@ -1,4 +1,4 @@
-import { IStefDef } from "../game-core/rule-interfaces";
+import { IStefDef } from "../game-core/common";
 
 export const MAX_STEF_DURATION = 8;
 

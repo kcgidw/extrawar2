@@ -216,7 +216,7 @@ function renderChatLog(messages) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const rule_interfaces_1 = __webpack_require__(/*! ../common/game-core/rule-interfaces */ "./src/common/game-core/rule-interfaces.ts");
+const common_1 = __webpack_require__(/*! ../common/game-core/common */ "./src/common/game-core/common.ts");
 const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 exports.socket = io('/lobby');
 exports.clientSocket = exports.socket;
@@ -247,7 +247,7 @@ exports.sendChatMessage = sendChatMessage;
 /* game */
 function chooseCharacter(entProfileId) {
     exports.socket.emit(messages_1.SOCKET_MSG.PLAYER_DECISION, {
-        phase: rule_interfaces_1.Phase.CHOOSE_CHARACTER,
+        phase: common_1.Phase.CHOOSE_CHARACTER,
         entityProfileId: entProfileId,
     });
 }
@@ -414,7 +414,7 @@ exports.TeamPanel = TeamPanel;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
-const rule_interfaces_1 = __webpack_require__(/*! ../common/game-core/rule-interfaces */ "./src/common/game-core/rule-interfaces.ts");
+const common_1 = __webpack_require__(/*! ../common/game-core/common */ "./src/common/game-core/common.ts");
 const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
 const character_choices_1 = __webpack_require__(/*! ./game-ui/character-choices */ "./src/client/game-ui/character-choices.tsx");
@@ -449,17 +449,17 @@ class GameView extends React.Component {
     render() {
         var innerView;
         switch (this.state.matchState.phase) {
-            case (rule_interfaces_1.Phase.CHOOSE_CHARACTER):
+            case (common_1.Phase.CHOOSE_CHARACTER):
                 innerView = (React.createElement("div", { id: "menu" },
                     React.createElement(team_panel_1.TeamPanel, { matchState: this.state.matchState, team: 1 }),
                     React.createElement(team_panel_1.TeamPanel, { matchState: this.state.matchState, team: 2 }),
                     React.createElement(character_choices_1.CharacterChoices, { choices: this.props.matchState.characterChoicesIds[this.props.username] })));
                 break;
-            case (rule_interfaces_1.Phase.CHOOSE_STARTING_LANE):
+            case (common_1.Phase.CHOOSE_STARTING_LANE):
                 break;
-            case (rule_interfaces_1.Phase.PLAN):
+            case (common_1.Phase.PLAN):
                 break;
-            case (rule_interfaces_1.Phase.RESOLVE):
+            case (common_1.Phase.RESOLVE):
                 break;
             default:
                 console.warn('Bad phase ' + this.state.matchState.phase);
@@ -476,15 +476,15 @@ class GameView extends React.Component {
     }
     getPrompt() {
         switch (this.state.matchState.phase) {
-            case (rule_interfaces_1.Phase.CHOOSE_CHARACTER):
+            case (common_1.Phase.CHOOSE_CHARACTER):
                 return 'Choose a character.';
-            case (rule_interfaces_1.Phase.CHOOSE_STARTING_LANE):
+            case (common_1.Phase.CHOOSE_STARTING_LANE):
                 return 'Choose a starting lane.';
-            case (rule_interfaces_1.Phase.PLAN):
+            case (common_1.Phase.PLAN):
                 return 'Choose an action.';
-            case (rule_interfaces_1.Phase.RESOLVE):
+            case (common_1.Phase.RESOLVE):
                 return '';
-            case (rule_interfaces_1.Phase.GAME_OVER):
+            case (common_1.Phase.GAME_OVER):
                 return 'Game over!';
         }
     }
@@ -678,11 +678,11 @@ exports.OnlineCounter = OnlineCounter;
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
 const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
+const chat_window_1 = __webpack_require__(/*! ./chat-window */ "./src/client/chat-window.tsx");
 const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
+const game_view_1 = __webpack_require__(/*! ./game-view */ "./src/client/game-view.tsx");
 const menu_views_1 = __webpack_require__(/*! ./menu-views */ "./src/client/menu-views.tsx");
 const online_counter_1 = __webpack_require__(/*! ./online-counter */ "./src/client/online-counter.tsx");
-const game_view_1 = __webpack_require__(/*! ./game-view */ "./src/client/game-view.tsx");
-const chat_window_1 = __webpack_require__(/*! ./chat-window */ "./src/client/chat-window.tsx");
 var VIEW;
 (function (VIEW) {
     VIEW["USERNAME"] = "username-entry";
@@ -791,16 +791,17 @@ exports.Views = Views;
 
 /***/ }),
 
-/***/ "./src/common/game-core/rule-interfaces.ts":
-/*!*************************************************!*\
-  !*** ./src/common/game-core/rule-interfaces.ts ***!
-  \*************************************************/
+/***/ "./src/common/game-core/common.ts":
+/*!****************************************!*\
+  !*** ./src/common/game-core/common.ts ***!
+  \****************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const util_1 = __webpack_require__(/*! ../../server/lobby/util */ "./src/server/lobby/util.ts");
 exports.ROOM_SIZE = 4;
 var Phase;
 (function (Phase) {
@@ -834,6 +835,18 @@ var TargetRange;
     TargetRange[TargetRange["NEARBY"] = 1] = "NEARBY";
     TargetRange[TargetRange["ANY"] = 2] = "ANY";
 })(TargetRange = exports.TargetRange || (exports.TargetRange = {}));
+class Lane {
+    constructor(y) {
+        this.team1 = [];
+        this.team2 = [];
+        this.y = y;
+    }
+    getRandomEntity(team) {
+        var from = this['team' + team];
+        return util_1.randItem(from);
+    }
+}
+exports.Lane = Lane;
 
 
 /***/ }),
@@ -848,7 +861,7 @@ var TargetRange;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const rule_interfaces_1 = __webpack_require__(/*! ../game-core/rule-interfaces */ "./src/common/game-core/rule-interfaces.ts");
+const common_1 = __webpack_require__(/*! ../game-core/common */ "./src/common/game-core/common.ts");
 exports.Characters = {
     UNKNOWN: {
         id: 'UNKNOWN',
@@ -859,49 +872,49 @@ exports.Characters = {
     },
     GENERIC_FER: {
         id: 'GENERIC_FER',
-        faction: rule_interfaces_1.Faction.FERALIST,
+        faction: common_1.Faction.FERALIST,
         name: 'Generic Feralist',
         maxHp: 140,
         str: 20
     },
     GENERIC_MOL: {
         id: 'GENERIC_MOL',
-        faction: rule_interfaces_1.Faction.MOLTEN,
+        faction: common_1.Faction.MOLTEN,
         name: 'Generic Molten',
         maxHp: 160,
         str: 20
     },
     GENERIC_ABE: {
         id: 'GENERIC_ABE',
-        faction: rule_interfaces_1.Faction.ABERRANT,
+        faction: common_1.Faction.ABERRANT,
         name: 'Generic Aberrant',
         maxHp: 175,
         str: 18
     },
     GENERIC_KIN: {
         id: 'GENERIC_KIN',
-        faction: rule_interfaces_1.Faction.KINDRED,
+        faction: common_1.Faction.KINDRED,
         name: 'Generic Kindred',
         maxHp: 180,
         str: 18
     },
     GENERIC_ETH: {
         id: 'GENERIC_ETH',
-        faction: rule_interfaces_1.Faction.ETHER,
+        faction: common_1.Faction.ETHER,
         name: 'Generic Ether',
         maxHp: 130,
         str: 20
     },
     GENERIC_GLO: {
         id: 'GENERIC_GLO',
-        faction: rule_interfaces_1.Faction.GLOOMER,
+        faction: common_1.Faction.GLOOMER,
         name: 'Generic Gloomer',
         maxHp: 140,
         str: 18
     },
     GENERIC_NONE: {
         id: 'GENERIC_NONE',
-        faction: rule_interfaces_1.Faction.NONE,
+        faction: common_1.Faction.NONE,
         name: 'Neutralbot',
         maxHp: 160,
         str: 20
@@ -962,6 +975,52 @@ function validateUsername(str) {
     return regex.test(str);
 }
 exports.validateUsername = validateUsername;
+
+
+/***/ }),
+
+/***/ "./src/server/lobby/util.ts":
+/*!**********************************!*\
+  !*** ./src/server/lobby/util.ts ***!
+  \**********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const ID_LENGTH = 4;
+const CHARS = 'abcdefgh123456789'; // 0 is confusing
+function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min)) + min;
+}
+exports.randInt = randInt;
+function randItem(arr) {
+    if (arr.length === 0) {
+        return undefined;
+    }
+    var idx = randInt(0, arr.length);
+    return arr[idx];
+}
+exports.randItem = randItem;
+function randChar(chars) {
+    return chars.charAt(randInt(0, chars.length));
+}
+function makeId() {
+    var id = '';
+    for (let i = 0; i < ID_LENGTH; i++) {
+        let char = randChar(CHARS);
+        id += char;
+    }
+    return id; // TODO add prefix for debugging clarity
+}
+exports.makeId = makeId;
+function shuffle(arr) {
+    arr.sort(() => {
+        return 0.5 - Math.random();
+    });
+}
+exports.shuffle = shuffle;
 
 
 /***/ }),
