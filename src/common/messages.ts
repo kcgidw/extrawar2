@@ -1,5 +1,5 @@
-import { IEntityProfile, Phase } from "./game-core/rule-interfaces";
 import { IMatchState } from "./game-core/match";
+import { Phase } from "./game-core/rule-interfaces";
 
 export enum SOCKET_MSG {
 	'LOBBY_NUM_ONLINE'=  'LOBBY_NUM_ONLINE',
@@ -9,8 +9,6 @@ export enum SOCKET_MSG {
 	'LOBBY_ROOM_USERS'= 'LOBBY_ROOM_USERS',
 	'CHAT_POST_MESSAGE'= 'CHAT_POST_MESSAGE',
 	'START_GAME'= 'START_GAME',
-	'CHOOSE_CHARACTER' = 'CHOOSE_CHARACTER',
-	'CHOOSE_STARTING_LANE' = 'CHOOSE_STARTING_LANE',
 	'PLAYER_DECISION' = 'PLAYER_DECISION',
 	'PLAYERS_READY' = 'PLAYERS_READY',
 }
@@ -58,6 +56,7 @@ export interface IChatPostMessageResponse extends IErrorableResponse {
 }
 
 export interface IPlayerDecisionRequest {
+	phase: Phase;
 	actionId: string;
 	targetLane?: number;
 	targetEntity?: number;

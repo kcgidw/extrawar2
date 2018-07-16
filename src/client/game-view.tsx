@@ -1,10 +1,9 @@
 import * as React from 'react';
-import * as Handler from './client-handler';
-import { SOCKET_MSG } from '../common/messages';
-import * as Msgs from '../common/messages';
-import { ChatWindow } from './chat-window';
 import { IMatchState } from '../common/game-core/match';
-import { IEntityProfile, Phase } from '../common/game-core/rule-interfaces';
+import { Phase } from '../common/game-core/rule-interfaces';
+import * as Msgs from '../common/messages';
+import { SOCKET_MSG } from '../common/messages';
+import * as Handler from './client-handler';
 import { CharacterChoices } from './game-ui/character-choices';
 import { Lane } from './game-ui/lane';
 import { TeamPanel } from './game-ui/team-panel';
@@ -33,7 +32,7 @@ export class GameView extends React.Component<IProps, IState> {
 				matchState: data.matchState
 			});
 		});
-		var han2 = Handler.generateHandler<Msgs.IPresentGamePhase>(SOCKET_MSG.CHOOSE_STARTING_LANE, (data) => {
+		var han2 = Handler.generateHandler<Msgs.IPresentGamePhase>(SOCKET_MSG.PLAYER_DECISION, (data) => {
 			this.setState({
 				matchState: data.matchState
 			});

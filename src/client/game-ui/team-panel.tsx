@@ -1,9 +1,6 @@
-import { Entity } from "../../common/game-core/entity";
 import * as React from 'react';
-import { IMatchState } from "../../common/game-core/match";
 import { Team } from "../../common/game-core/instance-interfaces";
-import { IPlayersReady, SOCKET_MSG } from "../../common/messages";
-import * as Handler from '../client-handler';
+import { IMatchState } from "../../common/game-core/match";
 
 interface ITeamProps {
 	matchState: IMatchState;

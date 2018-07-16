@@ -1,4 +1,4 @@
-import { IEntityProfile } from '../common/game-core/rule-interfaces';
+import { IEntityProfile, Phase } from '../common/game-core/rule-interfaces';
 import * as Msgs from '../common/messages';
 import { SOCKET_MSG } from '../common/messages';
 
@@ -29,7 +29,8 @@ export function sendChatMessage(msg: string) {
 /* game */
 
 export function chooseCharacter(entProfileId: string) {
-	socket.emit(SOCKET_MSG.CHOOSE_CHARACTER, {
+	socket.emit(SOCKET_MSG.PLAYER_DECISION, {
+		phase: Phase.CHOOSE_CHARACTER,
 		entityProfileId: entProfileId,
 	} as Msgs.IPlayerDecisionRequest);
 }

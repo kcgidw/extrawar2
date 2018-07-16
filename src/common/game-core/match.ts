@@ -2,10 +2,10 @@ import { ChatRoom } from "../../server/chat-room/chat-room";
 import { User } from "../../server/lobby/user";
 import { randItem, shuffle } from "../../server/lobby/util";
 import { Characters, PlayableCharacters } from "../game-info/characters";
+import { IPlayerDecisionRequest } from "../messages";
 import { Entity } from "./entity";
 import { ILaneState, Team } from "./instance-interfaces";
 import { IEntityProfile, Phase } from "./rule-interfaces";
-import { IPlayerDecisionRequest, SOCKET_MSG, IPlayersReady } from "../messages";
 
 const MAX_PLAYERS = 6; // TODO: any more = spectators. Make sure to update the const in lobby.ts too
 
@@ -88,15 +88,7 @@ export class Match implements IMatchState {
 
 		setTimeout(() => {
 			this.resetDecisions();
-			// this.presentPhase(Phase.CHOOSE_STARTING_LANE);
 		}, 1*1000);
-	}
-
-	presentPhase(phase: Phase) {
-		this.phase = phase;
-		for(let user of this.room.users) {
-			user.emit(SOCKET_MSG.CHOOSE_STARTING_LANE, this.exportState());
-		}
 	}
 
 	resetDecisions() {

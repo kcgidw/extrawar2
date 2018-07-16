@@ -216,6 +216,7 @@ function renderChatLog(messages) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const rule_interfaces_1 = __webpack_require__(/*! ../common/game-core/rule-interfaces */ "./src/common/game-core/rule-interfaces.ts");
 const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 exports.socket = io('/lobby');
 exports.clientSocket = exports.socket;
@@ -245,7 +246,8 @@ function sendChatMessage(msg) {
 exports.sendChatMessage = sendChatMessage;
 /* game */
 function chooseCharacter(entProfileId) {
-    exports.socket.emit(messages_1.SOCKET_MSG.CHOOSE_CHARACTER, {
+    exports.socket.emit(messages_1.SOCKET_MSG.PLAYER_DECISION, {
+        phase: rule_interfaces_1.Phase.CHOOSE_CHARACTER,
         entityProfileId: entProfileId,
     });
 }
@@ -412,9 +414,9 @@ exports.TeamPanel = TeamPanel;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
-const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
-const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 const rule_interfaces_1 = __webpack_require__(/*! ../common/game-core/rule-interfaces */ "./src/common/game-core/rule-interfaces.ts");
+const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
+const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
 const character_choices_1 = __webpack_require__(/*! ./game-ui/character-choices */ "./src/client/game-ui/character-choices.tsx");
 const lane_1 = __webpack_require__(/*! ./game-ui/lane */ "./src/client/game-ui/lane.tsx");
 const team_panel_1 = __webpack_require__(/*! ./game-ui/team-panel */ "./src/client/game-ui/team-panel.tsx");
@@ -431,7 +433,7 @@ class GameView extends React.Component {
                 matchState: data.matchState
             });
         });
-        var han2 = Handler.generateHandler(messages_1.SOCKET_MSG.CHOOSE_STARTING_LANE, (data) => {
+        var han2 = Handler.generateHandler(messages_1.SOCKET_MSG.PLAYER_DECISION, (data) => {
             this.setState({
                 matchState: data.matchState
             });
@@ -936,8 +938,6 @@ var SOCKET_MSG;
     SOCKET_MSG["LOBBY_ROOM_USERS"] = "LOBBY_ROOM_USERS";
     SOCKET_MSG["CHAT_POST_MESSAGE"] = "CHAT_POST_MESSAGE";
     SOCKET_MSG["START_GAME"] = "START_GAME";
-    SOCKET_MSG["CHOOSE_CHARACTER"] = "CHOOSE_CHARACTER";
-    SOCKET_MSG["CHOOSE_STARTING_LANE"] = "CHOOSE_STARTING_LANE";
     SOCKET_MSG["PLAYER_DECISION"] = "PLAYER_DECISION";
     SOCKET_MSG["PLAYERS_READY"] = "PLAYERS_READY";
 })(SOCKET_MSG = exports.SOCKET_MSG || (exports.SOCKET_MSG = {}));

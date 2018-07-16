@@ -32,7 +32,7 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 		}
 	});
 
-	sock.on(SOCKET_MSG.CHOOSE_CHARACTER, (data: Msgs.IPlayerDecisionRequest) => {
+	sock.on(SOCKET_MSG.PLAYER_DECISION, (data: Msgs.IPlayerDecisionRequest) => {
 		var user: User = (<User>sock);
 		var chatRoom: ChatRoom = user.gameRoom;
 		var errMsg: string;
@@ -53,14 +53,10 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 		}
 
 		if(errMsg || result !== true) {
-			// sock.emit(SOCKET_MSG.CHOOSE_CHARACTER, <Msgs.IPlayerDecisionResponse>{
-			// 	messageName: SOCKET_MSG.CHOOSE_CHARACTER,
-			// 	error: errMsg
-			// });
 			nsp.to(chatRoom.roomId).emit(SOCKET_MSG.PLAYERS_READY, {matchState: chatRoom.match.exportState()});
 		} else {
-			sock.emit(SOCKET_MSG.CHOOSE_CHARACTER, <Msgs.IPlayerDecisionResponse>{
-				messageName: SOCKET_MSG.CHOOSE_CHARACTER,
+			sock.emit(SOCKET_MSG.PLAYER_DECISION, <Msgs.IPlayerDecisionResponse>{
+				messageName: SOCKET_MSG.PLAYER_DECISION,
 				entityProfileId: data.entityProfileId
 			});
 		}
