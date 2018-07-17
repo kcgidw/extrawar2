@@ -15,7 +15,7 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 			let mstate = match.exportState();
 			
 			chatRoom.users.forEach((curUsr) => {
-				curUsr.emit(SOCKET_MSG.START_GAME, <Msgs.IPresentGamePhase>{
+				curUsr.emit(SOCKET_MSG.START_GAME, <Msgs.IPromptDecisionMessage>{
 					messageName: SOCKET_MSG.START_GAME,
 					requestorUsername: user.username,
 					phase: Phase.CHOOSE_CHARACTER,
@@ -23,7 +23,7 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 				});
 			});
 		} else {
-			sock.emit(SOCKET_MSG.START_GAME, <Msgs.IPresentGamePhase>{
+			sock.emit(SOCKET_MSG.START_GAME, <Msgs.IPromptDecisionMessage>{
 				messageName: SOCKET_MSG.START_GAME,
 				phase: undefined,
 				matchState: undefined,

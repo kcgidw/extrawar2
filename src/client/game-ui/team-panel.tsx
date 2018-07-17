@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Team } from "../../common/game-core/common";
-import { IMatchState } from "../../common/game-core/match";
+import { IMatchState } from "../../common/game-core/common";
 
 interface ITeamProps {
 	matchState: IMatchState;

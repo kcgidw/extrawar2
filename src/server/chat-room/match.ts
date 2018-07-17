@@ -1,26 +1,22 @@
-import { Phase, Team } from "../../common/game-core/common";
+import { IMatchState, Phase, Team, Lane } from "../../common/game-core/common";
 import { Entity } from "../../common/game-core/entity";
-import { IMatchState, Lane } from "../../common/game-core/match";
 import { Characters, PlayableCharacters } from "../../common/game-info/characters";
-import { IPlayerDecisionRequest } from "../../common/messages";
+import { IPlayerDecisionRequest, IPromptDecisionMessage, SOCKET_MSG } from "../../common/messages";
 import { User } from "../lobby/user";
 import { shuffle } from "../lobby/util";
 import { ChatRoom } from "./chat-room";
-
+import { skills } from "../../common/game-info/skills";
 
 const MAX_PLAYERS = 6; // TODO: any more = spectators. Make sure to update the const in lobby.ts too
 
 export class Match implements IMatchState {
 	room: ChatRoom;
-
-	// IMatchState implementations
 	players: {[username: string]: Entity} = {};
 	team1: string[] = [];
 	team2: string[] = [];
 	turn: number;
 	phase: Phase;
 	lanes: Lane[] = [];
-
 	playersReady: {};
 	characterChoicesIds: {[key: string]: string[]} = {};
 	playerDecisions: {[key: string]: IPlayerDecisionRequest} = {};
@@ -55,13 +51,28 @@ export class Match implements IMatchState {
 	}
 
 	enqueuePlayerDecision(user: User, decision: IPlayerDecisionRequest) {
-		this.playerDecisions[user.username] = decision;
-		if(this.phase === Phase.CHOOSE_CHARACTER) {
-			if(Object.keys(this.playerDecisions).length === Object.keys(this.players).length) {
-				this.resolveDecisionsChooseCharacter();
-			}
+		switch(this.phase) {
+			case(Phase.CHOOSE_CHARACTER):
+				this.playerDecisions[user.username] = decision;
+				if(Object.keys(this.playerDecisions).length === Object.keys(this.players).length) {
+					this.resolveDecisionsChooseCharacter();
+				}
+				break;
+			case(Phase.CHOOSE_STARTING_LANE):
+				this.playerDecisions[user.username] = decision;
+				if(Object.keys(this.playerDecisions).length === Object.keys(this.players).length) {
+					this.resolveDecisionsChooseStartingLane();
+				}
+				break;
+			case(Phase.PLAN):
+				break;
+			case(Phase.RESOLVE):
+				break;
+			case(Phase.GAME_OVER):
+				break;
+			default:
+				throw new Error('bad phase');
 		}
-
 	}
 
 	resolveDecisionsChooseCharacter() {
@@ -73,7 +84,19 @@ export class Match implements IMatchState {
 
 		setTimeout(() => {
 			this.resetDecisions();
-		}, 1*1000);
+			this.nextPhase(Phase.CHOOSE_STARTING_LANE);
+		}, 0.5*1000);
+	}
+	resolveDecisionsChooseStartingLane() {
+		for(let username of Object.keys(this.playerDecisions)) {
+			let choice = this.playerDecisions[username];
+			this.players[username].state.y = choice.targetStartingLane;
+		}
+
+		setTimeout(() => {
+			this.resetDecisions();
+			this.nextPhase(Phase.PLAN);
+		}, 0.5*1000);
 	}
 
 	resetDecisions() {
@@ -103,11 +126,6 @@ export class Match implements IMatchState {
 		return this.characterChoicesIds;
 	}
 
-	beginFight() {
-		this.turn = 1;
-		this.phase = Phase.PLAN;
-	}
-
 	exportState(): IMatchState {
 		return {
 			players: this.players,
@@ -126,5 +144,24 @@ export class Match implements IMatchState {
 			x[username] = this.playerDecisions[username] !== undefined;
 		}
 		return x;
+	}
+
+	nextPhase(phase: Phase) {
+		this.phase = phase;
+		switch(phase) {
+			case(Phase.CHOOSE_CHARACTER):
+				this.room.users.forEach((user) => {
+					var player = this.players[user.username];
+					user.emit(SOCKET_MSG.PROMPT_DECISION, <IPromptDecisionMessage>{
+						messageName: SOCKET_MSG.PROMPT_DECISION,
+						phase: phase,
+						matchState: this.exportState(),
+						actionChoiceIds: ['ATTACK', 'MOVE']
+					});
+				});
+				break;
+			default:
+				throw new Error('bad phase ' + phase);
+		}
 	}
 }

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { IMatchState } from '../common/game-core/match';
+import { IMatchState } from '../common/game-core/common';
 import * as Msgs from '../common/messages';
 import { SOCKET_MSG } from '../common/messages';
 import { ChatWindow } from './chat-window';
@@ -73,7 +73,7 @@ export class Views extends React.Component<{}, IViewsState> {
 				roomUsernames: data.users,
 			});
 		});
-		Handler.generateHandler<Msgs.IPresentGamePhase>(SOCKET_MSG.START_GAME, (data) => {
+		Handler.generateHandler<Msgs.IPromptDecisionMessage>(SOCKET_MSG.START_GAME, (data) => {
 			if(this.state.curView === VIEW.WAITING_ROOM ) {
 				var charChoices: string[] = data.characterChoiceIds;
 				this.setState({

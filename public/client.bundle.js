@@ -252,6 +252,13 @@ function chooseCharacter(entProfileId) {
     });
 }
 exports.chooseCharacter = chooseCharacter;
+function chooseStartingLane(laneId) {
+    exports.socket.emit(messages_1.SOCKET_MSG.PLAYER_DECISION, {
+        phase: common_1.Phase.CHOOSE_CHARACTER,
+        targetStartingLane: laneId,
+    });
+}
+exports.chooseStartingLane = chooseStartingLane;
 // returns a function to turn off the handler.
 // remember to SAVE that function and CALL it on the unmount.
 function generateHandler(messageType, fn, errorFn) {
@@ -360,9 +367,16 @@ const React = __webpack_require__(/*! react */ "react");
 class Lane extends React.Component {
     constructor(props) {
         super(props);
+        this.onClick = this.onClick.bind(this);
     }
     render() {
-        return (React.createElement("div", { id: "lane-" + this.props.id, className: "lane" }));
+        var classes = 'lane ' + (this.props.selectable ? 'selectable' : '');
+        return (React.createElement("div", { id: "lane-" + this.props.id, className: classes, onClick: this.onClick }));
+    }
+    onClick(e) {
+        if (this.props.selectable) {
+            this.props.onSelect(this.props.id);
+        }
     }
 }
 exports.Lane = Lane;
@@ -424,18 +438,24 @@ class GameView extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            matchState: this.props.matchState
+            matchState: this.props.matchState,
+            entitiesSelectable: false,
+            lanesSelectable: false,
         };
     }
     componentDidMount() {
         var han1 = Handler.generateHandler(messages_1.SOCKET_MSG.PLAYERS_READY, (data) => {
             this.setState({
-                matchState: data.matchState
+                matchState: data.matchState,
+                entitiesSelectable: false,
+                lanesSelectable: false,
             });
         });
-        var han2 = Handler.generateHandler(messages_1.SOCKET_MSG.PLAYER_DECISION, (data) => {
+        var han2 = Handler.generateHandler(messages_1.SOCKET_MSG.PROMPT_DECISION, (data) => {
             this.setState({
-                matchState: data.matchState
+                matchState: data.matchState,
+                entitiesSelectable: false,
+                lanesSelectable: true,
             });
         });
         this.handlerOff = () => {
@@ -451,8 +471,6 @@ class GameView extends React.Component {
         switch (this.state.matchState.phase) {
             case (common_1.Phase.CHOOSE_CHARACTER):
                 innerView = (React.createElement("div", { id: "menu" },
-                    React.createElement(team_panel_1.TeamPanel, { matchState: this.state.matchState, team: 1 }),
-                    React.createElement(team_panel_1.TeamPanel, { matchState: this.state.matchState, team: 2 }),
                     React.createElement(character_choices_1.CharacterChoices, { choices: this.props.matchState.characterChoicesIds[this.props.username] })));
                 break;
             case (common_1.Phase.CHOOSE_STARTING_LANE):
@@ -466,13 +484,15 @@ class GameView extends React.Component {
         }
         return (React.createElement("div", { id: "game-view" },
             React.createElement("div", { id: "game-prompt" }, this.getPrompt()),
+            React.createElement(team_panel_1.TeamPanel, { matchState: this.state.matchState, team: 1 }),
+            React.createElement(team_panel_1.TeamPanel, { matchState: this.state.matchState, team: 2 }),
             innerView,
             React.createElement("div", { id: "lanes-container" },
                 React.createElement("div", { id: "lanes" },
-                    React.createElement(lane_1.Lane, { id: 0 }),
-                    React.createElement(lane_1.Lane, { id: 1 }),
-                    React.createElement(lane_1.Lane, { id: 2 }),
-                    React.createElement(lane_1.Lane, { id: 3 })))));
+                    React.createElement(lane_1.Lane, { id: 0, onSelect: this.selectLane, selectable: this.state.lanesSelectable }),
+                    React.createElement(lane_1.Lane, { id: 1, onSelect: this.selectLane, selectable: this.state.lanesSelectable }),
+                    React.createElement(lane_1.Lane, { id: 2, onSelect: this.selectLane, selectable: this.state.lanesSelectable }),
+                    React.createElement(lane_1.Lane, { id: 3, onSelect: this.selectLane, selectable: this.state.lanesSelectable })))));
     }
     getPrompt() {
         switch (this.state.matchState.phase) {
@@ -487,6 +507,9 @@ class GameView extends React.Component {
             case (common_1.Phase.GAME_OVER):
                 return 'Game over!';
         }
+    }
+    selectLane(laneId) {
+        Handler.chooseStartingLane(laneId);
     }
 }
 exports.GameView = GameView;
@@ -837,8 +860,6 @@ var TargetRange;
 })(TargetRange = exports.TargetRange || (exports.TargetRange = {}));
 class Lane {
     constructor(y) {
-        this.team1 = [];
-        this.team2 = [];
         this.y = y;
     }
     getRandomEntity(team) {
@@ -953,6 +974,7 @@ var SOCKET_MSG;
     SOCKET_MSG["START_GAME"] = "START_GAME";
     SOCKET_MSG["PLAYER_DECISION"] = "PLAYER_DECISION";
     SOCKET_MSG["PLAYERS_READY"] = "PLAYERS_READY";
+    SOCKET_MSG["PROMPT_DECISION"] = "PROMPT_DECISION";
 })(SOCKET_MSG = exports.SOCKET_MSG || (exports.SOCKET_MSG = {}));
 
 

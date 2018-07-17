@@ -45,7 +45,7 @@ export class ChatWindow extends React.Component<{},IChatWindowState> {
 				this.addMessage(chatMsg);
 			}
 		);
-		var handlerOff3 = Handler.generateHandler<Msgs.IPresentGamePhase>(SOCKET_MSG.START_GAME,
+		var handlerOff3 = Handler.generateHandler<Msgs.IPromptDecisionMessage>(SOCKET_MSG.START_GAME,
 			(data) => {
 				// create system message
 				var chatMsg: Msgs.IChatPostMessageResponse = {

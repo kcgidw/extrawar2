@@ -22,12 +22,12 @@
 #team-panel-2 {
     float: right;
 }
-.character-choices {
+.choices {
     width: 400px;
     margin: auto;
     text-align: center;
 }
-.character-choice {
+.choice-card {
     background-color: #c3c2ac;
     color: #222;
     margin-bottom: 10px;
@@ -58,4 +58,8 @@
     background-color: #365641;
     margin-bottom: 4px;
     border-radius: 2px;
+}
+.lane.selectable:hover {
+    background-color: #457549;
+    cursor: pointer;
 }

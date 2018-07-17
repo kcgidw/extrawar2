@@ -1,5 +1,4 @@
-import { IMatchState } from "./game-core/match";
-import { Phase } from "./game-core/common";
+import { IMatchState, Phase } from "./game-core/common";
 
 export enum SOCKET_MSG {
 	'LOBBY_NUM_ONLINE'=  'LOBBY_NUM_ONLINE',
@@ -11,6 +10,7 @@ export enum SOCKET_MSG {
 	'START_GAME'= 'START_GAME',
 	'PLAYER_DECISION' = 'PLAYER_DECISION',
 	'PLAYERS_READY' = 'PLAYERS_READY',
+	'PROMPT_DECISION' = 'PROMPT_DECISION',
 }
 
 export interface IErrorableResponse {
@@ -74,9 +74,10 @@ export interface IPlayersReady {
 	matchState: IMatchState;
 }
 
-export interface IPresentGamePhase extends IErrorableResponse {
+export interface IPromptDecisionMessage extends IErrorableResponse {
 	phase: Phase;
 	matchState: IMatchState;
 	requestorUsername?: string;
 	characterChoiceIds?: string[];
+	actionChoiceIds?: string[];
 }

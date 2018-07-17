@@ -76,12 +76,6 @@ export interface IStefInstance {
 	invokerId: number; // entity that applied this stef
 }
 
-export interface ILaneState {
-	y: number;
-	stefs1: IStefInstance[];
-	stefs2: IStefInstance[];
-}
-
 export interface IMatchState {
 	players: {[username: string]: Entity};
 	team1: string[];
@@ -95,9 +89,8 @@ export interface IMatchState {
 
 export class Lane {
 	y: number;
-	team1: Entity[] = [];
-	team2: Entity[] = [];
-	state: ILaneState;
+	stefs1: IStefInstance[];
+	stefs2: IStefInstance[];
 
 	constructor(y: number) {
 		this.y = y;
@@ -107,5 +100,4 @@ export class Lane {
 		var from: Entity[] = this['team'+team];
 		return randItem<Entity>(from);
 	}
-	
 }

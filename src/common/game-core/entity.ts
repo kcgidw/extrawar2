@@ -1,6 +1,6 @@
 import { User } from "../../server/lobby/user";
 import { ALL_STEFS, MAX_STEF_DURATION } from "../game-info/stefs";
-import { IEntityProfile, IEntityState, IStefDef, IStefInstance, Team } from "./common";
+import { IEntityProfile, IEntityState, IStefDef, IStefInstance, Team, Lane } from "./common";
 import { IDeathResult, IEventResult, IHpChangeResult, INoneResult, TurnEventResultType } from "./event-interfaces";
 
 export class Entity {
@@ -79,6 +79,15 @@ export class Entity {
 		}
 
 		return results;
+	}
+
+	moveTo(lane: Lane, range: number): IEventResult[] {
+		if(Math.abs(this.state.y - lane.y) <= range) {
+
+		} else {
+
+		}
+		return undefined;
 	}
 
 	applyStef(stefId: string, duration: number, invoker: Entity): IEventResult[] {

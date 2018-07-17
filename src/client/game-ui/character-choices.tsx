@@ -15,7 +15,7 @@ export class CharacterChoices extends React.Component<ICharacterChoicesProps,{}>
 
 	render() {
 		return (
-			<div className="character-choices">
+			<div className="choices">
 					{renderCharacterChoices(this.props.choices)}
 			</div>
 		);
@@ -36,7 +36,7 @@ class CharacterChoicePanel extends React.Component<{entProfile: IEntityProfile},
 
 	render() {
 		return (
-			<div className="character-choice" onClick={this.onClick}>
+			<div className="choice-card" onClick={this.onClick}>
 				{this.props.entProfile.name}
 				<br />
 				FACTION {this.props.entProfile.faction}

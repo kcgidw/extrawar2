@@ -35,6 +35,13 @@ export function chooseCharacter(entProfileId: string) {
 	} as Msgs.IPlayerDecisionRequest);
 }
 
+export function chooseStartingLane(laneId: number) {
+	socket.emit(SOCKET_MSG.PLAYER_DECISION, {
+		phase: Phase.CHOOSE_CHARACTER,
+		targetStartingLane: laneId,
+	} as Msgs.IPlayerDecisionRequest);
+}
+
 // returns a function to turn off the handler.
 // remember to SAVE that function and CALL it on the unmount.
 export function generateHandler<T>(messageType: string, fn: (data: T)=>any, errorFn?: (data: T)=>any) {

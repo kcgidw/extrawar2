@@ -1,7 +1,6 @@
-import { Faction, IStefInstance, ITargetInfo, TargetRange, TargetWhat, Team } from "../game-core/common";
+import { Faction, IStefInstance, ITargetInfo, TargetRange, TargetWhat, Team, Lane } from "../game-core/common";
 import { Entity } from "../game-core/entity";
 import { IEventCause, IEventResult } from "../game-core/event-interfaces";
-import { Lane } from "../game-core/match";
 
 export interface ISkillDef {
 	id: string;
@@ -11,8 +10,8 @@ export interface ISkillDef {
 	desc: string;
 	keywords: string[]; // supplementary descriptons for stefs and whatnot
 	target: ITargetInfo;
-	fn: (user: Entity, target: Entity|Entity[]|Lane, custom?: object)=>Partial<IEventCause>;
-	resultMessage?: (user: Entity, target?: Entity|Entity[]|Lane, custom?: object)=>string;
+	fn: (userEntity: Entity, target: Entity|Entity[]|Lane, custom?: object)=>Partial<IEventCause>;
+	resultMessage?: (userEntity: Entity, target?: Entity|Entity[]|Lane, custom?: object)=>string;
 }
 
 export const skills: {[key: string]: ISkillDef} = {
@@ -27,13 +26,33 @@ export const skills: {[key: string]: ISkillDef} = {
 			what: TargetWhat.ENEMY,
 			range: TargetRange.NEARBY
 		},
-		fn: (user, targetEntity: Entity) => {
+		fn: (userEntity, targetEntity: Entity) => {
 			var results: IEventResult[]  = [];
-			results = results.concat(simpleAttack(user, targetEntity));
+			results = results.concat(simpleAttack(userEntity, targetEntity));
 			return {results: results};
 		},
-		resultMessage: (user, targetEntity: Entity) => {
-			return user.username + ' attacks.';
+		resultMessage: (userEntity, targetEntity: Entity) => {
+			return userEntity.username + ' attacks.';
+		}
+	},
+	'MOVE': {
+		id: 'MOVE',
+		active: true,
+		faction: Faction.NONE,
+		name: 'Move',
+		desc: 'Move to a nearby lane.',
+		keywords: [],
+		target: {
+			what: TargetWhat.LANE,
+			range: TargetRange.NEARBY
+		},
+		fn: (userEntity, targetLane: Lane) => {
+			var results: IEventResult[]  = [];
+			results = results.concat(userEntity.moveTo(targetLane, 1));
+			return {results: results};
+		},
+		resultMessage: (userEntity, targetLane: Lane) => {
+			return userEntity.username + ' moves to lane ' + targetLane.y + '.';
 		}
 	},
 	'FLANK_ASSAULT': {
