@@ -6,29 +6,39 @@ import { } from '../client-handler';
 
 interface ICharacterChoicesProps {
 	choices: string[];
+	onSelectCharacter: (entProfId: string)=>any;
 }
 
 export class CharacterChoices extends React.Component<ICharacterChoicesProps,{}> {
 	constructor(props) {
 		super(props);
+		this.selectCharacter = this.selectCharacter.bind(this);
 	}
 
 	render() {
 		return (
 			<div className="choices">
-					{renderCharacterChoices(this.props.choices)}
+					{this.renderCharacterChoices(this.props.choices)}
 			</div>
 		);
 	}
+	
+	renderCharacterChoices(choices: string[]) {
+		return choices.map((entProfId) => 
+			<CharacterChoicePanel key={entProfId} entProfile={Characters[entProfId]} onSelectCharacter={this.selectCharacter}/>
+		);
+	}
+
+	selectCharacter(entProfId: string) {
+		this.props.onSelectCharacter(entProfId);
+	}
 }
 
-function renderCharacterChoices(choices: string[]) {
-	return choices.map((entProfId) => 
-		<CharacterChoicePanel key={entProfId} entProfile={Characters[entProfId]} />
-	);
+interface ICharacterChoicePanelProps {
+	entProfile: IEntityProfile;
+	onSelectCharacter: (charId: string)=>any;
 }
-
-class CharacterChoicePanel extends React.Component<{entProfile: IEntityProfile},{}> {
+class CharacterChoicePanel extends React.Component<ICharacterChoicePanelProps,{}> {
 	constructor(props) {
 		super(props);
 		this.onClick = this.onClick.bind(this);
@@ -49,6 +59,6 @@ class CharacterChoicePanel extends React.Component<{entProfile: IEntityProfile},
 	}
 
 	onClick(e) {
-		Handler.chooseCharacter(this.props.entProfile.id);
+		this.props.onSelectCharacter(this.props.entProfile.id);
 	}
 }

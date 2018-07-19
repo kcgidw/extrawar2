@@ -5,8 +5,8 @@ import { IDeathResult, IEventResult, IHpChangeResult, INoneResult, TurnEventResu
 
 export class Entity {
 	isPlayer: boolean;
-	entityId: number;
-	username: string;
+	entityId: string;
+	displayName: string;
 	profileId: string;
 	state: IEntityState;
 	team: Team;
@@ -14,8 +14,12 @@ export class Entity {
 
 	profile: IEntityProfile;
 
+	get username(): string {
+		return this.entityId;
+	}
+
 	constructor(user: User, team: Team, character: IEntityProfile) {
-		this.username = user.username;
+		this.entityId = user.username;
 		this.isPlayer = user !== undefined;
 		this.profileId = character.id;
 		this.profile = character;
@@ -28,6 +32,7 @@ export class Entity {
 			hp: this.profile.maxHp,
 			maxHp: this.profile.maxHp,
 			ap: 0,
+			maxAp: 9,
 			deaths: 0,
 			respawn: 0,
 			nextRespawn: 1,
@@ -69,7 +74,7 @@ export class Entity {
 			this.state.hp += change;
 			results.push(<IHpChangeResult>{
 				type: TurnEventResultType.HP_CHANGE,
-				entityId: this.entityId,
+				entityId: this.username,
 				value: change
 			});
 

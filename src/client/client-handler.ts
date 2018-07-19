@@ -1,6 +1,7 @@
-import { IEntityProfile, Phase } from '../common/game-core/common';
+import { IEntityProfile, Phase, TargetWhat } from '../common/game-core/common';
 import * as Msgs from '../common/messages';
 import { SOCKET_MSG } from '../common/messages';
+import { ISkillDef } from '../common/game-info/skills';
 
 export const socket = io('/lobby');
 export const clientSocket = socket;
@@ -39,6 +40,15 @@ export function chooseStartingLane(laneId: number) {
 	socket.emit(SOCKET_MSG.PLAYER_DECISION, {
 		phase: Phase.CHOOSE_CHARACTER,
 		targetStartingLane: laneId,
+	} as Msgs.IPlayerDecisionRequest);
+}
+
+export function chooseActionAndTarget(actionDef: ISkillDef, targetId: number|string) {
+	socket.emit(SOCKET_MSG.PLAYER_DECISION, {
+		phase: Phase.CHOOSE_CHARACTER,
+		actionId: actionDef.id,
+		targetEntity: [TargetWhat.ALLY, TargetWhat.ENEMY, TargetWhat.ENTITY].indexOf(actionDef.target.what) !== -1 ? targetId : undefined,
+		targetLane: actionDef.target.what === TargetWhat.LANE ? targetId : undefined,
 	} as Msgs.IPlayerDecisionRequest);
 }
 

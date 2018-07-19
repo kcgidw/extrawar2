@@ -63,3 +63,38 @@
     background-color: #457549;
     cursor: pointer;
 }
+.lane.selected {
+    background-color: #457549;
+    border: 3px solid yellow;
+}
+
+.current-action-choice {
+    border: 3px solid yellow;
+}
+
+.entity-panel {
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 2px;
+    padding: 4px;
+    width: 80px;
+    height: 90px;
+    font-size: 12px;
+    display: inline-block;
+}
+.entity-panel .image-container {
+    width: 100%;
+    text-align: center;
+}
+.entity-panel img {
+    width: 60px;
+}
+.entity-panel .stats-container p {
+    margin: 0;
+}
+.entity-panel.selectable:hover {
+    background-color: rgba(255,255,255,0.2);
+    cursor: pointer;
+}
+.entity-panel.selected {
+    border: 3px solid yellow;
+}

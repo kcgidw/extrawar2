@@ -149,7 +149,17 @@ export class Match implements IMatchState {
 	nextPhase(phase: Phase) {
 		this.phase = phase;
 		switch(phase) {
-			case(Phase.CHOOSE_CHARACTER):
+			case(Phase.CHOOSE_STARTING_LANE):
+				this.room.users.forEach((user) => {
+					var player = this.players[user.username];
+					user.emit(SOCKET_MSG.PROMPT_DECISION, <IPromptDecisionMessage>{
+						messageName: SOCKET_MSG.PROMPT_DECISION,
+						phase: phase,
+						matchState: this.exportState(),
+					});
+				});
+				break;
+			case(Phase.PLAN):
 				this.room.users.forEach((user) => {
 					var player = this.players[user.username];
 					user.emit(SOCKET_MSG.PROMPT_DECISION, <IPromptDecisionMessage>{
@@ -160,6 +170,13 @@ export class Match implements IMatchState {
 					});
 				});
 				break;
+			case(Phase.RESOLVE):
+				setTimeout(() => {
+					this.nextPhase(Phase.PLAN);
+				}, 2 * 1000);
+				break;
+			case(Phase.CHOOSE_CHARACTER):
+				// for now, no-op. Leave the functionality to START_GAME
 			default:
 				throw new Error('bad phase ' + phase);
 		}

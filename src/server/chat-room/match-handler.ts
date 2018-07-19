@@ -36,15 +36,10 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 		var user: User = (<User>sock);
 		var chatRoom: ChatRoom = user.gameRoom;
 		var errMsg: string;
-		var result: boolean;
 		
 		if(chatRoom) {
 			if(chatRoom.match) {
-				if(chatRoom.match.phase === Phase.CHOOSE_CHARACTER) {
-					chatRoom.match.enqueuePlayerDecision(user, data);
-				} else {
-					errMsg = 'Game phase mismatch';
-				}
+				chatRoom.match.enqueuePlayerDecision(user, data);
 			} else {
 				errMsg = 'Game not started';
 			}
@@ -52,7 +47,7 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 			errMsg = 'Undefined room';
 		}
 
-		if(errMsg || result !== true) {
+		if(errMsg === undefined) {
 			nsp.to(chatRoom.roomId).emit(SOCKET_MSG.PLAYERS_READY, {matchState: chatRoom.match.exportState()});
 		} else {
 			sock.emit(SOCKET_MSG.PLAYER_DECISION, <Msgs.IPlayerDecisionResponse>{

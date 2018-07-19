@@ -101,7 +101,7 @@ function simpleAttack(attacker: Entity, target: Entity, stefs?: IStefInstance[],
 
 	if(target.alive && stefs) {
 		stefs.forEach((stef) => {
-			results = results.concat(target.applyStef(stef.stefId, stef.invokerId, attacker));
+			results = results.concat(target.applyStef(stef.stefId, stef.duration, attacker));
 		});
 	}
 

@@ -19,6 +19,8 @@ export interface IEntityProfile {
 	name: string;
 	maxHp: number;
 	str: number;
+	image: string;
+	emptyProfile?: boolean;
 }
 
 export interface IStefDef {
@@ -45,11 +47,12 @@ export interface ITargetInfo {
 export type Team = 1|2;
 
 export interface IEntityState {
-	entityId: number;
+	entityId: string;
 	ready: boolean;
 
 	maxHp: number;
 	hp: number;
+	maxAp: number;
 	ap: number;
 	deaths: number;
 	respawn: number;
@@ -73,7 +76,7 @@ export interface ICooldown {
 export interface IStefInstance {
 	stefId: string;
 	duration: number;
-	invokerId: number; // entity that applied this stef
+	invokerId: string; // entity that applied this stef
 }
 
 export interface IMatchState {
@@ -83,7 +86,8 @@ export interface IMatchState {
 	turn: number;
 	phase: Phase;
 	lanes: Lane[];
-	characterChoicesIds: {[key: string]: string[]};
+	characterChoicesIds?: {[key: string]: string[]};
+	actionChoicesIds?: {[key: string]: string[]};
 	playersReady: {[key: string]: boolean};
 }
 

@@ -259,6 +259,15 @@ function chooseStartingLane(laneId) {
     });
 }
 exports.chooseStartingLane = chooseStartingLane;
+function chooseActionAndTarget(actionDef, targetId) {
+    exports.socket.emit(messages_1.SOCKET_MSG.PLAYER_DECISION, {
+        phase: common_1.Phase.CHOOSE_CHARACTER,
+        actionId: actionDef.id,
+        targetEntity: [common_1.TargetWhat.ALLY, common_1.TargetWhat.ENEMY, common_1.TargetWhat.ENTITY].indexOf(actionDef.target.what) !== -1 ? targetId : undefined,
+        targetLane: actionDef.target.what === common_1.TargetWhat.LANE ? targetId : undefined,
+    });
+}
+exports.chooseActionAndTarget = chooseActionAndTarget;
 // returns a function to turn off the handler.
 // remember to SAVE that function and CALL it on the unmount.
 function generateHandler(messageType, fn, errorFn) {
@@ -302,6 +311,53 @@ ReactDOM.render(React.createElement(Views.Views, null), document.getElementById(
 
 /***/ }),
 
+/***/ "./src/client/game-ui/action-choices.tsx":
+/*!***********************************************!*\
+  !*** ./src/client/game-ui/action-choices.tsx ***!
+  \***********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "react");
+const skills_1 = __webpack_require__(/*! ../../common/game-info/skills */ "./src/common/game-info/skills.ts");
+class ActionChoices extends React.Component {
+    constructor(props) {
+        super(props);
+        this.onSelectAction = this.onSelectAction.bind(this);
+    }
+    render() {
+        return (React.createElement("div", { className: "choices" }, this.renderActionChoices(this.props.choices)));
+    }
+    onSelectAction(actionId) {
+        this.props.onSelectAction(actionId);
+    }
+    renderActionChoices(choices) {
+        return choices.map((actionId) => React.createElement(ActionChoicePanel, { key: actionId, def: skills_1.skills[actionId], onSelect: this.onSelectAction, currentlySelected: this.props.currentChoiceActionDef && actionId === this.props.currentChoiceActionDef.id }));
+    }
+}
+exports.ActionChoices = ActionChoices;
+class ActionChoicePanel extends React.Component {
+    constructor(props) {
+        super(props);
+        this.onSelect = this.onSelect.bind(this);
+    }
+    render() {
+        return (React.createElement("div", { className: "choice-card " + (this.props.currentlySelected ? 'current-action-choice' : ''), onClick: this.onSelect },
+            this.props.def.name,
+            React.createElement("br", null),
+            this.props.def.desc));
+    }
+    onSelect(e) {
+        this.props.onSelect(this.props.def.id);
+    }
+}
+
+
+/***/ }),
+
 /***/ "./src/client/game-ui/character-choices.tsx":
 /*!**************************************************!*\
   !*** ./src/client/game-ui/character-choices.tsx ***!
@@ -314,26 +370,29 @@ ReactDOM.render(React.createElement(Views.Views, null), document.getElementById(
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
 const characters_1 = __webpack_require__(/*! ../../common/game-info/characters */ "./src/common/game-info/characters.ts");
-const Handler = __webpack_require__(/*! ../client-handler */ "./src/client/client-handler.ts");
 class CharacterChoices extends React.Component {
     constructor(props) {
         super(props);
+        this.selectCharacter = this.selectCharacter.bind(this);
     }
     render() {
-        return (React.createElement("div", { className: "character-choices" }, renderCharacterChoices(this.props.choices)));
+        return (React.createElement("div", { className: "choices" }, this.renderCharacterChoices(this.props.choices)));
+    }
+    renderCharacterChoices(choices) {
+        return choices.map((entProfId) => React.createElement(CharacterChoicePanel, { key: entProfId, entProfile: characters_1.Characters[entProfId], onSelectCharacter: this.selectCharacter }));
+    }
+    selectCharacter(entProfId) {
+        this.props.onSelectCharacter(entProfId);
     }
 }
 exports.CharacterChoices = CharacterChoices;
-function renderCharacterChoices(choices) {
-    return choices.map((entProfId) => React.createElement(CharacterChoicePanel, { key: entProfId, entProfile: characters_1.Characters[entProfId] }));
-}
 class CharacterChoicePanel extends React.Component {
     constructor(props) {
         super(props);
         this.onClick = this.onClick.bind(this);
     }
     render() {
-        return (React.createElement("div", { className: "character-choice", onClick: this.onClick },
+        return (React.createElement("div", { className: "choice-card", onClick: this.onClick },
             this.props.entProfile.name,
             React.createElement("br", null),
             "FACTION ",
@@ -346,9 +405,58 @@ class CharacterChoicePanel extends React.Component {
             this.props.entProfile.str));
     }
     onClick(e) {
-        Handler.chooseCharacter(this.props.entProfile.id);
+        this.props.onSelectCharacter(this.props.entProfile.id);
     }
 }
+
+
+/***/ }),
+
+/***/ "./src/client/game-ui/entity-panel.tsx":
+/*!*********************************************!*\
+  !*** ./src/client/game-ui/entity-panel.tsx ***!
+  \*********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "react");
+class EntityPanel extends React.Component {
+    constructor(props) {
+        super(props);
+        this.onClick = this.onClick.bind(this);
+    }
+    render() {
+        if (this.props.entity.profile.emptyProfile) {
+            return null;
+        }
+        var image = this.props.entity.profile.image;
+        if (image) {
+            image = 'images/' + image;
+        }
+        var selectableClass = this.props.selectable ? 'selectable' : '';
+        var selectedClass = this.props.selected ? 'selected' : '';
+        return (React.createElement("div", { className: ['entity-panel', selectableClass, selectedClass].join(' '), onClick: this.onClick },
+            React.createElement("div", { className: "image-container" }, image ? React.createElement("img", { src: image }) : undefined),
+            React.createElement("div", { className: "stats-container" },
+                React.createElement("p", null,
+                    "HP ",
+                    this.props.entity.state.hp,
+                    "/",
+                    this.props.entity.state.maxHp),
+                React.createElement("p", null,
+                    "AP ",
+                    this.props.entity.state.ap,
+                    "/",
+                    this.props.entity.state.maxAp))));
+    }
+    onClick() {
+        this.props.onSelect(this.props.entity.entityId);
+    }
+}
+exports.EntityPanel = EntityPanel;
 
 
 /***/ }),
@@ -364,19 +472,28 @@ class CharacterChoicePanel extends React.Component {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
+const entity_panel_1 = __webpack_require__(/*! ./entity-panel */ "./src/client/game-ui/entity-panel.tsx");
 class Lane extends React.Component {
     constructor(props) {
         super(props);
         this.onClick = this.onClick.bind(this);
     }
     render() {
-        var classes = 'lane ' + (this.props.selectable ? 'selectable' : '');
-        return (React.createElement("div", { id: "lane-" + this.props.id, className: classes, onClick: this.onClick }));
+        var classes = ['lane', this.props.selectable ? 'selectable' : '', this.props.selected ? 'selected' : ''].join(' ');
+        return (React.createElement("div", { id: "lane-" + this.props.id, className: classes, onClick: this.onClick },
+            this.renderTeamEntities(1),
+            this.renderTeamEntities(2)));
     }
     onClick(e) {
         if (this.props.selectable) {
             this.props.onSelect(this.props.id);
         }
+    }
+    renderTeamEntities(t) {
+        return this.props.entities.filter((ent) => (ent.team === t))
+            .map((ent) => {
+            return (React.createElement(entity_panel_1.EntityPanel, { key: ent.username, entity: ent, selected: this.props.selectedEntityId === ent.entityId, selectable: this.props.entitiesSelectable, onSelect: this.props.onSelectEntity }));
+        });
     }
 }
 exports.Lane = Lane;
@@ -429,33 +546,73 @@ exports.TeamPanel = TeamPanel;
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
 const common_1 = __webpack_require__(/*! ../common/game-core/common */ "./src/common/game-core/common.ts");
+const common_2 = __webpack_require__(/*! ../common/game-core/common */ "./src/common/game-core/common.ts");
 const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
 const character_choices_1 = __webpack_require__(/*! ./game-ui/character-choices */ "./src/client/game-ui/character-choices.tsx");
 const lane_1 = __webpack_require__(/*! ./game-ui/lane */ "./src/client/game-ui/lane.tsx");
 const team_panel_1 = __webpack_require__(/*! ./game-ui/team-panel */ "./src/client/game-ui/team-panel.tsx");
+const action_choices_1 = __webpack_require__(/*! ./game-ui/action-choices */ "./src/client/game-ui/action-choices.tsx");
+const skills_1 = __webpack_require__(/*! ../common/game-info/skills */ "./src/common/game-info/skills.ts");
+var MenuState;
+(function (MenuState) {
+    MenuState[MenuState["CHOOSE_CHARACTER"] = 0] = "CHOOSE_CHARACTER";
+    MenuState[MenuState["CHOOSE_STARTING_LANE"] = 1] = "CHOOSE_STARTING_LANE";
+    MenuState[MenuState["CHOOSE_ACTION"] = 2] = "CHOOSE_ACTION";
+    MenuState[MenuState["CHOOSE_TARGET"] = 3] = "CHOOSE_TARGET";
+    MenuState[MenuState["WAITING"] = 4] = "WAITING";
+    MenuState[MenuState["RESOLVING"] = 5] = "RESOLVING";
+    MenuState[MenuState["GAME_OVER"] = 6] = "GAME_OVER";
+})(MenuState = exports.MenuState || (exports.MenuState = {}));
 class GameView extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             matchState: this.props.matchState,
-            entitiesSelectable: false,
-            lanesSelectable: false,
+            actionChoicesIds: undefined,
+            menuState: MenuState.CHOOSE_CHARACTER,
+            currentSelectedActionChoice: undefined,
+            currentSelectedLaneId: undefined,
+            currentSelectedEntityId: undefined,
         };
+        this.lanesSelectable = this.lanesSelectable.bind(this);
+        this.entitiesSelectable = this.entitiesSelectable.bind(this);
+        this.selectCharacterProfile = this.selectCharacterProfile.bind(this);
+        this.selectLane = this.selectLane.bind(this);
+        this.selectAction = this.selectAction.bind(this);
+        this.selectEntity = this.selectEntity.bind(this);
+    }
+    lanesSelectable() {
+        return this.state.menuState === MenuState.CHOOSE_STARTING_LANE
+            || (this.state.menuState === MenuState.CHOOSE_TARGET && this.state.currentSelectedActionChoice.target.what === common_1.TargetWhat.LANE);
+    }
+    entitiesSelectable() {
+        return this.state.menuState === MenuState.CHOOSE_TARGET
+            && [common_1.TargetWhat.ALLY, common_1.TargetWhat.ENEMY, common_1.TargetWhat.ENTITY,].indexOf(this.state.currentSelectedActionChoice.target.what) !== -1;
     }
     componentDidMount() {
         var han1 = Handler.generateHandler(messages_1.SOCKET_MSG.PLAYERS_READY, (data) => {
             this.setState({
                 matchState: data.matchState,
-                entitiesSelectable: false,
-                lanesSelectable: false,
             });
         });
         var han2 = Handler.generateHandler(messages_1.SOCKET_MSG.PROMPT_DECISION, (data) => {
+            var newState;
+            switch (data.phase) {
+                case (common_2.Phase.CHOOSE_STARTING_LANE):
+                    newState = MenuState.CHOOSE_STARTING_LANE;
+                    break;
+                case (common_2.Phase.PLAN):
+                    newState = MenuState.CHOOSE_ACTION;
+                    break;
+            }
             this.setState({
+                menuState: newState,
                 matchState: data.matchState,
-                entitiesSelectable: false,
-                lanesSelectable: true,
+                actionChoicesIds: data.actionChoiceIds,
+                currentSelectedActionChoice: undefined,
+                currentSelectedLaneId: undefined,
+                currentSelectedEntityId: undefined,
             });
         });
         this.handlerOff = () => {
@@ -469,50 +626,99 @@ class GameView extends React.Component {
     render() {
         var innerView;
         switch (this.state.matchState.phase) {
-            case (common_1.Phase.CHOOSE_CHARACTER):
+            case (common_2.Phase.CHOOSE_CHARACTER):
                 innerView = (React.createElement("div", { id: "menu" },
-                    React.createElement(character_choices_1.CharacterChoices, { choices: this.props.matchState.characterChoicesIds[this.props.username] })));
+                    React.createElement(character_choices_1.CharacterChoices, { choices: this.props.matchState.characterChoicesIds[this.props.username], onSelectCharacter: this.selectCharacterProfile })));
                 break;
-            case (common_1.Phase.CHOOSE_STARTING_LANE):
+            case (common_2.Phase.CHOOSE_STARTING_LANE):
                 break;
-            case (common_1.Phase.PLAN):
+            case (common_2.Phase.PLAN):
+                innerView = (React.createElement("div", { id: "menu" },
+                    React.createElement(action_choices_1.ActionChoices, { choices: this.state.actionChoicesIds, currentChoiceActionDef: this.state.currentSelectedActionChoice, onSelectAction: this.selectAction })));
                 break;
-            case (common_1.Phase.RESOLVE):
+            case (common_2.Phase.RESOLVE):
                 break;
             default:
                 console.warn('Bad phase ' + this.state.matchState.phase);
         }
+        var entitiesByLane = getEntitiesByLane(this.state.matchState);
         return (React.createElement("div", { id: "game-view" },
             React.createElement("div", { id: "game-prompt" }, this.getPrompt()),
             React.createElement(team_panel_1.TeamPanel, { matchState: this.state.matchState, team: 1 }),
             React.createElement(team_panel_1.TeamPanel, { matchState: this.state.matchState, team: 2 }),
             innerView,
             React.createElement("div", { id: "lanes-container" },
-                React.createElement("div", { id: "lanes" },
-                    React.createElement(lane_1.Lane, { id: 0, onSelect: this.selectLane, selectable: this.state.lanesSelectable }),
-                    React.createElement(lane_1.Lane, { id: 1, onSelect: this.selectLane, selectable: this.state.lanesSelectable }),
-                    React.createElement(lane_1.Lane, { id: 2, onSelect: this.selectLane, selectable: this.state.lanesSelectable }),
-                    React.createElement(lane_1.Lane, { id: 3, onSelect: this.selectLane, selectable: this.state.lanesSelectable })))));
+                React.createElement("div", { id: "lanes" }, entitiesByLane.map((ents, idx) => (React.createElement(lane_1.Lane, { key: idx, id: idx, onSelect: this.selectLane, selectable: this.lanesSelectable(), selected: this.state.currentSelectedLaneId === idx, entities: ents, entitiesSelectable: this.entitiesSelectable(), onSelectEntity: this.selectEntity, selectedEntityId: this.state.currentSelectedEntityId })))))));
     }
     getPrompt() {
-        switch (this.state.matchState.phase) {
-            case (common_1.Phase.CHOOSE_CHARACTER):
+        switch (this.state.menuState) {
+            case (MenuState.CHOOSE_CHARACTER):
                 return 'Choose a character.';
-            case (common_1.Phase.CHOOSE_STARTING_LANE):
+            case (MenuState.CHOOSE_STARTING_LANE):
                 return 'Choose a starting lane.';
-            case (common_1.Phase.PLAN):
+            case (MenuState.CHOOSE_ACTION):
                 return 'Choose an action.';
-            case (common_1.Phase.RESOLVE):
-                return '';
-            case (common_1.Phase.GAME_OVER):
+            case (MenuState.CHOOSE_TARGET):
+                let targ = this.lanesSelectable() ? 'lane' : 'entity';
+                return 'Choose target ' + targ + '.';
+            case (MenuState.WAITING):
+                return 'Waiting for other players.';
+            case (MenuState.RESOLVING):
+                return 'Resolving.';
+            case (MenuState.GAME_OVER):
                 return 'Game over!';
         }
     }
+    selectCharacterProfile(entProfId) {
+        Handler.chooseCharacter(entProfId);
+        this.setState({ menuState: MenuState.WAITING });
+    }
     selectLane(laneId) {
-        Handler.chooseStartingLane(laneId);
+        switch (this.state.menuState) {
+            case (MenuState.CHOOSE_STARTING_LANE):
+                Handler.chooseStartingLane(laneId);
+                this.setState({
+                    currentSelectedLaneId: laneId,
+                    menuState: MenuState.WAITING
+                });
+                break;
+            case (MenuState.CHOOSE_TARGET):
+                Handler.chooseActionAndTarget(this.state.currentSelectedActionChoice, laneId);
+                this.setState({
+                    currentSelectedLaneId: laneId,
+                    menuState: MenuState.WAITING
+                });
+                break;
+            default:
+                throw new Error('bad menuState ' + this.state.menuState);
+        }
+    }
+    selectAction(actionId) {
+        if ([MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menuState) !== -1) {
+            this.setState({
+                currentSelectedActionChoice: skills_1.skills[actionId],
+                menuState: MenuState.CHOOSE_TARGET,
+            });
+        }
+    }
+    selectEntity(id) {
+        this.setState({
+            currentSelectedEntityId: id,
+            menuState: MenuState.WAITING,
+        });
     }
 }
 exports.GameView = GameView;
+function getEntitiesByLane(ms) {
+    var entities = ms.players;
+    var res = [[], [], [], []];
+    for (let username of Object.keys(ms.players)) {
+        var ent = ms.players[username];
+        var y = ent.state.y;
+        res[y].push(ent);
+    }
+    return res;
+}
 
 
 /***/ }),
@@ -889,56 +1095,66 @@ exports.Characters = {
         faction: undefined,
         name: 'UNKNOWN',
         maxHp: undefined,
-        str: undefined
+        str: undefined,
+        image: '',
+        emptyProfile: true,
     },
     GENERIC_FER: {
         id: 'GENERIC_FER',
         faction: common_1.Faction.FERALIST,
         name: 'Generic Feralist',
         maxHp: 140,
-        str: 20
+        str: 20,
+        image: 'feralist.png',
     },
     GENERIC_MOL: {
         id: 'GENERIC_MOL',
         faction: common_1.Faction.MOLTEN,
         name: 'Generic Molten',
         maxHp: 160,
-        str: 20
+        str: 20,
+        image: 'molten.png',
     },
     GENERIC_ABE: {
         id: 'GENERIC_ABE',
         faction: common_1.Faction.ABERRANT,
         name: 'Generic Aberrant',
         maxHp: 175,
-        str: 18
+        str: 18,
+        image: 'aberrant.png',
     },
     GENERIC_KIN: {
         id: 'GENERIC_KIN',
         faction: common_1.Faction.KINDRED,
         name: 'Generic Kindred',
         maxHp: 180,
-        str: 18
+        str: 18,
+        image: 'kindred.png',
     },
     GENERIC_ETH: {
         id: 'GENERIC_ETH',
         faction: common_1.Faction.ETHER,
         name: 'Generic Ether',
         maxHp: 130,
-        str: 20
+        str: 20,
+        image: 'ether.png',
     },
     GENERIC_GLO: {
         id: 'GENERIC_GLO',
         faction: common_1.Faction.GLOOMER,
         name: 'Generic Gloomer',
         maxHp: 140,
-        str: 18
+        str: 18,
+        image: 'gloomer.png',
     },
     GENERIC_NONE: {
         id: 'GENERIC_NONE',
         faction: common_1.Faction.NONE,
         name: 'Neutralbot',
         maxHp: 160,
-        str: 20
+        str: 20,
+        image: '',
+        emptyProfile: true,
     },
 };
 exports.PlayableCharacters = {
@@ -949,6 +1165,113 @@ exports.PlayableCharacters = {
     GENERIC_ETH: exports.Characters.GENERIC_ETH,
     GENERIC_GLO: exports.Characters.GENERIC_GLO,
 };
+
+
+/***/ }),
+
+/***/ "./src/common/game-info/skills.ts":
+/*!****************************************!*\
+  !*** ./src/common/game-info/skills.ts ***!
+  \****************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const common_1 = __webpack_require__(/*! ../game-core/common */ "./src/common/game-core/common.ts");
+exports.skills = {
+    'ATTACK': {
+        id: 'ATTACK',
+        active: true,
+        faction: common_1.Faction.NONE,
+        name: 'Attack',
+        desc: 'Attack a nearby enemy.',
+        keywords: [],
+        target: {
+            what: common_1.TargetWhat.ENEMY,
+            range: common_1.TargetRange.NEARBY
+        },
+        fn: (userEntity, targetEntity) => {
+            var results = [];
+            results = results.concat(simpleAttack(userEntity, targetEntity));
+            return { results: results };
+        },
+        resultMessage: (userEntity, targetEntity) => {
+            return userEntity.username + ' attacks.';
+        }
+    },
+    'MOVE': {
+        id: 'MOVE',
+        active: true,
+        faction: common_1.Faction.NONE,
+        name: 'Move',
+        desc: 'Move to a nearby lane.',
+        keywords: [],
+        target: {
+            what: common_1.TargetWhat.LANE,
+            range: common_1.TargetRange.NEARBY
+        },
+        fn: (userEntity, targetLane) => {
+            var results = [];
+            results = results.concat(userEntity.moveTo(targetLane, 1));
+            return { results: results };
+        },
+        resultMessage: (userEntity, targetLane) => {
+            return userEntity.username + ' moves to lane ' + targetLane.y + '.';
+        }
+    },
+    'FLANK_ASSAULT': {
+        id: 'FLANK_ASSAULT',
+        active: true,
+        faction: common_1.Faction.FERALIST,
+        name: 'Flank Assault',
+        desc: `Move to a nearby lane, then attack a random enemy in that lane.`,
+        keywords: [],
+        target: {
+            what: common_1.TargetWhat.LANE,
+            range: common_1.TargetRange.NEARBY
+        },
+        fn: (user, targetLane) => {
+            var results = [];
+            // TODO movement
+            var targetEntity = targetLane.getRandomEntity(otherTeam(user.team));
+            if (targetEntity) {
+                results = results.concat(simpleAttack(user, targetEntity));
+            }
+            return { results: results };
+        }
+    }
+};
+function simpleAttack(attacker, target, stefs, damageMod) {
+    var results = [];
+    var damage;
+    var str = attacker.curStr;
+    if (damageMod) {
+        damage = damageMod(attacker, target);
+    }
+    else {
+        damage = str;
+    }
+    // TODO off-lane penalty
+    // TODO armor
+    results = results.concat(target.changeHp(damage));
+    if (target.alive && stefs) {
+        stefs.forEach((stef) => {
+            results = results.concat(target.applyStef(stef.stefId, stef.duration, attacker));
+        });
+    }
+    return results;
+}
+function otherTeam(x) {
+    if (x === 1) {
+        return 2;
+    }
+    if (x === 2) {
+        return 1;
+    }
+    throw new Error('bad team');
+}
 
 
 /***/ }),

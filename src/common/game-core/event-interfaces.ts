@@ -16,21 +16,21 @@ export interface IEventResult {
 }
 export interface IHpChangeResult extends IEventResult {
 	type: TurnEventResultType.HP_CHANGE;
-	entityId: number;
+	entityId: string;
 	value: number;
 }
 export interface IGainStefResult extends IEventResult {
 	type: TurnEventResultType.GAIN_STEF;
-	entityId: number;
+	entityId: string;
 	stefId: number;
 }
 export interface IDeathResult extends IEventResult {
 	type: TurnEventResultType.DEATH;
-	entityId: number;
+	entityId: string;
 }
 export interface IRespawnResult extends IEventResult {
 	type: TurnEventResultType.RESPAWN;
-	entityId: number;
+	entityId: string;
 }
 export interface INoneResult extends IEventResult {
 	type: TurnEventResultType.NONE;
@@ -38,6 +38,6 @@ export interface INoneResult extends IEventResult {
 }
 export interface IApChangeResult extends IEventResult {
 	type: TurnEventResultType.AP_CHANGE;
-	entityId: number;
+	entityId: string;
 	value: number;
 }
