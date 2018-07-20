@@ -8,8 +8,10 @@ import { CharacterChoices } from './game-ui/character-choices';
 import { Lane } from './game-ui/lane';
 import { TeamPanel } from './game-ui/team-panel';
 import { ActionChoices } from './game-ui/action-choices';
-import { ISkillDef, skills } from '../common/game-info/skills';
+import { ISkillDef, Skills } from '../common/game-info/skills';
 import { Entity } from '../common/game-core/entity';
+import { getActingTeam, actionDefTargetsEntity } from '../server/lobby/util';
+import { IActionResolutionTimeline, flatReport } from '../common/game-core/event-interfaces';
 
 interface IProps {
 	matchState: IMatchState;
@@ -50,15 +52,6 @@ export class GameView extends React.Component<IProps, IState> {
 		this.selectEntity = this.selectEntity.bind(this);
 	}
 
-	lanesSelectable(): boolean {
-		return this.state.menuState === MenuState.CHOOSE_STARTING_LANE
-		|| (this.state.menuState === MenuState.CHOOSE_TARGET && this.state.currentSelectedActionChoice.target.what === TargetWhat.LANE);
-	}
-	entitiesSelectable(): boolean {
-		return this.state.menuState === MenuState.CHOOSE_TARGET
-		&& [TargetWhat.ALLY, TargetWhat.ENEMY, TargetWhat.ENTITY,].indexOf(this.state.currentSelectedActionChoice.target.what) !== -1;
-	}
-
 	componentDidMount() {
 		var han1 = Handler.generateHandler<Msgs.IPlayersReady>(SOCKET_MSG.PLAYERS_READY, (data) => {
 			this.setState({
@@ -72,7 +65,11 @@ export class GameView extends React.Component<IProps, IState> {
 					newState = MenuState.CHOOSE_STARTING_LANE;
 					break;
 				case(Phase.PLAN):
-					newState = MenuState.CHOOSE_ACTION;
+					if(this.myTurn()) {
+						newState = MenuState.CHOOSE_ACTION;
+					} else {
+						newState = MenuState.WAITING;
+					}
 					break;
 			}
 			this.setState({
@@ -84,9 +81,13 @@ export class GameView extends React.Component<IProps, IState> {
 				currentSelectedEntityId: undefined,
 			});
 		});
+		var han3 = Handler.generateHandler<IActionResolutionTimeline>(SOCKET_MSG.RESOLVE_ACTIONS, (data) => {
+			console.log(flatReport(this.state.matchState, data.causes));
+		});
 		this.handlerOff = () => {
 			han1();
 			han2();
+			han3();
 		};
 	}
 	componentWillUnmount() {
@@ -141,6 +142,17 @@ export class GameView extends React.Component<IProps, IState> {
 		);
 	}
 
+	lanesSelectable(): boolean {
+		return this.state.menuState === MenuState.CHOOSE_STARTING_LANE
+		|| (this.myTurn() && this.state.menuState === MenuState.CHOOSE_TARGET && this.state.currentSelectedActionChoice.target.what === TargetWhat.LANE);
+	}
+	
+	entitiesSelectable(): boolean {
+		return this.myTurn()
+		&& this.state.menuState === MenuState.CHOOSE_TARGET
+		&& actionDefTargetsEntity(this.state.currentSelectedActionChoice);
+	}
+
 	getPrompt() {
 		switch(this.state.menuState) {
 			case(MenuState.CHOOSE_CHARACTER):
@@ -153,7 +165,10 @@ export class GameView extends React.Component<IProps, IState> {
 				let targ = this.lanesSelectable() ? 'lane' : 'entity';
 				return 'Choose target ' + targ + '.';
 			case(MenuState.WAITING):
-				return 'Waiting for other players.';
+				if(getActingTeam(this.state.matchState) === this.state.matchState.players[this.props.username].team) {
+					return 'Waiting for other players.';
+				}
+				return 'Waiting for opposing team.';
 			case(MenuState.RESOLVING):
 				return 'Resolving.';
 			case(MenuState.GAME_OVER):
@@ -176,10 +191,9 @@ export class GameView extends React.Component<IProps, IState> {
 				});
 				break;
 			case(MenuState.CHOOSE_TARGET):
-				Handler.chooseActionAndTarget(this.state.currentSelectedActionChoice, laneId);
+				this.submitActionAndSetWaiting(laneId);
 				this.setState({
 					currentSelectedLaneId: laneId,
-					menuState: MenuState.WAITING
 				});
 				break;
 			default:
@@ -188,25 +202,46 @@ export class GameView extends React.Component<IProps, IState> {
 	}
 
 	selectAction(actionId: string) {
-		if([MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menuState) !== -1) {
-			this.setState({
-				currentSelectedActionChoice: skills[actionId],
-				menuState: MenuState.CHOOSE_TARGET,
-			});
+		if(this.myTurn() && [MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menuState) !== -1) {
+			let actionDef = Skills[actionId];
+			if(actionDef.target.what === TargetWhat.NONE) {
+				this.submitActionAndSetWaiting(undefined);
+				this.setState({
+					currentSelectedActionChoice: Skills[actionId],
+				});
+			} else {
+				this.setState({
+					currentSelectedActionChoice: Skills[actionId],
+					menuState: MenuState.CHOOSE_TARGET,
+				});
+			}
 		}
 	}
 
 	selectEntity(id: string) {
+		if(this.state.menuState === MenuState.CHOOSE_TARGET) {
+			this.submitActionAndSetWaiting(id);
+			this.setState({
+				currentSelectedEntityId: id,
+			});
+		}
+	}
+
+	submitActionAndSetWaiting(target: number|string) {
+		Handler.chooseActionAndTarget(this.state.currentSelectedActionChoice, target);
 		this.setState({
-			currentSelectedEntityId: id,
 			menuState: MenuState.WAITING,
 		});
+	}
+
+	myTurn(): boolean {
+		return getActingTeam(this.state.matchState) === this.state.matchState.players[this.props.username].team;
 	}
 }
 
 function getEntitiesByLane(ms: IMatchState): Entity[][] {
 	var entities = ms.players;
-	var res = [[],[],[],[]]
+	var res = [[],[],[],[]];
 	for(let username of Object.keys(ms.players)) {
 		var ent = ms.players[username];
 		var y = ent.state.y;

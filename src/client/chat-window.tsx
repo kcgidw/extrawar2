@@ -2,6 +2,7 @@ import * as React from 'react';
 import * as Handler from './client-handler';
 import { SOCKET_MSG } from '../common/messages';
 import * as Msgs from '../common/messages';
+import { IActionResolutionTimeline, flatReport } from '../common/game-core/event-interfaces';
 
 interface IChatWindowState {
 	logs: Msgs.IChatPostMessageResponse[];

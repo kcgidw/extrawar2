@@ -76,7 +76,7 @@ export interface ICooldown {
 export interface IStefInstance {
 	stefId: string;
 	duration: number;
-	invokerId: string; // entity that applied this stef
+	invokerEntityId: string; // entity that applied this stef
 }
 
 export interface IMatchState {
@@ -88,7 +88,7 @@ export interface IMatchState {
 	lanes: Lane[];
 	characterChoicesIds?: {[key: string]: string[]};
 	actionChoicesIds?: {[key: string]: string[]};
-	playersReady: {[key: string]: boolean};
+	playersReady: {[key: string]: boolean}; // only for client use
 }
 
 export class Lane {

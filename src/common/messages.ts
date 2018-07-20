@@ -11,6 +11,7 @@ export enum SOCKET_MSG {
 	'PLAYER_DECISION' = 'PLAYER_DECISION',
 	'PLAYERS_READY' = 'PLAYERS_READY',
 	'PROMPT_DECISION' = 'PROMPT_DECISION',
+	'RESOLVE_ACTIONS' = 'RESOLVE_ACTIONS',
 }
 
 export interface IErrorableResponse {
@@ -56,18 +57,19 @@ export interface IChatPostMessageResponse extends IErrorableResponse {
 }
 
 export interface IPlayerDecisionRequest {
+	username: string;
 	phase: Phase;
 	actionId: string;
 	targetLane?: number;
 	targetEntity?: number;
 	entityProfileId?: string; // choose character
-	targetStartingLane?: number; // choose starting lane
+	startingLane?: number; // choose starting lane
 }
 export interface IPlayerDecisionResponse extends IErrorableResponse {
 	targetLane?: number;
 	targetEntity?: number;
 	entityProfileId?: string;
-	targetStartingLane?: number;
+	startingLane?: number;
 	usernames: string[]; // players ready
 }
 export interface IPlayersReady {

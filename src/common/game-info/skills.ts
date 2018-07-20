@@ -1,6 +1,7 @@
 import { Faction, IStefInstance, ITargetInfo, TargetRange, TargetWhat, Team, Lane } from "../game-core/common";
 import { Entity } from "../game-core/entity";
 import { IEventCause, IEventResult } from "../game-core/event-interfaces";
+import { Match } from "../../server/chat-room/match";
 
 export interface ISkillDef {
 	id: string;
@@ -10,11 +11,11 @@ export interface ISkillDef {
 	desc: string;
 	keywords: string[]; // supplementary descriptons for stefs and whatnot
 	target: ITargetInfo;
-	fn: (userEntity: Entity, target: Entity|Entity[]|Lane, custom?: object)=>Partial<IEventCause>;
-	resultMessage?: (userEntity: Entity, target?: Entity|Entity[]|Lane, custom?: object)=>string;
+	fn: (match: Match, userEntity: Entity, target: Entity|Lane, custom?: object)=>Partial<IEventCause>;
+	resultMessage?: (userEntity: Entity, target?: Entity|Lane, custom?: object)=>string;
 }
 
-export const skills: {[key: string]: ISkillDef} = {
+export const Skills: {[key: string]: ISkillDef} = {
 	'ATTACK': {
 		id: 'ATTACK',
 		active: true,
@@ -26,13 +27,13 @@ export const skills: {[key: string]: ISkillDef} = {
 			what: TargetWhat.ENEMY,
 			range: TargetRange.NEARBY
 		},
-		fn: (userEntity, targetEntity: Entity) => {
+		fn: (match: Match, userEntity: Entity, targetEntity: Entity) => {
 			var results: IEventResult[]  = [];
-			results = results.concat(simpleAttack(userEntity, targetEntity));
+			results = results.concat(simpleAttack(match, userEntity, targetEntity));
 			return {results: results};
 		},
 		resultMessage: (userEntity, targetEntity: Entity) => {
-			return userEntity.username + ' attacks.';
+			return userEntity.id + ' attacks.';
 		}
 	},
 	'MOVE': {
@@ -46,13 +47,13 @@ export const skills: {[key: string]: ISkillDef} = {
 			what: TargetWhat.LANE,
 			range: TargetRange.NEARBY
 		},
-		fn: (userEntity, targetLane: Lane) => {
+		fn: (match: Match, userEntity: Entity, targetLane: Lane) => {
 			var results: IEventResult[]  = [];
-			results = results.concat(userEntity.moveTo(targetLane, 1));
+			results = results.concat(match.moveEntity(userEntity, targetLane, 1));
 			return {results: results};
 		},
 		resultMessage: (userEntity, targetLane: Lane) => {
-			return userEntity.username + ' moves to lane ' + targetLane.y + '.';
+			return userEntity.id + ' moves to lane ' + targetLane.y + '.';
 		}
 	},
 	'FLANK_ASSAULT': {
@@ -66,14 +67,14 @@ export const skills: {[key: string]: ISkillDef} = {
 			what: TargetWhat.LANE,
 			range: TargetRange.NEARBY
 		},
-		fn: (user, targetLane: Lane) => {
+		fn: (match: Match, user: Entity, targetLane: Lane) => {
 			var results: IEventResult[]  = [];
 
 			// TODO movement
 
 			var targetEntity = targetLane.getRandomEntity(otherTeam(user.team));
 			if(targetEntity) {
-				results = results.concat(simpleAttack(user, targetEntity));
+				results = results.concat(simpleAttack(match, user, targetEntity));
 			}
 			
 			return {results: results};
@@ -82,7 +83,7 @@ export const skills: {[key: string]: ISkillDef} = {
 };
 
 
-function simpleAttack(attacker: Entity, target: Entity, stefs?: IStefInstance[], damageMod?: (attacker?: Entity, target?: Entity)=>number): IEventResult[] {
+function simpleAttack(match: Match, attacker: Entity, target: Entity, stefs?: IStefInstance[], damageMod?: (attacker?: Entity, target?: Entity)=>number): IEventResult[] {
 	var results: IEventResult[] = [];
 
 	var damage;
@@ -97,11 +98,11 @@ function simpleAttack(attacker: Entity, target: Entity, stefs?: IStefInstance[],
 
 	// TODO armor
 
-	results = results.concat(target.changeHp(damage));
+	results = results.concat(match.changeEntityHp(target, damage * -1));
 
 	if(target.alive && stefs) {
 		stefs.forEach((stef) => {
-			results = results.concat(target.applyStef(stef.stefId, stef.duration, attacker));
+			results = results.concat(match.applyStef(target, stef.stefId, stef.duration, attacker));
 		});
 	}
 

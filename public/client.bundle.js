@@ -218,6 +218,7 @@ function renderChatLog(messages) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = __webpack_require__(/*! ../common/game-core/common */ "./src/common/game-core/common.ts");
 const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
+const util_1 = __webpack_require__(/*! ../server/lobby/util */ "./src/server/lobby/util.ts");
 exports.socket = io('/lobby');
 exports.clientSocket = exports.socket;
 exports.socket.emit(messages_1.SOCKET_MSG.LOBBY_NUM_ONLINE);
@@ -255,7 +256,7 @@ exports.chooseCharacter = chooseCharacter;
 function chooseStartingLane(laneId) {
     exports.socket.emit(messages_1.SOCKET_MSG.PLAYER_DECISION, {
         phase: common_1.Phase.CHOOSE_CHARACTER,
-        targetStartingLane: laneId,
+        startingLane: laneId,
     });
 }
 exports.chooseStartingLane = chooseStartingLane;
@@ -263,7 +264,7 @@ function chooseActionAndTarget(actionDef, targetId) {
     exports.socket.emit(messages_1.SOCKET_MSG.PLAYER_DECISION, {
         phase: common_1.Phase.CHOOSE_CHARACTER,
         actionId: actionDef.id,
-        targetEntity: [common_1.TargetWhat.ALLY, common_1.TargetWhat.ENEMY, common_1.TargetWhat.ENTITY].indexOf(actionDef.target.what) !== -1 ? targetId : undefined,
+        targetEntity: util_1.actionDefTargetsEntity(actionDef) ? targetId : undefined,
         targetLane: actionDef.target.what === common_1.TargetWhat.LANE ? targetId : undefined,
     });
 }
@@ -335,7 +336,7 @@ class ActionChoices extends React.Component {
         this.props.onSelectAction(actionId);
     }
     renderActionChoices(choices) {
-        return choices.map((actionId) => React.createElement(ActionChoicePanel, { key: actionId, def: skills_1.skills[actionId], onSelect: this.onSelectAction, currentlySelected: this.props.currentChoiceActionDef && actionId === this.props.currentChoiceActionDef.id }));
+        return choices.map((actionId) => React.createElement(ActionChoicePanel, { key: actionId, def: skills_1.Skills[actionId], onSelect: this.onSelectAction, currentlySelected: this.props.currentChoiceActionDef && actionId === this.props.currentChoiceActionDef.id }));
     }
 }
 exports.ActionChoices = ActionChoices;
@@ -423,22 +424,25 @@ class CharacterChoicePanel extends React.Component {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
+const characters_1 = __webpack_require__(/*! ../../common/game-info/characters */ "./src/common/game-info/characters.ts");
 class EntityPanel extends React.Component {
     constructor(props) {
         super(props);
         this.onClick = this.onClick.bind(this);
     }
     render() {
-        if (this.props.entity.profile.emptyProfile) {
+        var prof = characters_1.Characters[this.props.entity.profileId];
+        if (prof.emptyProfile) {
             return null;
         }
-        var image = this.props.entity.profile.image;
+        var image = prof.image;
         if (image) {
             image = 'images/' + image;
         }
         var selectableClass = this.props.selectable ? 'selectable' : '';
         var selectedClass = this.props.selected ? 'selected' : '';
-        return (React.createElement("div", { className: ['entity-panel', selectableClass, selectedClass].join(' '), onClick: this.onClick },
+        var teamClass = "entity-team-" + this.props.entity.team;
+        return (React.createElement("div", { className: ['entity-panel', selectableClass, selectedClass, teamClass].join(' '), onClick: this.onClick },
             React.createElement("div", { className: "image-container" }, image ? React.createElement("img", { src: image }) : undefined),
             React.createElement("div", { className: "stats-container" },
                 React.createElement("p", null,
@@ -453,7 +457,7 @@ class EntityPanel extends React.Component {
                     this.props.entity.state.maxAp))));
     }
     onClick() {
-        this.props.onSelect(this.props.entity.entityId);
+        this.props.onSelect(this.props.entity.id);
     }
 }
 exports.EntityPanel = EntityPanel;
@@ -492,7 +496,7 @@ class Lane extends React.Component {
     renderTeamEntities(t) {
         return this.props.entities.filter((ent) => (ent.team === t))
             .map((ent) => {
-            return (React.createElement(entity_panel_1.EntityPanel, { key: ent.username, entity: ent, selected: this.props.selectedEntityId === ent.entityId, selectable: this.props.entitiesSelectable, onSelect: this.props.onSelectEntity }));
+            return (React.createElement(entity_panel_1.EntityPanel, { key: ent.id, entity: ent, selected: this.props.selectedEntityId === ent.id, selectable: this.props.entitiesSelectable, onSelect: this.props.onSelectEntity }));
         });
     }
 }
@@ -554,6 +558,8 @@ const lane_1 = __webpack_require__(/*! ./game-ui/lane */ "./src/client/game-ui/l
 const team_panel_1 = __webpack_require__(/*! ./game-ui/team-panel */ "./src/client/game-ui/team-panel.tsx");
 const action_choices_1 = __webpack_require__(/*! ./game-ui/action-choices */ "./src/client/game-ui/action-choices.tsx");
 const skills_1 = __webpack_require__(/*! ../common/game-info/skills */ "./src/common/game-info/skills.ts");
+const util_1 = __webpack_require__(/*! ../server/lobby/util */ "./src/server/lobby/util.ts");
+const event_interfaces_1 = __webpack_require__(/*! ../common/game-core/event-interfaces */ "./src/common/game-core/event-interfaces.ts");
 var MenuState;
 (function (MenuState) {
     MenuState[MenuState["CHOOSE_CHARACTER"] = 0] = "CHOOSE_CHARACTER";
@@ -582,14 +588,6 @@ class GameView extends React.Component {
         this.selectAction = this.selectAction.bind(this);
         this.selectEntity = this.selectEntity.bind(this);
     }
-    lanesSelectable() {
-        return this.state.menuState === MenuState.CHOOSE_STARTING_LANE
-            || (this.state.menuState === MenuState.CHOOSE_TARGET && this.state.currentSelectedActionChoice.target.what === common_1.TargetWhat.LANE);
-    }
-    entitiesSelectable() {
-        return this.state.menuState === MenuState.CHOOSE_TARGET
-            && [common_1.TargetWhat.ALLY, common_1.TargetWhat.ENEMY, common_1.TargetWhat.ENTITY,].indexOf(this.state.currentSelectedActionChoice.target.what) !== -1;
-    }
     componentDidMount() {
         var han1 = Handler.generateHandler(messages_1.SOCKET_MSG.PLAYERS_READY, (data) => {
             this.setState({
@@ -603,7 +601,12 @@ class GameView extends React.Component {
                     newState = MenuState.CHOOSE_STARTING_LANE;
                     break;
                 case (common_2.Phase.PLAN):
-                    newState = MenuState.CHOOSE_ACTION;
+                    if (this.myTurn()) {
+                        newState = MenuState.CHOOSE_ACTION;
+                    }
+                    else {
+                        newState = MenuState.WAITING;
+                    }
                     break;
             }
             this.setState({
@@ -615,9 +618,13 @@ class GameView extends React.Component {
                 currentSelectedEntityId: undefined,
             });
         });
+        var han3 = Handler.generateHandler(messages_1.SOCKET_MSG.RESOLVE_ACTIONS, (data) => {
+            console.log(event_interfaces_1.flatReport(this.state.matchState, data.causes));
+        });
         this.handlerOff = () => {
             han1();
             han2();
+            han3();
         };
     }
     componentWillUnmount() {
@@ -650,6 +657,15 @@ class GameView extends React.Component {
             React.createElement("div", { id: "lanes-container" },
                 React.createElement("div", { id: "lanes" }, entitiesByLane.map((ents, idx) => (React.createElement(lane_1.Lane, { key: idx, id: idx, onSelect: this.selectLane, selectable: this.lanesSelectable(), selected: this.state.currentSelectedLaneId === idx, entities: ents, entitiesSelectable: this.entitiesSelectable(), onSelectEntity: this.selectEntity, selectedEntityId: this.state.currentSelectedEntityId })))))));
     }
+    lanesSelectable() {
+        return this.state.menuState === MenuState.CHOOSE_STARTING_LANE
+            || (this.myTurn() && this.state.menuState === MenuState.CHOOSE_TARGET && this.state.currentSelectedActionChoice.target.what === common_1.TargetWhat.LANE);
+    }
+    entitiesSelectable() {
+        return this.myTurn()
+            && this.state.menuState === MenuState.CHOOSE_TARGET
+            && util_1.actionDefTargetsEntity(this.state.currentSelectedActionChoice);
+    }
     getPrompt() {
         switch (this.state.menuState) {
             case (MenuState.CHOOSE_CHARACTER):
@@ -662,7 +678,10 @@ class GameView extends React.Component {
                 let targ = this.lanesSelectable() ? 'lane' : 'entity';
                 return 'Choose target ' + targ + '.';
             case (MenuState.WAITING):
-                return 'Waiting for other players.';
+                if (util_1.getActingTeam(this.state.matchState) === this.state.matchState.players[this.props.username].team) {
+                    return 'Waiting for other players.';
+                }
+                return 'Waiting for opposing team.';
             case (MenuState.RESOLVING):
                 return 'Resolving.';
             case (MenuState.GAME_OVER):
@@ -683,10 +702,9 @@ class GameView extends React.Component {
                 });
                 break;
             case (MenuState.CHOOSE_TARGET):
-                Handler.chooseActionAndTarget(this.state.currentSelectedActionChoice, laneId);
+                this.submitActionAndSetWaiting(laneId);
                 this.setState({
                     currentSelectedLaneId: laneId,
-                    menuState: MenuState.WAITING
                 });
                 break;
             default:
@@ -694,18 +712,38 @@ class GameView extends React.Component {
         }
     }
     selectAction(actionId) {
-        if ([MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menuState) !== -1) {
-            this.setState({
-                currentSelectedActionChoice: skills_1.skills[actionId],
-                menuState: MenuState.CHOOSE_TARGET,
-            });
+        if (this.myTurn() && [MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menuState) !== -1) {
+            let actionDef = skills_1.Skills[actionId];
+            if (actionDef.target.what === common_1.TargetWhat.NONE) {
+                this.submitActionAndSetWaiting(undefined);
+                this.setState({
+                    currentSelectedActionChoice: skills_1.Skills[actionId],
+                });
+            }
+            else {
+                this.setState({
+                    currentSelectedActionChoice: skills_1.Skills[actionId],
+                    menuState: MenuState.CHOOSE_TARGET,
+                });
+            }
         }
     }
     selectEntity(id) {
+        if (this.state.menuState === MenuState.CHOOSE_TARGET) {
+            this.submitActionAndSetWaiting(id);
+            this.setState({
+                currentSelectedEntityId: id,
+            });
+        }
+    }
+    submitActionAndSetWaiting(target) {
+        Handler.chooseActionAndTarget(this.state.currentSelectedActionChoice, target);
         this.setState({
-            currentSelectedEntityId: id,
             menuState: MenuState.WAITING,
         });
+    }
+    myTurn() {
+        return util_1.getActingTeam(this.state.matchState) === this.state.matchState.players[this.props.username].team;
     }
 }
 exports.GameView = GameView;
@@ -1078,6 +1116,81 @@ exports.Lane = Lane;
 
 /***/ }),
 
+/***/ "./src/common/game-core/event-interfaces.ts":
+/*!**************************************************!*\
+  !*** ./src/common/game-core/event-interfaces.ts ***!
+  \**************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const skills_1 = __webpack_require__(/*! ../game-info/skills */ "./src/common/game-info/skills.ts");
+const util_1 = __webpack_require__(/*! ../../server/lobby/util */ "./src/server/lobby/util.ts");
+var TurnEventResultType;
+(function (TurnEventResultType) {
+    TurnEventResultType["NONE"] = "NONE";
+    TurnEventResultType["HP_CHANGE"] = "HP_CHANGE";
+    TurnEventResultType["GAIN_STEF"] = "GAIN_STEF";
+    TurnEventResultType["LOSE_STEF"] = "LOSE_STEF";
+    TurnEventResultType["DEATH"] = "DEATH";
+    TurnEventResultType["RESPAWN"] = "RESPAWN";
+    TurnEventResultType["AP_CHANGE"] = "AP_CHANGE";
+    TurnEventResultType["CHANGE_LANE"] = "CHANGE_LANE";
+})(TurnEventResultType = exports.TurnEventResultType || (exports.TurnEventResultType = {}));
+exports.EventResultTexts = {
+    'NONE': () => 'Nothing happened.',
+    'HP_CHANGE': (result) => {
+        if (result.value > 0) {
+            return `${result.entityId} gains ${result.value} HP.`;
+        }
+        return `${result.entityId} loses ${result.value} HP.`;
+    },
+    'GAIN_STEF': undefined,
+    'LOSE_STEF': undefined,
+    'DEATH': (result) => `${result.entityId} dies.`,
+    'RESPAWN': (result) => `${result.entityId} respawns.`,
+    'AP_CHANGE': (result) => {
+        if (result.value > 0) {
+            return `${result.entityId} gains ${result.value} AP.`;
+        }
+        return `${result.entityId} loses ${Math.abs(result.value)} AP.`;
+    },
+    'CHANGE_LANE': (result) => {
+        return ''; // `${result.entityId} moves to lane ${result.laneId}.`;
+    },
+};
+function flatReport(ms, causes) {
+    return causes.map((cause) => {
+        return flatEvent(ms, cause);
+    });
+}
+exports.flatReport = flatReport;
+function flatEvent(ms, cause) {
+    var actionDef = skills_1.Skills[cause.actionDefId];
+    var ent = ms.players[cause.entityId];
+    var tar;
+    if (util_1.actionDefTargetsEntity(actionDef)) {
+        tar = ms.phase[cause.targetId];
+    }
+    else {
+        tar = ms.lanes[cause.targetId];
+    }
+    var lines = [actionDef.resultMessage(ent, tar)];
+    for (let res of cause.results) {
+        var line = exports.EventResultTexts[res.type](res);
+        if (line) {
+            lines.push(line);
+        }
+    }
+    return lines;
+}
+exports.flatEvent = flatEvent;
+
+
+/***/ }),
+
 /***/ "./src/common/game-info/characters.ts":
 /*!********************************************!*\
   !*** ./src/common/game-info/characters.ts ***!
@@ -1180,7 +1293,7 @@ exports.PlayableCharacters = {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = __webpack_require__(/*! ../game-core/common */ "./src/common/game-core/common.ts");
-exports.skills = {
+exports.Skills = {
     'ATTACK': {
         id: 'ATTACK',
         active: true,
@@ -1192,13 +1305,13 @@ exports.skills = {
             what: common_1.TargetWhat.ENEMY,
             range: common_1.TargetRange.NEARBY
         },
-        fn: (userEntity, targetEntity) => {
+        fn: (match, userEntity, targetEntity) => {
             var results = [];
-            results = results.concat(simpleAttack(userEntity, targetEntity));
+            results = results.concat(simpleAttack(match, userEntity, targetEntity));
             return { results: results };
         },
         resultMessage: (userEntity, targetEntity) => {
-            return userEntity.username + ' attacks.';
+            return userEntity.id + ' attacks.';
         }
     },
     'MOVE': {
@@ -1212,13 +1325,13 @@ exports.skills = {
             what: common_1.TargetWhat.LANE,
             range: common_1.TargetRange.NEARBY
         },
-        fn: (userEntity, targetLane) => {
+        fn: (match, userEntity, targetLane) => {
             var results = [];
-            results = results.concat(userEntity.moveTo(targetLane, 1));
+            results = results.concat(match.moveEntity(userEntity, targetLane, 1));
             return { results: results };
         },
         resultMessage: (userEntity, targetLane) => {
-            return userEntity.username + ' moves to lane ' + targetLane.y + '.';
+            return userEntity.id + ' moves to lane ' + targetLane.y + '.';
         }
     },
     'FLANK_ASSAULT': {
@@ -1232,18 +1345,18 @@ exports.skills = {
             what: common_1.TargetWhat.LANE,
             range: common_1.TargetRange.NEARBY
         },
-        fn: (user, targetLane) => {
+        fn: (match, user, targetLane) => {
             var results = [];
             // TODO movement
             var targetEntity = targetLane.getRandomEntity(otherTeam(user.team));
             if (targetEntity) {
-                results = results.concat(simpleAttack(user, targetEntity));
+                results = results.concat(simpleAttack(match, user, targetEntity));
             }
             return { results: results };
         }
     }
 };
-function simpleAttack(attacker, target, stefs, damageMod) {
+function simpleAttack(match, attacker, target, stefs, damageMod) {
     var results = [];
     var damage;
     var str = attacker.curStr;
@@ -1255,10 +1368,10 @@ function simpleAttack(attacker, target, stefs, damageMod) {
     }
     // TODO off-lane penalty
     // TODO armor
-    results = results.concat(target.changeHp(damage));
+    results = results.concat(match.changeEntityHp(target, damage * -1));
     if (target.alive && stefs) {
         stefs.forEach((stef) => {
-            results = results.concat(target.applyStef(stef.stefId, stef.duration, attacker));
+            results = results.concat(match.applyStef(target, stef.stefId, stef.duration, attacker));
         });
     }
     return results;
@@ -1298,6 +1411,7 @@ var SOCKET_MSG;
     SOCKET_MSG["PLAYER_DECISION"] = "PLAYER_DECISION";
     SOCKET_MSG["PLAYERS_READY"] = "PLAYERS_READY";
     SOCKET_MSG["PROMPT_DECISION"] = "PROMPT_DECISION";
+    SOCKET_MSG["RESOLVE_ACTIONS"] = "RESOLVE_ACTIONS";
 })(SOCKET_MSG = exports.SOCKET_MSG || (exports.SOCKET_MSG = {}));
 
 
@@ -1334,6 +1448,7 @@ exports.validateUsername = validateUsername;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const common_1 = __webpack_require__(/*! ../../common/game-core/common */ "./src/common/game-core/common.ts");
 const ID_LENGTH = 4;
 const CHARS = 'abcdefgh123456789'; // 0 is confusing
 function randInt(min, max) {
@@ -1366,6 +1481,17 @@ function shuffle(arr) {
     });
 }
 exports.shuffle = shuffle;
+function getActingTeam(ms) {
+    if (ms.turn % 2 === 0) {
+        return 2;
+    }
+    return 1;
+}
+exports.getActingTeam = getActingTeam;
+function actionDefTargetsEntity(ad) {
+    return [common_1.TargetWhat.ALLY, common_1.TargetWhat.ENEMY, common_1.TargetWhat.ENTITY].indexOf(ad.target.what) !== -1;
+}
+exports.actionDefTargetsEntity = actionDefTargetsEntity;
 
 
 /***/ }),

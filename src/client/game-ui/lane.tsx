@@ -39,7 +39,7 @@ export class Lane extends React.Component<IProps,{}> {
 	renderTeamEntities(t: Team) {
 		return this.props.entities.filter((ent) => (ent.team === t))
 		.map((ent) => {
-			return (< EntityPanel key={ent.username} entity={ent} selected={this.props.selectedEntityId === ent.entityId} selectable={this.props.entitiesSelectable} onSelect={this.props.onSelectEntity} />)
+			return (< EntityPanel key={ent.id} entity={ent} selected={this.props.selectedEntityId === ent.id} selectable={this.props.entitiesSelectable} onSelect={this.props.onSelectEntity} />);
 		});
 	}
 }

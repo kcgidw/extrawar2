@@ -1,3 +1,6 @@
+import { IMatchState, Team, TargetWhat } from "../../common/game-core/common";
+import { ISkillDef } from "../../common/game-info/skills";
+
 const ID_LENGTH = 4;
 const CHARS = 'abcdefgh123456789'; // 0 is confusing
 
@@ -29,4 +32,15 @@ export function shuffle<T>(arr: T[]): void {
 	arr.sort(() => {
 		return 0.5 - Math.random();
 	});
+}
+
+export function getActingTeam(ms: IMatchState): Team {
+	if(ms.turn % 2 === 0) {
+		return 2;
+	}
+	return 1;
+}
+
+export function actionDefTargetsEntity(ad: ISkillDef) {
+	return [TargetWhat.ALLY, TargetWhat.ENEMY, TargetWhat.ENTITY].indexOf(ad.target.what) !== -1;
 }

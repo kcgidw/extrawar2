@@ -1,9 +1,5 @@
 import * as React from 'react';
-import { IEntityProfile } from '../../common/game-core/common';
-import { Characters } from '../../common/game-info/characters';
-import * as Handler from '../client-handler';
-import { } from '../client-handler';
-import { ISkillDef, skills } from '../../common/game-info/skills';
+import { ISkillDef, Skills } from '../../common/game-info/skills';
 
 interface IActionChoicesProps {
 	choices: string[];
@@ -31,7 +27,7 @@ export class ActionChoices extends React.Component<IActionChoicesProps,{}> {
 
 	renderActionChoices(choices: string[]) {
 		return choices.map((actionId) => 
-			<ActionChoicePanel key={actionId} def={skills[actionId]} onSelect={this.onSelectAction}
+			<ActionChoicePanel key={actionId} def={Skills[actionId]} onSelect={this.onSelectAction}
 			currentlySelected={this.props.currentChoiceActionDef && actionId === this.props.currentChoiceActionDef.id} />
 		);
 	}
