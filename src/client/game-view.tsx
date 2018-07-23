@@ -14,11 +14,11 @@ import { getActingTeam, actionDefTargetsEntity } from '../server/lobby/util';
 import { IActionResolutionTimeline, flatReport } from '../common/game-core/event-interfaces';
 
 interface IProps {
-	matchState: IMatchState;
+	initialMatchState: IMatchState;
 	username: string;
 }
 export enum MenuState {
-	CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, CHOOSE_ACTION, CHOOSE_TARGET, WAITING, RESOLVING, GAME_OVER
+	WAITING_ROOM, CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, CHOOSE_ACTION, CHOOSE_TARGET, WAITING, RESOLVING, GAME_OVER
 }
 interface IState {
 	matchState: IMatchState;
@@ -36,7 +36,7 @@ export class GameView extends React.Component<IProps, IState> {
 	constructor(props) {
 		super(props);
 		this.state = {
-			matchState: this.props.matchState,
+			matchState: this.props.initialMatchState,
 			actionChoicesIds: undefined,
 			menuState: MenuState.CHOOSE_CHARACTER,
 			currentSelectedActionChoice: undefined,
@@ -82,7 +82,8 @@ export class GameView extends React.Component<IProps, IState> {
 			});
 		});
 		var han3 = Handler.generateHandler<IActionResolutionTimeline>(SOCKET_MSG.RESOLVE_ACTIONS, (data) => {
-			console.log(flatReport(this.state.matchState, data.causes));
+			var fr = flatReport(this.state.matchState, data.causes);
+			console.log();
 		});
 		this.handlerOff = () => {
 			han1();
@@ -101,7 +102,7 @@ export class GameView extends React.Component<IProps, IState> {
 			case(Phase.CHOOSE_CHARACTER):
 				innerView = (
 					<div id="menu">
-						< CharacterChoices choices={this.props.matchState.characterChoicesIds[this.props.username]} onSelectCharacter={this.selectCharacterProfile} />
+						< CharacterChoices choices={this.props.initialMatchState.characterChoicesIds[this.props.username]} onSelectCharacter={this.selectCharacterProfile} />
 					</div>
 				);
 				break;

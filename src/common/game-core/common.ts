@@ -5,7 +5,7 @@ import { randItem } from "../../server/lobby/util";
 export const ROOM_SIZE = 4;
 
 export enum Phase {
-	CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, PLAN, RESOLVE, GAME_OVER
+	WAITING_ROOM, CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, PLAN, RESOLVE, GAME_OVER
 }
 
 export enum Faction {

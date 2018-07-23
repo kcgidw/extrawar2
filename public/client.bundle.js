@@ -98,90 +98,37 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
 const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
-const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 class ChatWindow extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            logs: [],
             err: undefined,
-            message: '',
+            newMessage: '',
         };
         this.onSubmit = this.onSubmit.bind(this);
         this.updateMessage = this.updateMessage.bind(this);
     }
-    componentDidMount() {
-        var handlerOff1 = Handler.generateHandler(messages_1.SOCKET_MSG.CHAT_POST_MESSAGE, (data) => {
-            this.addMessage(data);
-        }, (data) => {
-            this.setState({
-                err: data.error,
-            });
-        });
-        var handlerOff2 = Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_ROOM_USERS, (data) => {
-            var chatMsg = {
-                messageName: messages_1.SOCKET_MSG.LOBBY_ROOM_USERS,
-                username: undefined,
-                message: data.username + (data.joined ? ' joined the room.' : ' left the room.'),
-                timestamp: new Date() // TODO do this server-side
-            };
-            this.addMessage(chatMsg);
-        });
-        var handlerOff3 = Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
-            // create system message
-            var chatMsg = {
-                messageName: messages_1.SOCKET_MSG.START_GAME,
-                username: undefined,
-                message: data.requestorUsername + ' started the game.',
-                timestamp: new Date() // TODO do this server-side
-            };
-            this.addMessage(chatMsg);
-        }, (data) => {
-            this.setState({
-                err: data.error,
-            });
-        });
-        this.handlerOff = () => {
-            handlerOff1();
-            handlerOff2();
-            handlerOff3();
-        };
-    }
-    componentWillUnmount() {
-        this.handlerOff();
-    }
     render() {
         return (React.createElement("div", { id: "game-chat" },
             React.createElement("div", { id: "messages-container", className: "messages-container" },
-                React.createElement("ol", null, renderChatLog(this.state.logs))),
+                React.createElement("ol", null, renderChatLog(this.props.logs))),
             React.createElement("form", { className: "chat-form", action: "", onSubmit: this.onSubmit },
-                React.createElement("input", { type: "text", id: "chat-input", autoComplete: "off", maxLength: 40, placeholder: "Write a chat message", onChange: this.updateMessage, value: this.state.message }))));
+                React.createElement("input", { type: "text", id: "chat-input", autoComplete: "off", maxLength: 40, placeholder: "Write a chat message", onChange: this.updateMessage, value: this.state.newMessage }))));
     }
     updateMessage(e) {
         this.setState({
-            message: e.target.value,
+            newMessage: e.target.value,
         });
     }
     onSubmit(e) {
-        var msg = this.state.message;
+        var msg = this.state.newMessage;
         if (msg) {
             Handler.sendChatMessage(msg);
             this.setState({
-                message: '',
+                newMessage: '',
             });
         }
         e.preventDefault();
-    }
-    addMessage(msg) {
-        // if scroll is at bottom, scroll down again to show new message
-        var container = document.getElementById('messages-container');
-        var scrollDown = container.scrollTop + container.clientHeight === container.scrollHeight;
-        this.setState({
-            logs: [...this.state.logs, msg]
-        });
-        if (scrollDown) {
-            container.scrollTop = container.scrollHeight;
-        }
     }
 }
 exports.ChatWindow = ChatWindow;
@@ -562,19 +509,20 @@ const util_1 = __webpack_require__(/*! ../server/lobby/util */ "./src/server/lob
 const event_interfaces_1 = __webpack_require__(/*! ../common/game-core/event-interfaces */ "./src/common/game-core/event-interfaces.ts");
 var MenuState;
 (function (MenuState) {
-    MenuState[MenuState["CHOOSE_CHARACTER"] = 0] = "CHOOSE_CHARACTER";
-    MenuState[MenuState["CHOOSE_STARTING_LANE"] = 1] = "CHOOSE_STARTING_LANE";
-    MenuState[MenuState["CHOOSE_ACTION"] = 2] = "CHOOSE_ACTION";
-    MenuState[MenuState["CHOOSE_TARGET"] = 3] = "CHOOSE_TARGET";
-    MenuState[MenuState["WAITING"] = 4] = "WAITING";
-    MenuState[MenuState["RESOLVING"] = 5] = "RESOLVING";
-    MenuState[MenuState["GAME_OVER"] = 6] = "GAME_OVER";
+    MenuState[MenuState["WAITING_ROOM"] = 0] = "WAITING_ROOM";
+    MenuState[MenuState["CHOOSE_CHARACTER"] = 1] = "CHOOSE_CHARACTER";
+    MenuState[MenuState["CHOOSE_STARTING_LANE"] = 2] = "CHOOSE_STARTING_LANE";
+    MenuState[MenuState["CHOOSE_ACTION"] = 3] = "CHOOSE_ACTION";
+    MenuState[MenuState["CHOOSE_TARGET"] = 4] = "CHOOSE_TARGET";
+    MenuState[MenuState["WAITING"] = 5] = "WAITING";
+    MenuState[MenuState["RESOLVING"] = 6] = "RESOLVING";
+    MenuState[MenuState["GAME_OVER"] = 7] = "GAME_OVER";
 })(MenuState = exports.MenuState || (exports.MenuState = {}));
 class GameView extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            matchState: this.props.matchState,
+            matchState: this.props.initialMatchState,
             actionChoicesIds: undefined,
             menuState: MenuState.CHOOSE_CHARACTER,
             currentSelectedActionChoice: undefined,
@@ -619,7 +567,8 @@ class GameView extends React.Component {
             });
         });
         var han3 = Handler.generateHandler(messages_1.SOCKET_MSG.RESOLVE_ACTIONS, (data) => {
-            console.log(event_interfaces_1.flatReport(this.state.matchState, data.causes));
+            var fr = event_interfaces_1.flatReport(this.state.matchState, data.causes);
+            console.log();
         });
         this.handlerOff = () => {
             han1();
@@ -635,7 +584,7 @@ class GameView extends React.Component {
         switch (this.state.matchState.phase) {
             case (common_2.Phase.CHOOSE_CHARACTER):
                 innerView = (React.createElement("div", { id: "menu" },
-                    React.createElement(character_choices_1.CharacterChoices, { choices: this.props.matchState.characterChoicesIds[this.props.username], onSelectCharacter: this.selectCharacterProfile })));
+                    React.createElement(character_choices_1.CharacterChoices, { choices: this.props.initialMatchState.characterChoicesIds[this.props.username], onSelectCharacter: this.selectCharacterProfile })));
                 break;
             case (common_2.Phase.CHOOSE_STARTING_LANE):
                 break;
@@ -859,30 +808,6 @@ class RoomOptionsView extends React.Component {
     }
 }
 exports.RoomOptionsView = RoomOptionsView;
-class WaitingRoomView extends React.Component {
-    constructor(props) {
-        super(props);
-        this.startGame = this.startGame.bind(this);
-    }
-    render() {
-        return (React.createElement("div", { id: "waiting-room", className: "lobby-menu" },
-            React.createElement("div", null, "Room ID:"),
-            React.createElement("h1", null, this.props.roomId),
-            React.createElement("br", null),
-            React.createElement("div", null, "Waiting for players..."),
-            React.createElement("div", null,
-                "Current players:",
-                React.createElement("ul", null, renderPlayersList(this.props.usernames))),
-            React.createElement("button", { type: "button", id: "start-game-btn", onClick: this.startGame }, "Start Game")));
-    }
-    startGame() {
-        Handler.sendStartGame();
-    }
-}
-exports.WaitingRoomView = WaitingRoomView;
-function renderPlayersList(usernames) {
-    return usernames.map((name) => (React.createElement("li", { key: name }, name)));
-}
 
 
 /***/ }),
@@ -933,6 +858,102 @@ exports.OnlineCounter = OnlineCounter;
 
 /***/ }),
 
+/***/ "./src/client/room-view.tsx":
+/*!**********************************!*\
+  !*** ./src/client/room-view.tsx ***!
+  \**********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "react");
+const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
+const chat_window_1 = __webpack_require__(/*! ./chat-window */ "./src/client/chat-window.tsx");
+const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
+const game_view_1 = __webpack_require__(/*! ./game-view */ "./src/client/game-view.tsx");
+const waiting_room_view_1 = __webpack_require__(/*! ./waiting-room-view */ "./src/client/waiting-room-view.tsx");
+var MenuState;
+(function (MenuState) {
+    MenuState[MenuState["WAITING_ROOM"] = 0] = "WAITING_ROOM";
+    MenuState[MenuState["CHOOSE_CHARACTER"] = 1] = "CHOOSE_CHARACTER";
+    MenuState[MenuState["CHOOSE_STARTING_LANE"] = 2] = "CHOOSE_STARTING_LANE";
+    MenuState[MenuState["CHOOSE_ACTION"] = 3] = "CHOOSE_ACTION";
+    MenuState[MenuState["CHOOSE_TARGET"] = 4] = "CHOOSE_TARGET";
+    MenuState[MenuState["WAITING"] = 5] = "WAITING";
+    MenuState[MenuState["RESOLVING"] = 6] = "RESOLVING";
+    MenuState[MenuState["GAME_OVER"] = 7] = "GAME_OVER";
+})(MenuState = exports.MenuState || (exports.MenuState = {}));
+class RoomView extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            ms: undefined,
+            menu: MenuState.WAITING_ROOM,
+            chatLog: [],
+            roomUsernames: this.props.initialRoomUsernames,
+        };
+        this.ShowGameView = this.ShowGameView.bind(this);
+        this.ShowWaitingRoomView = this.ShowWaitingRoomView.bind(this);
+    }
+    componentDidMount() {
+        Handler.generateHandler(messages_1.SOCKET_MSG.CHAT_POST_MESSAGE, (data) => {
+            this.addUserChatMessage(data);
+        });
+        Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_ROOM_USERS, (data) => {
+            this.addSystemChatMessage(messages_1.SOCKET_MSG.LOBBY_ROOM_USERS, data.username + (data.joined ? ' joined the room.' : ' left the room.'));
+            this.setState({
+                roomUsernames: data.users,
+            });
+        });
+        Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
+            this.addSystemChatMessage(messages_1.SOCKET_MSG.START_GAME, data.requestorUsername + ' started the game.');
+            this.setState({
+                ms: data.matchState,
+                menu: MenuState.CHOOSE_CHARACTER,
+            });
+        });
+    }
+    componentWillUnmount() {
+        this.handlers.forEach((fn) => {
+            fn();
+        });
+    }
+    render() {
+        return (React.createElement("div", { id: "match" },
+            React.createElement(chat_window_1.ChatWindow, { logs: this.state.chatLog }),
+            React.createElement(this.ShowGameView, null),
+            React.createElement(this.ShowWaitingRoomView, null)));
+    }
+    ShowGameView() {
+        return this.state.ms !== undefined ? React.createElement(game_view_1.GameView, { initialMatchState: this.state.ms, username: this.props.username }) : null;
+    }
+    ShowWaitingRoomView() {
+        return this.state.menu === MenuState.WAITING_ROOM ? React.createElement(waiting_room_view_1.WaitingRoomView, { roomId: this.props.roomId, usernames: this.state.roomUsernames, onStartGame: this.sendStartGame }) : null;
+    }
+    addUserChatMessage(msg) {
+        this.setState({
+            chatLog: [...this.state.chatLog, msg],
+        });
+    }
+    addSystemChatMessage(msgName, msg) {
+        this.addUserChatMessage({
+            messageName: msgName,
+            username: undefined,
+            timestamp: new Date(),
+            message: msg,
+        });
+    }
+    sendStartGame() {
+        Handler.sendStartGame();
+    }
+}
+exports.RoomView = RoomView;
+
+
+/***/ }),
+
 /***/ "./src/client/views.tsx":
 /*!******************************!*\
   !*** ./src/client/views.tsx ***!
@@ -945,17 +966,15 @@ exports.OnlineCounter = OnlineCounter;
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
 const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
-const chat_window_1 = __webpack_require__(/*! ./chat-window */ "./src/client/chat-window.tsx");
 const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
-const game_view_1 = __webpack_require__(/*! ./game-view */ "./src/client/game-view.tsx");
 const menu_views_1 = __webpack_require__(/*! ./menu-views */ "./src/client/menu-views.tsx");
 const online_counter_1 = __webpack_require__(/*! ./online-counter */ "./src/client/online-counter.tsx");
+const room_view_1 = __webpack_require__(/*! ./room-view */ "./src/client/room-view.tsx");
 var VIEW;
 (function (VIEW) {
     VIEW["USERNAME"] = "username-entry";
     VIEW["ROOM_OPTIONS"] = "room-options";
-    VIEW["WAITING_ROOM"] = "waiting-room";
-    VIEW["GAME"] = "game";
+    VIEW["IN_ROOM"] = "match";
 })(VIEW || (VIEW = {}));
 class Views extends React.Component {
     constructor(props) {
@@ -969,68 +988,38 @@ class Views extends React.Component {
         };
     }
     componentDidMount() {
-        Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_CREATE_USER, (data) => {
-            this.setState({
-                myUsername: data.username,
-            });
-            this.setView(VIEW.ROOM_OPTIONS);
-        });
-        Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_CREATE_ROOM, (data) => {
-            this.setState({
-                roomId: data.roomId,
-                roomUsernames: [this.state.myUsername],
-            });
-            this.setView(VIEW.WAITING_ROOM);
-        });
-        Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_JOIN_ROOM, (data) => {
-            if (data.username === this.state.myUsername) {
+        this.handlers = [
+            Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_CREATE_USER, (data) => {
+                this.setState({
+                    myUsername: data.username,
+                });
+                this.setView(VIEW.ROOM_OPTIONS);
+            }),
+            Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_CREATE_ROOM, (data) => {
                 this.setState({
                     roomId: data.roomId,
-                    roomUsernames: data.users,
+                    roomUsernames: [this.state.myUsername],
                 });
-                switch (this.state.curView) {
-                    case (VIEW.ROOM_OPTIONS):
-                        this.setView(VIEW.WAITING_ROOM);
-                        break;
-                    case (VIEW.WAITING_ROOM):
-                        break;
-                    case (VIEW.GAME):
-                        break;
-                    default:
-                        console.warn('Bad view: ' + this.state.curView);
+                this.setView(VIEW.IN_ROOM);
+            }),
+            Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_JOIN_ROOM, (data) => {
+                if (data.username === this.state.myUsername && this.state.curView === VIEW.ROOM_OPTIONS) {
+                    this.setState({
+                        roomId: data.roomId,
+                        roomUsernames: data.users,
+                    });
+                    this.setView(VIEW.IN_ROOM);
                 }
-            }
-        });
-        Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_ROOM_USERS, (data) => {
-            this.setState({
-                roomUsernames: data.users,
-            });
-        });
-        Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
-            if (this.state.curView === VIEW.WAITING_ROOM) {
-                var charChoices = data.characterChoiceIds;
-                this.setState({
-                    matchState: data.matchState,
-                });
-                this.setView(VIEW.GAME);
-            }
-            else {
-                console.warn('Bad view: ' + this.state.curView);
-            }
-        });
+            }),
+        ];
     }
     render() {
         var showCounter;
-        if (this.state.curView === VIEW.USERNAME || this.state.curView === VIEW.ROOM_OPTIONS) {
+        if (this.state.curView !== VIEW.IN_ROOM) {
             showCounter = React.createElement(online_counter_1.OnlineCounter, null);
-        }
-        var showChat;
-        if (this.state.curView === VIEW.WAITING_ROOM || this.state.curView === VIEW.GAME) {
-            showChat = React.createElement(chat_window_1.ChatWindow, null);
         }
         return (React.createElement("div", { id: "view" },
             showCounter,
-            showChat,
             this.getViewComponent()));
     }
     getViewComponent() {
@@ -1039,10 +1028,8 @@ class Views extends React.Component {
                 return (React.createElement(menu_views_1.UsernameView, null));
             case (VIEW.ROOM_OPTIONS):
                 return (React.createElement(menu_views_1.RoomOptionsView, null));
-            case (VIEW.WAITING_ROOM):
-                return (React.createElement(menu_views_1.WaitingRoomView, { roomId: this.state.roomId, usernames: this.state.roomUsernames }));
-            case (VIEW.GAME):
-                return (React.createElement(game_view_1.GameView, { username: this.state.myUsername, matchState: this.state.matchState }));
+            case (VIEW.IN_ROOM):
+                return React.createElement(room_view_1.RoomView, { roomId: this.state.roomId, username: this.state.myUsername, initialRoomUsernames: this.state.roomUsernames });
             default:
                 console.error('Bad view ' + this.state.curView);
         }
@@ -1054,6 +1041,41 @@ class Views extends React.Component {
     }
 }
 exports.Views = Views;
+
+
+/***/ }),
+
+/***/ "./src/client/waiting-room-view.tsx":
+/*!******************************************!*\
+  !*** ./src/client/waiting-room-view.tsx ***!
+  \******************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const React = __webpack_require__(/*! react */ "react");
+class WaitingRoomView extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+    render() {
+        return (React.createElement("div", { id: "waiting-room", className: "lobby-menu" },
+            React.createElement("div", null, "Room ID:"),
+            React.createElement("h1", null, this.props.roomId),
+            React.createElement("br", null),
+            React.createElement("div", null, "Waiting for players..."),
+            React.createElement("div", null,
+                "Current players:",
+                React.createElement("ul", null, renderPlayersList(this.props.usernames))),
+            React.createElement("button", { type: "button", id: "start-game-btn", onClick: this.props.onStartGame }, "Start Game")));
+    }
+}
+exports.WaitingRoomView = WaitingRoomView;
+function renderPlayersList(usernames) {
+    return usernames.map((name) => (React.createElement("li", { key: name }, name)));
+}
 
 
 /***/ }),
@@ -1072,11 +1094,12 @@ const util_1 = __webpack_require__(/*! ../../server/lobby/util */ "./src/server/
 exports.ROOM_SIZE = 4;
 var Phase;
 (function (Phase) {
-    Phase[Phase["CHOOSE_CHARACTER"] = 0] = "CHOOSE_CHARACTER";
-    Phase[Phase["CHOOSE_STARTING_LANE"] = 1] = "CHOOSE_STARTING_LANE";
-    Phase[Phase["PLAN"] = 2] = "PLAN";
-    Phase[Phase["RESOLVE"] = 3] = "RESOLVE";
-    Phase[Phase["GAME_OVER"] = 4] = "GAME_OVER";
+    Phase[Phase["WAITING_ROOM"] = 0] = "WAITING_ROOM";
+    Phase[Phase["CHOOSE_CHARACTER"] = 1] = "CHOOSE_CHARACTER";
+    Phase[Phase["CHOOSE_STARTING_LANE"] = 2] = "CHOOSE_STARTING_LANE";
+    Phase[Phase["PLAN"] = 3] = "PLAN";
+    Phase[Phase["RESOLVE"] = 4] = "RESOLVE";
+    Phase[Phase["GAME_OVER"] = 5] = "GAME_OVER";
 })(Phase = exports.Phase || (exports.Phase = {}));
 var Faction;
 (function (Faction) {
@@ -1145,7 +1168,7 @@ exports.EventResultTexts = {
         if (result.value > 0) {
             return `${result.entityId} gains ${result.value} HP.`;
         }
-        return `${result.entityId} loses ${result.value} HP.`;
+        return `${result.entityId} loses ${Math.abs(result.value)} HP.`;
     },
     'GAIN_STEF': undefined,
     'LOSE_STEF': undefined,

@@ -70,7 +70,7 @@ export const EventResultTexts: {[key: string]: (result?: IEventResult)=>string} 
 		if(result.value > 0) {
 			return `${result.entityId} gains ${result.value} HP.`;
 		}
-		return `${result.entityId} loses ${result.value} HP.`;
+		return `${result.entityId} loses ${Math.abs(result.value)} HP.`;
 	},
 	'GAIN_STEF': undefined,
 	'LOSE_STEF': undefined,
