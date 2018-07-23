@@ -83,16 +83,24 @@ export const EventResultTexts: {[key: string]: (result?: IEventResult)=>string} 
 		return `${result.entityId} loses ${Math.abs(result.value)} AP.`;
 	},
 	'CHANGE_LANE': (result: IChangeLangeResult) => {
-		return ''; // `${result.entityId} moves to lane ${result.laneId}.`;
+		return `${result.entityId} moves to lane ${result.laneId}.`;
 	},
 };
 
-export function flatReport(ms: IMatchState, causes: IEventCause[]): string[][] {
-	return causes.map((cause) => {
-		return flatEvent(ms, cause);
-	});
+
+export interface IFlatEvent {
+	message: string;
+	newState: IMatchState;
 }
-export function flatEvent(ms: IMatchState, cause: IEventCause): string[] {
+
+export function flatReport(ms: IMatchState, causes: IEventCause[]): IFlatEvent[] {
+	var res: IFlatEvent[] = [];
+	causes.forEach((cause) => {
+		res = res.concat(reportCause(ms, cause));
+	});
+	return res;
+}
+export function reportCause(ms: IMatchState, cause: IEventCause): IFlatEvent[] {
 	var actionDef = Skills[cause.actionDefId];
 	var ent = ms.players[cause.entityId];
 	var tar: Entity|Lane;
@@ -103,12 +111,18 @@ export function flatEvent(ms: IMatchState, cause: IEventCause): string[] {
 		tar = ms.lanes[cause.targetId];
 	}
 
-	var lines = [actionDef.resultMessage(ent, tar)];
+	var lines: IFlatEvent[] = [{
+		message: actionDef.resultMessage(ent, tar),
+		newState: undefined,
+	}];
 
 	for(let res of cause.results) {
-		var line = EventResultTexts[res.type](res);
-		if(line) {
-			lines.push(line);
+		var message = EventResultTexts[res.type](res);
+		if(message) {
+			lines.push({
+				message: message,
+				newState: res.newMatchState,
+			});
 		}
 	}
 

@@ -9,6 +9,7 @@ interface Props {
 interface IChatWindowState {
 	err: string;
 	newMessage: string;
+	logCount: number;
 }
 
 export class ChatWindow extends React.Component<Props,IChatWindowState> {
@@ -18,6 +19,7 @@ export class ChatWindow extends React.Component<Props,IChatWindowState> {
 		this.state = {
 			err: undefined,
 			newMessage: '',
+			logCount: 0,
 		};
 
 		this.onSubmit = this.onSubmit.bind(this);
@@ -57,17 +59,21 @@ export class ChatWindow extends React.Component<Props,IChatWindowState> {
 }
 
 function renderChatLog(messages: Msgs.IChatPostMessageResponse[]) {
-	return messages.map((msg) => {
+	return messages.map((msg, idx) => {
 		var displayMessage;
 		if(msg.username) {
 			displayMessage = <span className="user-message">
 				<span className="chat-user-tag">[{msg.username}]: </span>{msg.message}
 			</span>;
-		} else {
+		} else if(msg.systemMessage) {
 			displayMessage = <span className="system-message">{msg.message}</span>;
+		} else if(msg.resolveMessage) {
+			displayMessage = <span className="resolve-message">{msg.message}</span>;
+		} else {
+			throw Error('bad message' + msg.message);
 		}
 		return (
-			<li key={msg.username+msg.timestamp}>
+			<li key={idx+msg.username+msg.timestamp.getTime()}>
 				{displayMessage}
 			</li>
 		);

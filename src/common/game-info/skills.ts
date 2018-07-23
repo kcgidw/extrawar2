@@ -53,7 +53,7 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return {results: results};
 		},
 		resultMessage: (userEntity, targetLane: Lane) => {
-			return userEntity.id + ' moves to lane ' + targetLane.y + '.';
+			return userEntity.id + ' moves.';
 		}
 	},
 	'FLANK_ASSAULT': {

@@ -104,6 +104,7 @@ class ChatWindow extends React.Component {
         this.state = {
             err: undefined,
             newMessage: '',
+            logCount: 0,
         };
         this.onSubmit = this.onSubmit.bind(this);
         this.updateMessage = this.updateMessage.bind(this);
@@ -133,7 +134,7 @@ class ChatWindow extends React.Component {
 }
 exports.ChatWindow = ChatWindow;
 function renderChatLog(messages) {
-    return messages.map((msg) => {
+    return messages.map((msg, idx) => {
         var displayMessage;
         if (msg.username) {
             displayMessage = React.createElement("span", { className: "user-message" },
@@ -143,10 +144,16 @@ function renderChatLog(messages) {
                     "]: "),
                 msg.message);
         }
-        else {
+        else if (msg.systemMessage) {
             displayMessage = React.createElement("span", { className: "system-message" }, msg.message);
         }
-        return (React.createElement("li", { key: msg.username + msg.timestamp }, displayMessage));
+        else if (msg.resolveMessage) {
+            displayMessage = React.createElement("span", { className: "resolve-message" }, msg.message);
+        }
+        else {
+            throw Error('bad message' + msg.message);
+        }
+        return (React.createElement("li", { key: idx + msg.username + msg.timestamp.getTime() }, displayMessage));
     });
 }
 
@@ -497,16 +504,11 @@ exports.TeamPanel = TeamPanel;
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
 const common_1 = __webpack_require__(/*! ../common/game-core/common */ "./src/common/game-core/common.ts");
-const common_2 = __webpack_require__(/*! ../common/game-core/common */ "./src/common/game-core/common.ts");
-const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
-const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
+const util_1 = __webpack_require__(/*! ../server/lobby/util */ "./src/server/lobby/util.ts");
+const action_choices_1 = __webpack_require__(/*! ./game-ui/action-choices */ "./src/client/game-ui/action-choices.tsx");
 const character_choices_1 = __webpack_require__(/*! ./game-ui/character-choices */ "./src/client/game-ui/character-choices.tsx");
 const lane_1 = __webpack_require__(/*! ./game-ui/lane */ "./src/client/game-ui/lane.tsx");
 const team_panel_1 = __webpack_require__(/*! ./game-ui/team-panel */ "./src/client/game-ui/team-panel.tsx");
-const action_choices_1 = __webpack_require__(/*! ./game-ui/action-choices */ "./src/client/game-ui/action-choices.tsx");
-const skills_1 = __webpack_require__(/*! ../common/game-info/skills */ "./src/common/game-info/skills.ts");
-const util_1 = __webpack_require__(/*! ../server/lobby/util */ "./src/server/lobby/util.ts");
-const event_interfaces_1 = __webpack_require__(/*! ../common/game-core/event-interfaces */ "./src/common/game-core/event-interfaces.ts");
 var MenuState;
 (function (MenuState) {
     MenuState[MenuState["WAITING_ROOM"] = 0] = "WAITING_ROOM";
@@ -521,102 +523,49 @@ var MenuState;
 class GameView extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            matchState: this.props.initialMatchState,
-            actionChoicesIds: undefined,
-            menuState: MenuState.CHOOSE_CHARACTER,
-            currentSelectedActionChoice: undefined,
-            currentSelectedLaneId: undefined,
-            currentSelectedEntityId: undefined,
-        };
+        this.state = {};
         this.lanesSelectable = this.lanesSelectable.bind(this);
         this.entitiesSelectable = this.entitiesSelectable.bind(this);
-        this.selectCharacterProfile = this.selectCharacterProfile.bind(this);
-        this.selectLane = this.selectLane.bind(this);
-        this.selectAction = this.selectAction.bind(this);
-        this.selectEntity = this.selectEntity.bind(this);
-    }
-    componentDidMount() {
-        var han1 = Handler.generateHandler(messages_1.SOCKET_MSG.PLAYERS_READY, (data) => {
-            this.setState({
-                matchState: data.matchState,
-            });
-        });
-        var han2 = Handler.generateHandler(messages_1.SOCKET_MSG.PROMPT_DECISION, (data) => {
-            var newState;
-            switch (data.phase) {
-                case (common_2.Phase.CHOOSE_STARTING_LANE):
-                    newState = MenuState.CHOOSE_STARTING_LANE;
-                    break;
-                case (common_2.Phase.PLAN):
-                    if (this.myTurn()) {
-                        newState = MenuState.CHOOSE_ACTION;
-                    }
-                    else {
-                        newState = MenuState.WAITING;
-                    }
-                    break;
-            }
-            this.setState({
-                menuState: newState,
-                matchState: data.matchState,
-                actionChoicesIds: data.actionChoiceIds,
-                currentSelectedActionChoice: undefined,
-                currentSelectedLaneId: undefined,
-                currentSelectedEntityId: undefined,
-            });
-        });
-        var han3 = Handler.generateHandler(messages_1.SOCKET_MSG.RESOLVE_ACTIONS, (data) => {
-            var fr = event_interfaces_1.flatReport(this.state.matchState, data.causes);
-            console.log();
-        });
-        this.handlerOff = () => {
-            han1();
-            han2();
-            han3();
-        };
-    }
-    componentWillUnmount() {
-        this.handlerOff();
+        this.selectOption = this.selectOption.bind(this);
     }
     render() {
         var innerView;
-        switch (this.state.matchState.phase) {
-            case (common_2.Phase.CHOOSE_CHARACTER):
+        switch (this.props.matchState.phase) {
+            case (common_1.Phase.CHOOSE_CHARACTER):
                 innerView = (React.createElement("div", { id: "menu" },
-                    React.createElement(character_choices_1.CharacterChoices, { choices: this.props.initialMatchState.characterChoicesIds[this.props.username], onSelectCharacter: this.selectCharacterProfile })));
+                    React.createElement(character_choices_1.CharacterChoices, { choices: this.props.matchState.characterChoicesIds[this.props.username], onSelectCharacter: this.selectOption })));
                 break;
-            case (common_2.Phase.CHOOSE_STARTING_LANE):
+            case (common_1.Phase.CHOOSE_STARTING_LANE):
                 break;
-            case (common_2.Phase.PLAN):
+            case (common_1.Phase.PLAN):
                 innerView = (React.createElement("div", { id: "menu" },
-                    React.createElement(action_choices_1.ActionChoices, { choices: this.state.actionChoicesIds, currentChoiceActionDef: this.state.currentSelectedActionChoice, onSelectAction: this.selectAction })));
+                    React.createElement(action_choices_1.ActionChoices, { choices: this.props.actionChoicesIds, currentChoiceActionDef: this.props.currentSelectedActionChoice, onSelectAction: this.selectOption })));
                 break;
-            case (common_2.Phase.RESOLVE):
+            case (common_1.Phase.RESOLVE):
                 break;
             default:
-                console.warn('Bad phase ' + this.state.matchState.phase);
+                console.warn('Bad phase ' + this.props.matchState.phase);
         }
-        var entitiesByLane = getEntitiesByLane(this.state.matchState);
+        var entitiesByLane = getEntitiesByLane(this.props.matchState);
         return (React.createElement("div", { id: "game-view" },
             React.createElement("div", { id: "game-prompt" }, this.getPrompt()),
-            React.createElement(team_panel_1.TeamPanel, { matchState: this.state.matchState, team: 1 }),
-            React.createElement(team_panel_1.TeamPanel, { matchState: this.state.matchState, team: 2 }),
+            React.createElement(team_panel_1.TeamPanel, { matchState: this.props.matchState, team: 1 }),
+            React.createElement(team_panel_1.TeamPanel, { matchState: this.props.matchState, team: 2 }),
             innerView,
             React.createElement("div", { id: "lanes-container" },
-                React.createElement("div", { id: "lanes" }, entitiesByLane.map((ents, idx) => (React.createElement(lane_1.Lane, { key: idx, id: idx, onSelect: this.selectLane, selectable: this.lanesSelectable(), selected: this.state.currentSelectedLaneId === idx, entities: ents, entitiesSelectable: this.entitiesSelectable(), onSelectEntity: this.selectEntity, selectedEntityId: this.state.currentSelectedEntityId })))))));
+                React.createElement("div", { id: "lanes" }, entitiesByLane.map((ents, idx) => (React.createElement(lane_1.Lane, { key: idx, id: idx, onSelect: this.selectOption, selectable: this.lanesSelectable(), selected: this.props.currentSelectedLaneId === idx, entities: ents, entitiesSelectable: this.entitiesSelectable(), onSelectEntity: this.selectOption, selectedEntityId: this.props.currentSelectedEntityId })))))));
     }
     lanesSelectable() {
-        return this.state.menuState === MenuState.CHOOSE_STARTING_LANE
-            || (this.myTurn() && this.state.menuState === MenuState.CHOOSE_TARGET && this.state.currentSelectedActionChoice.target.what === common_1.TargetWhat.LANE);
+        return this.props.menuState === MenuState.CHOOSE_STARTING_LANE
+            || (this.myTurn() && this.props.menuState === MenuState.CHOOSE_TARGET && this.props.currentSelectedActionChoice.target.what === common_1.TargetWhat.LANE);
     }
     entitiesSelectable() {
         return this.myTurn()
-            && this.state.menuState === MenuState.CHOOSE_TARGET
-            && util_1.actionDefTargetsEntity(this.state.currentSelectedActionChoice);
+            && this.props.menuState === MenuState.CHOOSE_TARGET
+            && util_1.actionDefTargetsEntity(this.props.currentSelectedActionChoice);
     }
     getPrompt() {
-        switch (this.state.menuState) {
+        switch (this.props.menuState) {
             case (MenuState.CHOOSE_CHARACTER):
                 return 'Choose a character.';
             case (MenuState.CHOOSE_STARTING_LANE):
@@ -627,7 +576,7 @@ class GameView extends React.Component {
                 let targ = this.lanesSelectable() ? 'lane' : 'entity';
                 return 'Choose target ' + targ + '.';
             case (MenuState.WAITING):
-                if (util_1.getActingTeam(this.state.matchState) === this.state.matchState.players[this.props.username].team) {
+                if (util_1.getActingTeam(this.props.matchState) === this.props.matchState.players[this.props.username].team) {
                     return 'Waiting for other players.';
                 }
                 return 'Waiting for opposing team.';
@@ -637,62 +586,11 @@ class GameView extends React.Component {
                 return 'Game over!';
         }
     }
-    selectCharacterProfile(entProfId) {
-        Handler.chooseCharacter(entProfId);
-        this.setState({ menuState: MenuState.WAITING });
-    }
-    selectLane(laneId) {
-        switch (this.state.menuState) {
-            case (MenuState.CHOOSE_STARTING_LANE):
-                Handler.chooseStartingLane(laneId);
-                this.setState({
-                    currentSelectedLaneId: laneId,
-                    menuState: MenuState.WAITING
-                });
-                break;
-            case (MenuState.CHOOSE_TARGET):
-                this.submitActionAndSetWaiting(laneId);
-                this.setState({
-                    currentSelectedLaneId: laneId,
-                });
-                break;
-            default:
-                throw new Error('bad menuState ' + this.state.menuState);
-        }
-    }
-    selectAction(actionId) {
-        if (this.myTurn() && [MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menuState) !== -1) {
-            let actionDef = skills_1.Skills[actionId];
-            if (actionDef.target.what === common_1.TargetWhat.NONE) {
-                this.submitActionAndSetWaiting(undefined);
-                this.setState({
-                    currentSelectedActionChoice: skills_1.Skills[actionId],
-                });
-            }
-            else {
-                this.setState({
-                    currentSelectedActionChoice: skills_1.Skills[actionId],
-                    menuState: MenuState.CHOOSE_TARGET,
-                });
-            }
-        }
-    }
-    selectEntity(id) {
-        if (this.state.menuState === MenuState.CHOOSE_TARGET) {
-            this.submitActionAndSetWaiting(id);
-            this.setState({
-                currentSelectedEntityId: id,
-            });
-        }
-    }
-    submitActionAndSetWaiting(target) {
-        Handler.chooseActionAndTarget(this.state.currentSelectedActionChoice, target);
-        this.setState({
-            menuState: MenuState.WAITING,
-        });
-    }
     myTurn() {
-        return util_1.getActingTeam(this.state.matchState) === this.state.matchState.players[this.props.username].team;
+        return util_1.getActingTeam(this.props.matchState) === this.props.matchState.players[this.props.username].team;
+    }
+    selectOption(id) {
+        this.props.selectOption(id);
     }
 }
 exports.GameView = GameView;
@@ -869,11 +767,15 @@ exports.OnlineCounter = OnlineCounter;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const React = __webpack_require__(/*! react */ "react");
+const common_1 = __webpack_require__(/*! ../common/game-core/common */ "./src/common/game-core/common.ts");
 const messages_1 = __webpack_require__(/*! ../common/messages */ "./src/common/messages.ts");
 const chat_window_1 = __webpack_require__(/*! ./chat-window */ "./src/client/chat-window.tsx");
 const Handler = __webpack_require__(/*! ./client-handler */ "./src/client/client-handler.ts");
 const game_view_1 = __webpack_require__(/*! ./game-view */ "./src/client/game-view.tsx");
 const waiting_room_view_1 = __webpack_require__(/*! ./waiting-room-view */ "./src/client/waiting-room-view.tsx");
+const event_interfaces_1 = __webpack_require__(/*! ../common/game-core/event-interfaces */ "./src/common/game-core/event-interfaces.ts");
+const util_1 = __webpack_require__(/*! ../server/lobby/util */ "./src/server/lobby/util.ts");
+const skills_1 = __webpack_require__(/*! ../common/game-info/skills */ "./src/common/game-info/skills.ts");
 var MenuState;
 (function (MenuState) {
     MenuState[MenuState["WAITING_ROOM"] = 0] = "WAITING_ROOM";
@@ -893,27 +795,85 @@ class RoomView extends React.Component {
             menu: MenuState.WAITING_ROOM,
             chatLog: [],
             roomUsernames: this.props.initialRoomUsernames,
+            actionChoicesIds: undefined,
+            currentSelectedActionChoice: undefined,
+            currentSelectedLaneId: undefined,
+            currentSelectedEntityId: undefined,
         };
         this.ShowGameView = this.ShowGameView.bind(this);
         this.ShowWaitingRoomView = this.ShowWaitingRoomView.bind(this);
+        this.selectOption = this.selectOption.bind(this);
     }
     componentDidMount() {
-        Handler.generateHandler(messages_1.SOCKET_MSG.CHAT_POST_MESSAGE, (data) => {
-            this.addUserChatMessage(data);
-        });
-        Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_ROOM_USERS, (data) => {
-            this.addSystemChatMessage(messages_1.SOCKET_MSG.LOBBY_ROOM_USERS, data.username + (data.joined ? ' joined the room.' : ' left the room.'));
-            this.setState({
-                roomUsernames: data.users,
-            });
-        });
-        Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
-            this.addSystemChatMessage(messages_1.SOCKET_MSG.START_GAME, data.requestorUsername + ' started the game.');
-            this.setState({
-                ms: data.matchState,
-                menu: MenuState.CHOOSE_CHARACTER,
-            });
-        });
+        this.handlers = [
+            Handler.generateHandler(messages_1.SOCKET_MSG.CHAT_POST_MESSAGE, (data) => {
+                this.addUserChatMessage(data);
+            }),
+            Handler.generateHandler(messages_1.SOCKET_MSG.LOBBY_ROOM_USERS, (data) => {
+                this.addSystemChatMessage(messages_1.SOCKET_MSG.LOBBY_ROOM_USERS, data.username + (data.joined ? ' joined the room.' : ' left the room.'));
+                this.setState({
+                    roomUsernames: data.users,
+                });
+            }),
+            Handler.generateHandler(messages_1.SOCKET_MSG.START_GAME, (data) => {
+                this.addSystemChatMessage(messages_1.SOCKET_MSG.START_GAME, data.requestorUsername + ' started the game.');
+                this.setState({
+                    ms: data.matchState,
+                    menu: MenuState.CHOOSE_CHARACTER,
+                });
+            }),
+            Handler.generateHandler(messages_1.SOCKET_MSG.RESOLVE_ACTIONS, (data) => {
+                var report = event_interfaces_1.flatReport(this.state.ms, data.causes);
+                var idx = 0;
+                var reenact = () => {
+                    setTimeout(() => {
+                        let curEvent = report[idx];
+                        this.addResolveMessage(messages_1.SOCKET_MSG.RESOLVE_ACTIONS, curEvent.message);
+                        if (curEvent.newState) {
+                            this.setState({
+                                ms: report[idx].newState,
+                            }, () => {
+                                if (++idx < report.length) {
+                                    reenact();
+                                }
+                            });
+                        }
+                        else {
+                            if (++idx < report.length) {
+                                reenact();
+                            }
+                        }
+                    }, 0.6 * 1000);
+                };
+                reenact();
+            }),
+            Handler.generateHandler(messages_1.SOCKET_MSG.PLAYERS_READY, (data) => {
+                this.setState({
+                    ms: data.matchState,
+                });
+            }),
+            Handler.generateHandler(messages_1.SOCKET_MSG.PROMPT_DECISION, (data) => {
+                var newState;
+                switch (data.phase) {
+                    case (common_1.Phase.CHOOSE_STARTING_LANE):
+                        newState = MenuState.CHOOSE_STARTING_LANE;
+                        break;
+                    case (common_1.Phase.PLAN):
+                        if (this.myTurn()) {
+                            newState = MenuState.CHOOSE_ACTION;
+                        }
+                        else {
+                            newState = MenuState.WAITING;
+                        }
+                        break;
+                }
+                this.setState({
+                    ms: data.matchState,
+                    menu: newState,
+                    actionChoicesIds: data.actionChoiceIds,
+                });
+            })
+        ];
     }
     componentWillUnmount() {
         this.handlers.forEach((fn) => {
@@ -927,11 +887,13 @@ class RoomView extends React.Component {
             React.createElement(this.ShowWaitingRoomView, null)));
     }
     ShowGameView() {
-        return this.state.ms !== undefined ? React.createElement(game_view_1.GameView, { initialMatchState: this.state.ms, username: this.props.username }) : null;
+        return this.state.ms !== undefined ?
+            React.createElement(game_view_1.GameView, { matchState: this.state.ms, menuState: this.state.menu, username: this.props.username, selectOption: this.selectOption, actionChoicesIds: this.state.actionChoicesIds, currentSelectedActionChoice: this.state.currentSelectedActionChoice, currentSelectedLaneId: this.state.currentSelectedLaneId, currentSelectedEntityId: this.state.currentSelectedEntityId }) : null;
     }
     ShowWaitingRoomView() {
         return this.state.menu === MenuState.WAITING_ROOM ? React.createElement(waiting_room_view_1.WaitingRoomView, { roomId: this.props.roomId, usernames: this.state.roomUsernames, onStartGame: this.sendStartGame }) : null;
     }
+    /* CHAT */
     addUserChatMessage(msg) {
         this.setState({
             chatLog: [...this.state.chatLog, msg],
@@ -943,10 +905,83 @@ class RoomView extends React.Component {
             username: undefined,
             timestamp: new Date(),
             message: msg,
+            systemMessage: true,
         });
     }
+    addResolveMessage(msgName, msg) {
+        this.addUserChatMessage({
+            messageName: msgName,
+            username: undefined,
+            timestamp: new Date(),
+            message: msg,
+            resolveMessage: true,
+        });
+    }
+    /* MATCH */
     sendStartGame() {
         Handler.sendStartGame();
+    }
+    myTurn() {
+        return util_1.getActingTeam(this.state.ms) === this.state.ms.players[this.props.username].team;
+    }
+    selectOption(id) {
+        switch (this.state.menu) {
+            case MenuState.CHOOSE_CHARACTER:
+                let entProfId = id;
+                Handler.chooseCharacter(entProfId);
+                this.setState({ menu: MenuState.WAITING });
+                break;
+            case MenuState.CHOOSE_STARTING_LANE:
+                let laneId = id;
+                Handler.chooseStartingLane(laneId);
+                this.setState({
+                    currentSelectedLaneId: laneId,
+                    menu: MenuState.WAITING
+                });
+                break;
+            case MenuState.CHOOSE_ACTION:
+                let actionDefId = id;
+                if (this.myTurn() && [MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menu) !== -1) {
+                    let actionDef = skills_1.Skills[actionDefId];
+                    if (actionDef.target.what === common_1.TargetWhat.NONE) {
+                        this.submitActionAndSetWaiting(undefined);
+                        this.setState({
+                            currentSelectedActionChoice: skills_1.Skills[actionDefId],
+                        });
+                    }
+                    else {
+                        this.setState({
+                            currentSelectedActionChoice: skills_1.Skills[actionDefId],
+                            menu: MenuState.CHOOSE_TARGET,
+                        });
+                    }
+                }
+                break;
+            case MenuState.CHOOSE_TARGET:
+                if (typeof id === 'number') {
+                    let laneId = id;
+                    this.submitActionAndSetWaiting(laneId);
+                    this.setState({
+                        currentSelectedLaneId: laneId,
+                    });
+                }
+                else if (typeof id === 'string') {
+                    let entId = id;
+                    this.submitActionAndSetWaiting(entId);
+                    this.setState({
+                        currentSelectedEntityId: entId,
+                    });
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    submitActionAndSetWaiting(targetId) {
+        Handler.chooseActionAndTarget(this.state.currentSelectedActionChoice, targetId);
+        this.setState({
+            menu: MenuState.WAITING,
+        });
     }
 }
 exports.RoomView = RoomView;
@@ -1181,16 +1216,18 @@ exports.EventResultTexts = {
         return `${result.entityId} loses ${Math.abs(result.value)} AP.`;
     },
     'CHANGE_LANE': (result) => {
-        return ''; // `${result.entityId} moves to lane ${result.laneId}.`;
+        return `${result.entityId} moves to lane ${result.laneId}.`;
     },
 };
 function flatReport(ms, causes) {
-    return causes.map((cause) => {
-        return flatEvent(ms, cause);
+    var res = [];
+    causes.forEach((cause) => {
+        res = res.concat(reportCause(ms, cause));
     });
+    return res;
 }
 exports.flatReport = flatReport;
-function flatEvent(ms, cause) {
+function reportCause(ms, cause) {
     var actionDef = skills_1.Skills[cause.actionDefId];
     var ent = ms.players[cause.entityId];
     var tar;
@@ -1200,16 +1237,22 @@ function flatEvent(ms, cause) {
     else {
         tar = ms.lanes[cause.targetId];
     }
-    var lines = [actionDef.resultMessage(ent, tar)];
+    var lines = [{
+            message: actionDef.resultMessage(ent, tar),
+            newState: undefined,
+        }];
     for (let res of cause.results) {
-        var line = exports.EventResultTexts[res.type](res);
-        if (line) {
-            lines.push(line);
+        var message = exports.EventResultTexts[res.type](res);
+        if (message) {
+            lines.push({
+                message: message,
+                newState: res.newMatchState,
+            });
         }
     }
     return lines;
 }
-exports.flatEvent = flatEvent;
+exports.reportCause = reportCause;
 
 
 /***/ }),
@@ -1354,7 +1397,7 @@ exports.Skills = {
             return { results: results };
         },
         resultMessage: (userEntity, targetLane) => {
-            return userEntity.id + ' moves to lane ' + targetLane.y + '.';
+            return userEntity.id + ' moves.';
         }
     },
     'FLANK_ASSAULT': {

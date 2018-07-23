@@ -54,6 +54,10 @@ export interface IChatPostMessageResponse extends IErrorableResponse {
 	username: string;
 	timestamp: Date;
 	message: string;
+
+	// client fields
+	resolveMessage?: boolean;
+	systemMessage?: boolean;
 }
 
 export interface IPlayerDecisionRequest {
