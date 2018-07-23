@@ -10,6 +10,7 @@ import { Skills } from "../../common/game-info/skills";
 import { MAX_STEF_DURATION } from "../../common/game-info/stefs";
 
 const MAX_PLAYERS = 6; // TODO: any more = spectators. Make sure to update the const in lobby.ts too
+const NEXT_PHASE_DELAY = 0.4 * 1000;
 
 export class Match implements IMatchState {
 	room: ChatRoom;
@@ -53,18 +54,27 @@ export class Match implements IMatchState {
 	getUsernameTeam(username: string): Team {
 		return this.players[username].team;
 	}
+	userShouldAct(user: User): boolean {
+		if(this.turn % 2 === 1 && this.getUserTeam(user) === 1) {
+			return true;
+		}
+		if(this.turn % 2 === 0 && this.getUserTeam(user) === 2) {
+			return true;
+		}
+		return false;
+	}
 
 	enqueuePlayerDecision(user: User, decision: IPlayerDecisionRequest) {
 		switch(this.phase) {
 			case(Phase.CHOOSE_CHARACTER):
 				this.playerDecisions[user.username] = decision;
-				if(Object.keys(this.playerDecisions).length === Object.keys(this.players).length) {
+				if(this.allReady()) {
 					this.resolveDecisionsChooseCharacter();
 				}
 				break;
 			case(Phase.CHOOSE_STARTING_LANE):
 				this.playerDecisions[user.username] = decision;
-				if(Object.keys(this.playerDecisions).length === Object.keys(this.players).length) {
+				if(this.allReady()) {
 					this.resolveDecisionsChooseStartingLane();
 				}
 				break;
@@ -78,17 +88,19 @@ export class Match implements IMatchState {
 				}
 				break;
 			case(Phase.RESOLVE):
+				this.playerDecisions[user.username] = {
+					username: user.username,
+					phase: Phase.RESOLVE,
+				};
+				if(this.allReady()) {
+					this.nextPhase(Phase.PLAN);
+				}
 				break;
 			case(Phase.GAME_OVER):
 				break;
 			default:
-				throw new Error('bad phase');
+				throw new Error('bad phase ' + this.phase);
 		}
-	}
-
-	teamReady(t: Team): boolean {
-		var teamString = 'team'+t;
-		return this[teamString].every((username) => (this.playerDecisions[username] !== undefined));
 	}
 
 	resolveDecisionsChooseCharacter() {
@@ -97,29 +109,30 @@ export class Match implements IMatchState {
 			let entProfile = Characters[choice.entityProfileId];
 			this.players[username] = new Entity(this.room.findUser(username), this.getUsernameTeam(username), entProfile);
 		}
-
 		setTimeout(() => {
 			this.nextPhase(Phase.CHOOSE_STARTING_LANE);
-		}, 0.5*1000);
+		}, NEXT_PHASE_DELAY);
 	}
 	resolveDecisionsChooseStartingLane() {
 		for(let username of Object.keys(this.playerDecisions)) {
 			let choice = this.playerDecisions[username];
 			this.players[username].state.y = choice.startingLane;
 		}
-
 		setTimeout(() => {
 			this.nextPhase(Phase.PLAN);
-		}, 0.5*1000);
+		}, NEXT_PHASE_DELAY);
 	}
 	resolveDecisionsChooseAction() {
 		setTimeout(() => {
 			this.nextPhase(Phase.RESOLVE);
-		}, 1*1000);
+		},NEXT_PHASE_DELAY);
 	}
 
 	resetDecisions() {
 		this.playerDecisions = {};
+		if(this.characterChoicesIds) {
+			this.characterChoicesIds = undefined;
+		}
 	}
 
 	setCharacterChoices(): {[key: string]: string[]} {
@@ -164,6 +177,13 @@ export class Match implements IMatchState {
 		}
 		return x;
 	}
+	allReady(): boolean {
+		return Object.keys(this.playerDecisions).length === Object.keys(this.players).length;
+	}
+	teamReady(t: Team): boolean {
+		var teamString = 'team'+t;
+		return this[teamString].every((username) => (this.playerDecisions[username] !== undefined));
+	}
 
 	nextPhase(phase: Phase) {
 		this.phase = phase;
@@ -188,17 +208,20 @@ export class Match implements IMatchState {
 				}
 				this.room.users.forEach((user) => {
 					var player = this.players[user.username];
+					var shouldAct = this.userShouldAct(user);
 					user.emit(SOCKET_MSG.PROMPT_DECISION, <IPromptDecisionMessage>{
 						messageName: SOCKET_MSG.PROMPT_DECISION,
 						phase: phase,
 						matchState: this.exportState(),
-						actionChoiceIds: ['ATTACK', 'MOVE']
+						actionChoiceIds: shouldAct ? ['ATTACK', 'MOVE'] : [],
 					});
 				});
 				break;
 			case(Phase.RESOLVE):
 				var causes = [];
-				var players = Object.keys(this.playerDecisions);
+				var playerDecisions = this.playerDecisions;
+				this.resetDecisions();
+				var players = Object.keys(playerDecisions);
 				players.sort((usernameA: string, usernameB: string) => {
 					var playerA = this.players[usernameA];
 					var playerB = this.players[usernameB];
@@ -209,7 +232,7 @@ export class Match implements IMatchState {
 					return 0; // TODO decide ties
 				});
 				players.forEach((username) => {
-					var decision = this.playerDecisions[username];
+					var decision = playerDecisions[username];
 					var actionDef = Skills[decision.actionId];
 					var target: Entity|Lane;
 					if(actionDef.target.what === TargetWhat.LANE) {
@@ -231,7 +254,6 @@ export class Match implements IMatchState {
 				this.room.nsp.to(this.room.roomId).emit(SOCKET_MSG.RESOLVE_ACTIONS, <IActionResolutionTimeline>{
 					causes: causes,
 				});
-				this.resetDecisions();
 				break;
 			case(Phase.CHOOSE_CHARACTER):
 				// for now, no-op. Leave the functionality to START_GAME

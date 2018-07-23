@@ -39,23 +39,25 @@ export class GameView extends React.Component<IProps, IState> {
 		var innerView;
 
 		switch(this.props.matchState.phase) {
-			case(Phase.CHOOSE_CHARACTER):
+			case Phase.CHOOSE_CHARACTER:
 				innerView = (
 					<div id="menu">
 						< CharacterChoices choices={this.props.matchState.characterChoicesIds[this.props.username]} onSelectCharacter={this.selectOption} />
 					</div>
 				);
 				break;
-			case(Phase.CHOOSE_STARTING_LANE):
+			case Phase.CHOOSE_STARTING_LANE:
 				break;
-			case(Phase.PLAN):
-				innerView = (
-					<div id="menu">
-						< ActionChoices choices={this.props.actionChoicesIds} currentChoiceActionDef={this.props.currentSelectedActionChoice} onSelectAction={this.selectOption} />
-					</div>
-				);
+			case Phase.PLAN:
+				if(this.myTurn()) {
+					innerView = (
+						<div id="menu">
+							< ActionChoices choices={this.props.actionChoicesIds} currentChoiceActionDef={this.props.currentSelectedActionChoice} onSelectAction={this.selectOption} />
+						</div>
+					);
+				}
 				break;
-			case(Phase.RESOLVE):
+			case Phase.RESOLVE:
 				break;
 			default:
 				console.warn('Bad phase ' + this.props.matchState.phase);
@@ -96,29 +98,29 @@ export class GameView extends React.Component<IProps, IState> {
 
 	getPrompt() {
 		switch(this.props.menuState) {
-			case(MenuState.CHOOSE_CHARACTER):
+			case MenuState.CHOOSE_CHARACTER:
 				return 'Choose a character.';
-			case(MenuState.CHOOSE_STARTING_LANE):
+			case MenuState.CHOOSE_STARTING_LANE:
 				return 'Choose a starting lane.';
-			case(MenuState.CHOOSE_ACTION):
+			case MenuState.CHOOSE_ACTION:
 				return 'Choose an action.';
-			case(MenuState.CHOOSE_TARGET):
+			case MenuState.CHOOSE_TARGET:
 				let targ = this.lanesSelectable() ? 'lane' : 'entity';
 				return 'Choose target ' + targ + '.';
-			case(MenuState.WAITING):
-				if(getActingTeam(this.props.matchState) === this.props.matchState.players[this.props.username].team) {
+			case MenuState.WAITING:
+				if(this.myTurn()) {
 					return 'Waiting for other players.';
 				}
 				return 'Waiting for opposing team.';
-			case(MenuState.RESOLVING):
+			case MenuState.RESOLVING:
 				return 'Resolving.';
-			case(MenuState.GAME_OVER):
+			case MenuState.GAME_OVER:
 				return 'Game over!';
 		}
 	}
 
 	myTurn(): boolean { // TODO remove function duplication
-		return getActingTeam(this.props.matchState) === this.props.matchState.players[this.props.username].team;
+		return this.props.matchState.turn === -1 || getActingTeam(this.props.matchState) === this.props.matchState.players[this.props.username].team;
 	}
 
 	selectOption(id: number|string): void {

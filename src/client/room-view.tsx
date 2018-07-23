@@ -82,6 +82,10 @@ export class RoomView extends React.Component<Props, State> {
 			Handler.generateHandler<IActionResolutionTimeline>(SOCKET_MSG.RESOLVE_ACTIONS, (data) => {
 				var report = flatReport(this.state.ms, data.causes);
 
+				function done() {
+					Handler.resolveDone();
+				}
+
 				var idx = 0;
 				var reenact = () => {
 					setTimeout(() => {
@@ -90,19 +94,28 @@ export class RoomView extends React.Component<Props, State> {
 						if(curEvent.newState) {
 							this.setState({
 								ms: report[idx].newState,
-							}, () => {
-								if(++idx < report.length) {
-									reenact();
-								}
-							});
+							}, next);
 						} else {
+							next();
+						}
+
+						function next() {
 							if(++idx < report.length) {
 								reenact();
+							} else {
+								done();
 							}
 						}
 					}, 0.6 * 1000);
 				};
-				reenact();
+				
+				this.setState({
+					currentSelectedActionChoice: undefined,
+					currentSelectedEntityId: undefined,
+					currentSelectedLaneId: undefined,
+				}, ()=> {
+					reenact();
+				});
 			}),
 			Handler.generateHandler<Msgs.IPlayersReady>(SOCKET_MSG.PLAYERS_READY, (data) => {
 				this.setState({
@@ -110,23 +123,26 @@ export class RoomView extends React.Component<Props, State> {
 				});
 			}),
 			Handler.generateHandler<Msgs.IPromptDecisionMessage>(SOCKET_MSG.PROMPT_DECISION, (data) => {
-				var newState: MenuState;
+				var nextMenu: MenuState;
 				switch(data.phase) {
 					case(Phase.CHOOSE_STARTING_LANE):
-						newState = MenuState.CHOOSE_STARTING_LANE;
+						nextMenu = MenuState.CHOOSE_STARTING_LANE;
 						break;
 					case(Phase.PLAN):
-						if(this.myTurn()) {
-							newState = MenuState.CHOOSE_ACTION;
+						if(data.actionChoiceIds && data.actionChoiceIds.length > 0) {
+							nextMenu = MenuState.CHOOSE_ACTION;
 						} else {
-							newState = MenuState.WAITING;
+							nextMenu = MenuState.WAITING;
 						}
 						break;
 				}
 				this.setState({
 					ms: data.matchState,
-					menu: newState,
+					menu: nextMenu,
 					actionChoicesIds: data.actionChoiceIds,
+					currentSelectedActionChoice: undefined,
+					currentSelectedEntityId: undefined,
+					currentSelectedLaneId: undefined,
 				});
 			})
 		];
@@ -150,16 +166,16 @@ export class RoomView extends React.Component<Props, State> {
 
 	ShowGameView() {
 		return this.state.ms !== undefined ?
-		<GameView 
-			matchState={this.state.ms} 
-			menuState={this.state.menu} 
-			username={this.props.username} 
-			selectOption={this.selectOption} 
-			actionChoicesIds={this.state.actionChoicesIds}
-			currentSelectedActionChoice={this.state.currentSelectedActionChoice}
-			currentSelectedLaneId={this.state.currentSelectedLaneId}
-			currentSelectedEntityId={this.state.currentSelectedEntityId}
-		/> : null;
+			<GameView 
+				matchState={this.state.ms} 
+				menuState={this.state.menu} 
+				username={this.props.username} 
+				selectOption={this.selectOption} 
+				actionChoicesIds={this.state.actionChoicesIds}
+				currentSelectedActionChoice={this.state.currentSelectedActionChoice}
+				currentSelectedLaneId={this.state.currentSelectedLaneId}
+				currentSelectedEntityId={this.state.currentSelectedEntityId}
+			/> : null;
 	}
 	ShowWaitingRoomView() {
 		return this.state.menu === MenuState.WAITING_ROOM ? < WaitingRoomView roomId={this.props.roomId} usernames={this.state.roomUsernames} onStartGame={this.sendStartGame} /> : null;
@@ -198,7 +214,7 @@ export class RoomView extends React.Component<Props, State> {
 	}
 
 	myTurn(): boolean {
-		return getActingTeam(this.state.ms) === this.state.ms.players[this.props.username].team;
+		return this.state.ms.turn === -1 || getActingTeam(this.state.ms) === this.state.ms.players[this.props.username].team;
 	}
 
 	selectOption(id: number|string) {

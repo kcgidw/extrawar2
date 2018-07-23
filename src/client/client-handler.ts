@@ -53,6 +53,10 @@ export function chooseActionAndTarget(actionDef: ISkillDef, targetId: number|str
 	} as Msgs.IPlayerDecisionRequest);
 }
 
+export function resolveDone() {
+	socket.emit(SOCKET_MSG.RESOLVE_DONE);
+}
+
 // returns a function to turn off the handler.
 // remember to SAVE that function and CALL it on the unmount.
 export function generateHandler<T>(messageType: string, fn: (data: T)=>any, errorFn?: (data: T)=>any) {

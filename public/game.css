@@ -46,9 +46,6 @@
 }
 
 #lanes-container {
-    display: flex;
-    align-items: center;
-    /* height: calc(100% - 20px); */
 }
 #lanes {
     margin: 0 auto;

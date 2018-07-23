@@ -153,7 +153,7 @@ function renderChatLog(messages) {
         else {
             throw Error('bad message' + msg.message);
         }
-        return (React.createElement("li", { key: idx + msg.username + msg.timestamp.getTime() }, displayMessage));
+        return (React.createElement("li", { key: '' + idx + msg.username + msg.timestamp.getTime() }, displayMessage));
     });
 }
 
@@ -223,6 +223,10 @@ function chooseActionAndTarget(actionDef, targetId) {
     });
 }
 exports.chooseActionAndTarget = chooseActionAndTarget;
+function resolveDone() {
+    exports.socket.emit(messages_1.SOCKET_MSG.RESOLVE_DONE);
+}
+exports.resolveDone = resolveDone;
 // returns a function to turn off the handler.
 // remember to SAVE that function and CALL it on the unmount.
 function generateHandler(messageType, fn, errorFn) {
@@ -531,17 +535,19 @@ class GameView extends React.Component {
     render() {
         var innerView;
         switch (this.props.matchState.phase) {
-            case (common_1.Phase.CHOOSE_CHARACTER):
+            case common_1.Phase.CHOOSE_CHARACTER:
                 innerView = (React.createElement("div", { id: "menu" },
                     React.createElement(character_choices_1.CharacterChoices, { choices: this.props.matchState.characterChoicesIds[this.props.username], onSelectCharacter: this.selectOption })));
                 break;
-            case (common_1.Phase.CHOOSE_STARTING_LANE):
+            case common_1.Phase.CHOOSE_STARTING_LANE:
                 break;
-            case (common_1.Phase.PLAN):
-                innerView = (React.createElement("div", { id: "menu" },
-                    React.createElement(action_choices_1.ActionChoices, { choices: this.props.actionChoicesIds, currentChoiceActionDef: this.props.currentSelectedActionChoice, onSelectAction: this.selectOption })));
+            case common_1.Phase.PLAN:
+                if (this.myTurn()) {
+                    innerView = (React.createElement("div", { id: "menu" },
+                        React.createElement(action_choices_1.ActionChoices, { choices: this.props.actionChoicesIds, currentChoiceActionDef: this.props.currentSelectedActionChoice, onSelectAction: this.selectOption })));
+                }
                 break;
-            case (common_1.Phase.RESOLVE):
+            case common_1.Phase.RESOLVE:
                 break;
             default:
                 console.warn('Bad phase ' + this.props.matchState.phase);
@@ -566,28 +572,28 @@ class GameView extends React.Component {
     }
     getPrompt() {
         switch (this.props.menuState) {
-            case (MenuState.CHOOSE_CHARACTER):
+            case MenuState.CHOOSE_CHARACTER:
                 return 'Choose a character.';
-            case (MenuState.CHOOSE_STARTING_LANE):
+            case MenuState.CHOOSE_STARTING_LANE:
                 return 'Choose a starting lane.';
-            case (MenuState.CHOOSE_ACTION):
+            case MenuState.CHOOSE_ACTION:
                 return 'Choose an action.';
-            case (MenuState.CHOOSE_TARGET):
+            case MenuState.CHOOSE_TARGET:
                 let targ = this.lanesSelectable() ? 'lane' : 'entity';
                 return 'Choose target ' + targ + '.';
-            case (MenuState.WAITING):
-                if (util_1.getActingTeam(this.props.matchState) === this.props.matchState.players[this.props.username].team) {
+            case MenuState.WAITING:
+                if (this.myTurn()) {
                     return 'Waiting for other players.';
                 }
                 return 'Waiting for opposing team.';
-            case (MenuState.RESOLVING):
+            case MenuState.RESOLVING:
                 return 'Resolving.';
-            case (MenuState.GAME_OVER):
+            case MenuState.GAME_OVER:
                 return 'Game over!';
         }
     }
     myTurn() {
-        return util_1.getActingTeam(this.props.matchState) === this.props.matchState.players[this.props.username].team;
+        return this.props.matchState.turn === -1 || util_1.getActingTeam(this.props.matchState) === this.props.matchState.players[this.props.username].team;
     }
     selectOption(id) {
         this.props.selectOption(id);
@@ -824,6 +830,9 @@ class RoomView extends React.Component {
             }),
             Handler.generateHandler(messages_1.SOCKET_MSG.RESOLVE_ACTIONS, (data) => {
                 var report = event_interfaces_1.flatReport(this.state.ms, data.causes);
+                function done() {
+                    Handler.resolveDone();
+                }
                 var idx = 0;
                 var reenact = () => {
                     setTimeout(() => {
@@ -832,20 +841,28 @@ class RoomView extends React.Component {
                         if (curEvent.newState) {
                             this.setState({
                                 ms: report[idx].newState,
-                            }, () => {
-                                if (++idx < report.length) {
-                                    reenact();
-                                }
-                            });
+                            }, next);
                         }
                         else {
+                            next();
+                        }
+                        function next() {
                             if (++idx < report.length) {
                                 reenact();
+                            }
+                            else {
+                                done();
                             }
                         }
                     }, 0.6 * 1000);
                 };
-                reenact();
+                this.setState({
+                    currentSelectedActionChoice: undefined,
+                    currentSelectedEntityId: undefined,
+                    currentSelectedLaneId: undefined,
+                }, () => {
+                    reenact();
+                });
             }),
             Handler.generateHandler(messages_1.SOCKET_MSG.PLAYERS_READY, (data) => {
                 this.setState({
@@ -853,24 +870,27 @@ class RoomView extends React.Component {
                 });
             }),
             Handler.generateHandler(messages_1.SOCKET_MSG.PROMPT_DECISION, (data) => {
-                var newState;
+                var nextMenu;
                 switch (data.phase) {
                     case (common_1.Phase.CHOOSE_STARTING_LANE):
-                        newState = MenuState.CHOOSE_STARTING_LANE;
+                        nextMenu = MenuState.CHOOSE_STARTING_LANE;
                         break;
                     case (common_1.Phase.PLAN):
-                        if (this.myTurn()) {
-                            newState = MenuState.CHOOSE_ACTION;
+                        if (data.actionChoiceIds && data.actionChoiceIds.length > 0) {
+                            nextMenu = MenuState.CHOOSE_ACTION;
                         }
                         else {
-                            newState = MenuState.WAITING;
+                            nextMenu = MenuState.WAITING;
                         }
                         break;
                 }
                 this.setState({
                     ms: data.matchState,
-                    menu: newState,
+                    menu: nextMenu,
                     actionChoicesIds: data.actionChoiceIds,
+                    currentSelectedActionChoice: undefined,
+                    currentSelectedEntityId: undefined,
+                    currentSelectedLaneId: undefined,
                 });
             })
         ];
@@ -922,7 +942,7 @@ class RoomView extends React.Component {
         Handler.sendStartGame();
     }
     myTurn() {
-        return util_1.getActingTeam(this.state.ms) === this.state.ms.players[this.props.username].team;
+        return this.state.ms.turn === -1 || util_1.getActingTeam(this.state.ms) === this.state.ms.players[this.props.username].team;
     }
     selectOption(id) {
         switch (this.state.menu) {
@@ -1478,6 +1498,7 @@ var SOCKET_MSG;
     SOCKET_MSG["PLAYERS_READY"] = "PLAYERS_READY";
     SOCKET_MSG["PROMPT_DECISION"] = "PROMPT_DECISION";
     SOCKET_MSG["RESOLVE_ACTIONS"] = "RESOLVE_ACTIONS";
+    SOCKET_MSG["RESOLVE_DONE"] = "RESOLVE_DONE";
 })(SOCKET_MSG = exports.SOCKET_MSG || (exports.SOCKET_MSG = {}));
 
 

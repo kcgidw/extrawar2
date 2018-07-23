@@ -12,6 +12,7 @@ export enum SOCKET_MSG {
 	'PLAYERS_READY' = 'PLAYERS_READY',
 	'PROMPT_DECISION' = 'PROMPT_DECISION',
 	'RESOLVE_ACTIONS' = 'RESOLVE_ACTIONS',
+	'RESOLVE_DONE' = 'RESOLVE_DONE',
 }
 
 export interface IErrorableResponse {
@@ -63,7 +64,7 @@ export interface IChatPostMessageResponse extends IErrorableResponse {
 export interface IPlayerDecisionRequest {
 	username: string;
 	phase: Phase;
-	actionId: string;
+	actionId?: string;
 	targetLane?: number;
 	targetEntity?: number;
 	entityProfileId?: string; // choose character

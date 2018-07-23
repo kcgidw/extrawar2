@@ -73,7 +73,7 @@ function renderChatLog(messages: Msgs.IChatPostMessageResponse[]) {
 			throw Error('bad message' + msg.message);
 		}
 		return (
-			<li key={idx+msg.username+msg.timestamp.getTime()}>
+			<li key={''+idx+msg.username+msg.timestamp.getTime()}>
 				{displayMessage}
 			</li>
 		);

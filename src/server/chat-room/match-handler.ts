@@ -56,4 +56,18 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 			});
 		}
 	});
+	sock.on(SOCKET_MSG.RESOLVE_DONE, () => {
+		var user: User = (<User>sock);
+		var chatRoom: ChatRoom = user.gameRoom;
+		var errMsg: string;
+		if(chatRoom) {
+			if(chatRoom.match) {
+				chatRoom.match.enqueuePlayerDecision(user, undefined);
+			} else {
+				errMsg = 'Game not started';
+			}
+		} else {
+			errMsg = 'Undefined room';
+		}
+	});
 }
