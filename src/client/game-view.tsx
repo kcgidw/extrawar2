@@ -2,11 +2,11 @@ import * as React from 'react';
 import { IMatchState, Phase, TargetWhat } from '../common/game-core/common';
 import { Entity } from '../common/game-core/entity';
 import { ISkillDef, ISkillInstance } from '../common/game-info/skills';
-import { actionDefTargetsEntity, getActingTeam } from '../server/lobby/util';
 import { ActionChoices } from './game-ui/action-choices';
 import { CharacterChoices } from './game-ui/character-choices';
 import { Lane } from './game-ui/lane';
 import { TeamPanel } from './game-ui/team-panel';
+import { actionDefTargetsEntity, getActingTeam } from '../common/match-util';
 
 interface IProps {
 	username: string;

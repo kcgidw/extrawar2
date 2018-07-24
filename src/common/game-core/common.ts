@@ -33,7 +33,7 @@ export interface IStefDef {
 }
 
 export enum TargetWhat {
-	NONE, ENTITY, ALLY, ENEMY, LANE,
+	NONE, ENTITY, ALLY, ENEMY, SELF, LANE,
 }
 export enum TargetRange {
 	IN_LANE, NEARBY, ANY,

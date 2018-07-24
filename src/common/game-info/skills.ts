@@ -2,7 +2,10 @@ import { Faction, IStefInstance, ITargetInfo, TargetRange, TargetWhat, Team, Lan
 import { Entity } from "../game-core/entity";
 import { IEventCause, IEventResult } from "../game-core/event-interfaces";
 import { Match } from "../../server/chat-room/match";
-import { otherTeam, randItem } from "../../server/lobby/util";
+import { randItem } from "../../server/lobby/util";
+import { otherTeam, findEntities, usernameShouldAct } from "../match-util";
+import { maxUsernameLength } from "../validate";
+import { ALL_STEFS } from "./stefs";
 
 export interface ISkillDef {
 	id: string;
@@ -21,6 +24,15 @@ export interface ISkillDef {
 export interface ISkillInstance {
 	skillDefId: string;
 	cooldown: number;
+}
+
+function generateSkillDef(id: string, active: boolean, faction: Faction, name: string, desc: string,
+	keywords: string[], apCost: number, cooldown: number, target: ITargetInfo,
+	fn: (match: Match, userEntity: Entity, target: Entity|Lane, custom?: object)=>Partial<IEventCause>,
+	resultMessage?: (userEntity: Entity, target?: Entity|Lane, custom?: object)=>string): ISkillDef {
+		return {
+			id, active, faction, name, desc, keywords, apCost, cooldown, target, fn, resultMessage
+		};
 }
 
 export const Skills: {[key: string]: ISkillDef} = {
@@ -73,7 +85,7 @@ export const Skills: {[key: string]: ISkillDef} = {
 		active: true,
 		faction: Faction.NONE,
 		name: 'Ultra Hyper Killer',
-		desc: 'Ultimate attack. Deals 1000 damage. For testing only!',
+		desc: 'Deals 1000 damage!',
 		keywords: [],
 		apCost: 0,
 		cooldown: 0,
@@ -84,7 +96,9 @@ export const Skills: {[key: string]: ISkillDef} = {
 		fn: (match: Match, userEntity: Entity, target: Entity) => {
 			var results: IEventResult[]  = [];
 
-			results = results.concat(simpleAttack(match, userEntity, target, [], () => 1000));
+			results = results.concat(simpleAttack(match, userEntity, target, {
+				damageMod: (attacker) => (1000),
+			}));
 			
 			return {results: results};
 		},
@@ -92,6 +106,10 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return userEntity.id + ' uses the ULTRA HYPER KILLER!!';
 		}
 	},
+	'NO_HOLDS': generateSkillDef('NO_HOLDS', false, Faction.FERALIST,
+		'No Holds Barred',
+		'Deal +20% attack damage to in-lane enemies.',
+		[], 4, undefined, undefined, undefined),
 	'FLANK_ASSAULT': {
 		id: 'FLANK_ASSAULT',
 		active: true,
@@ -108,9 +126,9 @@ export const Skills: {[key: string]: ISkillDef} = {
 		fn: (match: Match, user: Entity, targetLane: Lane) => {
 			var results: IEventResult[]  = [];
 
-			// TODO movement
+			results = results.concat(match.moveEntity(user, targetLane, 1));
 
-			var targetEntity = randItem(match.findEntities({laneId: targetLane.y, team: otherTeam(user.team), aliveOnly: true}));
+			var targetEntity = randItem(findEntities(match, {laneId: targetLane.y, team: otherTeam(user.team), aliveOnly: true}));
 			if(targetEntity) {
 				results = results.concat(simpleAttack(match, user, targetEntity));
 			}
@@ -135,7 +153,7 @@ export const Skills: {[key: string]: ISkillDef} = {
 			var results: IEventResult[]  = [];
 
 			for(let i=0; i<3; i++) {
-				var targetEntity = randItem(match.findEntities({laneId: targetLane.y, team: otherTeam(user.team), aliveOnly: true}));
+				var targetEntity = randItem(findEntities(match, {laneId: targetLane.y, team: otherTeam(user.team)}));
 				if(targetEntity) {
 					results = results.concat(simpleAttack(match, user, targetEntity));
 				}
@@ -144,6 +162,82 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return {results: results};
 		}
 	},
+	'IMMORTAL_FURY': generateSkillDef('IMMORTAL_FURY', false, Faction.FERALIST,
+		'Immortal Fury',
+		'When you respawn, gain Armor (3) and Strength Up (3).',
+		[], 4, undefined, undefined, undefined),
+	'AGNI_BURST': {
+		id: 'AGNI_BURST',
+		active: true,
+		faction: Faction.MOLTEN,
+		name: 'Agni Burst',
+		desc: `Attack a nearby enemy [dx1.5] and other nearby enemies [dx0.5]. Take 8 damage.`,
+		keywords: [],
+		apCost: 4,
+		cooldown: 4,
+		target: {
+			what: TargetWhat.ENEMY,
+			range: TargetRange.NEARBY
+		},
+		fn: (match: Match, user: Entity, target: Entity) => {
+			var results: IEventResult[]  = [];
+			var tars = findEntities(match, {
+				laneId: user.state.y,
+				laneRange: 1,
+			});
+			tars.forEach((ent) => {
+				var isMainTarget = ent.id === target.id;
+				results = results.concat(simpleAttack(match, user, target, {
+					damageMod: (attacker) => (user.profile.str * (isMainTarget ? 1.5 : 0.5)),
+					selfDamage: (isMainTarget ? () => (8) : undefined),
+				}));
+			});
+			return {results: results};
+		}
+	},
+	'PHLOGISTON': {
+		id: 'PHLOGISTON',
+		active: true,
+		faction: Faction.MOLTEN,
+		name: 'Phlogistic Fusion',
+		desc: `Gain Volatile (2).`,
+		keywords: ['VOLATILE'],
+		apCost: 2,
+		cooldown: 2,
+		target: {
+			what: TargetWhat.SELF,
+			range: TargetRange.IN_LANE
+		},
+		fn: (match: Match, user: Entity, target: Entity) => {
+			var results: IEventResult[]  = [];
+			results = results.concat(match.applyStefToEntity(user, 'VOLATILE', 2, user));
+			return {results: results};
+		}
+	},
+	'EULOGY': generateSkillDef('EULOGY', false, Faction.ABERRANT,
+		'Eulogy', 
+		'When you die, apply Strength Up (X) to allies, where X = your respawn counter + 1.',
+		['STR_UP'], 2, undefined, undefined, undefined),
+	'EQUIV_EX': {
+		id: 'EQUIV_EX',
+		active: true,
+		faction: Faction.ABERRANT,
+		name: 'Equivalent Exchange',
+		desc: 'Heal a nearby ally 50 HP. Lose 50 HP.',
+		keywords: [],
+		apCost: 4,
+		cooldown: 4,
+		target: {
+			what: TargetWhat.ALLY,
+			range: TargetRange.NEARBY
+		},
+		fn: (match: Match, user: Entity, target: Entity) => {
+			var results: IEventResult[]  = [];
+			results = results.concat(match.changeEntityHp(target, 50));
+			results = results.concat(match.changeEntityHp(user, -50));
+			return {results: results};
+		}
+	}
 	// 'CHOOSE_RESPAWN_LANE': {
 	// 	id: 'CHOOSE_RESPAWN_LANE',
 	// 	active: true,
@@ -162,28 +256,45 @@ export const Skills: {[key: string]: ISkillDef} = {
 	// }
 };
 
-
-function simpleAttack(match: Match, attacker: Entity, target: Entity, stefs?: IStefInstance[], damageMod?: (attacker?: Entity, target?: Entity)=>number): IEventResult[] {
+interface simpleAttackOptions {
+	stefs?: IStefInstance[];
+	damageMod?: (attacker?: Entity, target?: Entity)=>number;
+	selfDamage?: (attacker?: Entity)=>number;
+	ignoreLanePenalty?: boolean;
+}
+function simpleAttack(match: Match, attacker: Entity, target: Entity, options: simpleAttackOptions = {}) {
 	var results: IEventResult[] = [];
 
 	var damage;
 	var str = attacker.curStr;
-	if(damageMod) {
-		damage = damageMod(attacker, target);
+
+	if(options.damageMod) {
+		damage = options.damageMod(attacker, target);
 	} else {
 		damage = str;
 	}
 
-	// TODO off-lane penalty
-
-	// TODO armor
+	if(target.state.y !== attacker.state.y && !options.ignoreLanePenalty) {
+		// off-lane penalty
+		damage -= damage * 0.30;
+	}
+	if(target.hasStef(ALL_STEFS.ARMOR)) {
+		damage -= damage * 0.25;
+	}
 
 	results = results.concat(match.changeEntityHp(target, damage * -1));
 
-	if(target.alive && stefs) {
-		stefs.forEach((stef) => {
-			results = results.concat(match.applyStef(target, stef.stefId, stef.duration, attacker));
+	if(target.alive && options.stefs) {
+		options.stefs.forEach((stef) => {
+			results = results.concat(match.applyStefToEntity(target, stef.stefId, stef.duration, attacker));
 		});
+	}
+
+	if(options.selfDamage) { // also for lifesteal!
+		let damage = options.selfDamage(attacker);
+		if(damage !== 0) {
+			results = results.concat(match.changeEntityHp(attacker, damage * -1));
+		}
 	}
 
 	return results;

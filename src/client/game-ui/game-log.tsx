@@ -1,9 +1,6 @@
 import * as React from 'react';
-import { IEventCause, EventResultTexts } from '../../common/game-core/event-interfaces';
-import { Skills } from '../../common/game-info/skills';
-import { IMatchState, TargetWhat, Lane } from '../../common/game-core/common';
-import { Entity } from '../../common/game-core/entity';
-import { actionDefTargetsEntity } from '../../server/lobby/util';
+import { IMatchState } from '../../common/game-core/common';
+import { IEventCause } from '../../common/game-core/event-interfaces';
 
 interface Props {
 	matchState: IMatchState;

@@ -7,8 +7,8 @@ import * as Handler from './client-handler';
 import { GameView } from './game-view';
 import { WaitingRoomView } from './waiting-room-view';
 import { flatReport, IActionResolutionTimeline } from '../common/game-core/event-interfaces';
-import { getActingTeam } from '../server/lobby/util';
 import { Skills, ISkillDef, ISkillInstance } from '../common/game-info/skills';
+import { getActingTeam, getUsernameTeam } from '../common/match-util';
 
 export enum MenuState {
 	WAITING_ROOM, CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, CHOOSE_ACTION, CHOOSE_TARGET, WAITING, RESOLVING, GAME_OVER
@@ -132,7 +132,7 @@ export class RoomView extends React.Component<Props, State> {
 						nextMenu = MenuState.CHOOSE_STARTING_LANE;
 						break;
 					case(Phase.PLAN):
-						if(getActingTeam(data.matchState) === data.matchState.players[this.props.username].team) {
+						if(getActingTeam(data.matchState) === getUsernameTeam(this.state.ms, this.props.username)) {
 							nextMenu = MenuState.CHOOSE_ACTION;
 						} else {
 							nextMenu = MenuState.WAITING;

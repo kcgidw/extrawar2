@@ -6,9 +6,10 @@ import { Skills } from "../../common/game-info/skills";
 import { MAX_STEF_DURATION } from "../../common/game-info/stefs";
 import { IPlayerDecisionRequest, IPromptDecisionMessage, SOCKET_MSG } from "../../common/messages";
 import { User } from "../lobby/user";
-import { getActingTeam, otherTeam, shuffle } from "../lobby/util";
+import { shuffle } from "../lobby/util";
 import { ChatRoom } from "./chat-room";
 import { arch } from "os";
+import { getActingTeam, otherTeam, getUsernameTeam, userShouldAct, teamDead } from "../../common/match-util";
 
 const MAX_PLAYERS = 6; // TODO: any more = spectators. Make sure to update the const in lobby.ts too
 const NEXT_PHASE_DELAY = 0.4 * 1000;
@@ -28,6 +29,8 @@ export class Match implements IMatchState {
 	playerDecisions: {[key: string]: IPlayerDecisionRequest} = {};
 
 	gameOver: boolean = false;
+
+	debug: boolean = true;
 
 	constructor(room: ChatRoom) {
 		this.room = room;
@@ -94,7 +97,7 @@ export class Match implements IMatchState {
 		for(let username of Object.keys(this.playerDecisions)) {
 			let choice = this.playerDecisions[username];
 			let entProfile = Characters[choice.entityProfileId];
-			this.players[username] = new Entity(this.room.findUser(username), this.getUsernameTeam(username), entProfile);
+			this.players[username] = new Entity(this.room.findUser(username), getUsernameTeam(this, username), entProfile);
 		}
 		setTimeout(() => {
 			this.nextPhase(Phase.CHOOSE_STARTING_LANE);
@@ -131,15 +134,18 @@ export class Match implements IMatchState {
 		var charsShuffled: string[] = Object.keys(PlayableCharacters);
 		shuffle(charsShuffled);
 
+		var numChoices = this.debug ? 6 : 2;
+
 		var idx = 0;
 		var pcs = Object.keys(PlayableCharacters);
 		shuffle(pcs);
 		this.room.users.forEach((usr) => {
-			var a = pcs[idx++];
-			idx %= pcs.length;
-			var b = pcs[idx++];
-			idx %= pcs.length;
-			this.characterChoicesIds[usr.username] = [a, b];
+			var choices = [];
+			for(let c=0; c<numChoices; c++) {
+				choices.push(pcs[idx++]);
+				idx %= pcs.length;
+			}
+			this.characterChoicesIds[usr.username] = choices;
 		});
 
 		return this.characterChoicesIds;
@@ -180,7 +186,7 @@ export class Match implements IMatchState {
 					this.turn++;
 				}
 				this.room.users.forEach((user) => {
-					var shouldAct = this.userShouldAct(user);
+					var shouldAct = userShouldAct(this, user);
 					if(!shouldAct) {
 						this.playerDecisions[user.username] = {
 							username: user.username,
@@ -189,7 +195,7 @@ export class Match implements IMatchState {
 					}
 				});
 				this.room.users.forEach((user) => {
-					var shouldAct = this.userShouldAct(user);
+					var shouldAct = userShouldAct(this, user);
 					var ent = this.players[user.username];
 					user.emit(SOCKET_MSG.PROMPT_DECISION, <IPromptDecisionMessage>{
 						messageName: SOCKET_MSG.PROMPT_DECISION,
@@ -222,12 +228,17 @@ export class Match implements IMatchState {
 					var decision = playerDecisions[username];
 					var actionDef = Skills[decision.actionId];
 					if(actionDef && !this.gameOver) {
+						console.log('Resolving decision...');
+						console.log(decision);
 						var target: Entity|Lane;
 						if(actionDef.target.what === TargetWhat.LANE) {
 							target = this.lanes[decision.targetLane];
 						}
 						if(actionDef.target.what === TargetWhat.ALLY || actionDef.target.what === TargetWhat.ENEMY || actionDef.target.what === TargetWhat.ENTITY) {
 							target = this.players[decision.targetEntity];
+						}
+						if(actionDef.target.what === TargetWhat.SELF) {
+							target = this.players[username];
 						}
 						var res = actionDef.fn(this, this.players[username], target, {});
 						var resObj: IEventCause = {
@@ -241,6 +252,7 @@ export class Match implements IMatchState {
 				});
 
 				// end-of-turn events
+				console.log('turn end');
 				if(!this.gameOver) {
 					// tick respawn timers at the end of the opponent's turns
 					players.forEach((username) => {
@@ -271,6 +283,8 @@ export class Match implements IMatchState {
 	changeEntityHp(ent: Entity, change: number, custom?: object): IEventResult[] {
 		var results: IEventResult[] = [];
 
+		change = Math.ceil(change);
+
 		if(!ent.alive) {
 			results.push(<INoneResult>{
 				type: TurnEventResultType.NONE,
@@ -279,6 +293,10 @@ export class Match implements IMatchState {
 			});
 		} else {
 			ent.state.hp += change;
+			if(ent.state.hp > ent.state.maxHp) {
+				ent.state.hp = ent.state.maxHp;
+			}
+
 			results.push(<IHpChangeResult>{
 				type: TurnEventResultType.HP_CHANGE,
 				entityId: ent.username,
@@ -295,7 +313,7 @@ export class Match implements IMatchState {
 		return results;
 	}
 
-	applyStef(ent: Entity, stefId: string, duration: number, invokerEntity: Entity): IEventResult[] {
+	applyStefToEntity(ent: Entity, stefId: string, duration: number, invokerEntity: Entity): IEventResult[] {
 		var results: IEventResult[] = [];
 
 		if(!ent.alive) {
@@ -305,21 +323,8 @@ export class Match implements IMatchState {
 				reason: 'Entity already dead'
 			});
 		} else {
-			var stef: IStefInstance = ent.hasStef(stefId);
-			if(stef) {
-				stef.duration += duration;
-				if(stef.duration > MAX_STEF_DURATION) {
-					stef.duration = MAX_STEF_DURATION;
-				}
-				stef.invokerEntityId = invokerEntity.id; // override invoker
-			} else {
-				stef = {
-					stefId: stefId,
-					duration: duration,
-					invokerEntityId: invokerEntity.id,
-					invokedTurn: this.turn,
-				};
-			}
+			this.applyStef(ent.state.stefs, stefId, duration, invokerEntity);
+
 			results.push(<IGainStefResult>{
 				type: TurnEventResultType.GAIN_STEF,
 				entityId: ent.id,
@@ -330,9 +335,49 @@ export class Match implements IMatchState {
 		return results;
 	}
 
+	applyStefToLane(lane: Lane, toSide:Team, stefId: string, duration: number, invokerEntity: Entity): IEventResult[] {
+		var results: IEventResult[] = [];
+		var stefs: IStefInstance[] = lane['stefs'+toSide];
+
+		this.applyStef(stefs, stefId, duration, invokerEntity);
+
+		results.push(<IGainStefResult>{
+			type: TurnEventResultType.GAIN_STEF,
+			laneId: lane.y,
+			stefId: stefId,
+			newMatchState: this.exportState()
+		});
+		return results;
+	}
+	applyStef(stefs: IStefInstance[], stefId: string, duration: number, invokerEntity: Entity) {
+		var stef = (stefs.find((stefInst) => (stefInst.stefId === stefId)));
+		if(stef) {
+			stef.duration += duration;
+			if(stef.duration > MAX_STEF_DURATION) {
+				stef.duration = MAX_STEF_DURATION;
+			}
+			stef.invokerEntityId = invokerEntity.id; // override invoker
+		} else {
+			stef = {
+				stefId: stefId,
+				duration: duration,
+				invokerEntityId: invokerEntity.id,
+				invokedTurn: this.turn,
+			};
+			stefs.push(stef);
+		}
+	}
+
 	moveEntity(ent: Entity, lane: Lane, range: number): IEventResult[] {
 		if(Math.abs(ent.state.y - lane.y) <= range) {
 			ent.state.y = lane.y;
+		} else {
+			return [<INoneResult>{
+				type: TurnEventResultType.NONE,
+				entityId: ent.id,
+				reason: 'Lane out of range',
+				newMatchState: this.exportState()
+			}];
 		}
 		return [<IChangeLangeResult>{
 			type: TurnEventResultType.CHANGE_LANE,
@@ -354,7 +399,7 @@ export class Match implements IMatchState {
 		ent.state.nextRespawn++;
 		ent.state.diedTurn = this.turn;
 
-		if(this.teamDead(ent.team)) {
+		if(teamDead(this, ent.team)) {
 			this.gameOver = true;
 			results.push(<IGameOverResult> {
 				type: TurnEventResultType.GAME_OVER,
@@ -373,25 +418,6 @@ export class Match implements IMatchState {
 	}
 
 	/* Util */
-
-
-	getUserTeam(user: User): Team {
-		return this.getUsernameTeam(user.username);
-	}
-	getUsernameTeam(username: string): Team {
-		return this.players[username].team;
-	}
-	userShouldAct(user: User): boolean {
-		if(this.players[user.username].alive) {
-			if(getActingTeam(this) === this.getUserTeam(user)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	teamDead(t: Team): boolean {
-		return this['team'+t].every((username) => (!this.players[username].alive) );
-	}
 	getPlayersReady(): {[key: string]: boolean} {
 		var x = {};
 		for(let username of Object.keys(this.players)) {
@@ -401,20 +427,5 @@ export class Match implements IMatchState {
 	}
 	allPlayersReady(): boolean {
 		return Object.keys(this.playerDecisions).length === Object.keys(this.players).length;
-	}
-	findEntities(filter?: {laneId?: number, team?: Team, aliveOnly?: boolean}): Entity[] {
-		var res = Object.keys(this.players).map((username) => (this.players[username]));
-		if(filter) {
-			if(filter.laneId !== undefined) {
-				res = res.filter((ent) => (ent.state.y === filter.laneId));
-			}
-			if(filter.team !== undefined) {
-				res = res.filter((ent) => (ent.team === filter.team));
-			}
-			if(filter.aliveOnly !== undefined) {
-				res = res.filter((ent) => (ent.alive === filter.aliveOnly));
-			}
-		}
-		return res;
 	}
 }

@@ -2,7 +2,7 @@ import { User } from "../../server/lobby/user";
 import { Characters } from "../game-info/characters";
 import { ALL_STEFS } from "../game-info/stefs";
 import { IEntityProfile, IEntityState, IStefDef, IStefInstance, Team, Faction } from "./common";
-import { ISkillDef, ISkillInstance } from "../game-info/skills";
+import { ISkillDef, ISkillInstance, Skills } from "../game-info/skills";
 
 export class Entity {
 	isPlayer: boolean;
@@ -27,9 +27,7 @@ export class Entity {
 		this.team = team;
 
 		var actives: string[] = ['ATTACK', 'MOVE', 'ULTRA_HYPER_KILLER'];
-		if(character.faction === Faction.FERALIST) {
-			actives = [... actives, 'FLANK_ASSAULT', 'ADRENALINE_RUSH', ''];
-		}
+		actives = actives.concat(Object.keys(Skills).filter((skId) => (Skills[skId].faction === character.faction && Skills[skId].active === true)));
 		var activeInstances: ISkillInstance[] = actives.map((id) => ({skillDefId: id, cooldown: 0}));
 
 		this.state = {
@@ -53,9 +51,13 @@ export class Entity {
 	}
 
 	get curStr() {
-		var str = this.profile.str;
+		var baseStr = this.profile.str;
+		var str = baseStr;
 		if(this.hasStef(ALL_STEFS.STR_UP)) {
-			str += str * 1.25;
+			str += baseStr * 0.30;
+		}
+		if(this.hasStef(ALL_STEFS.VOLATILE)) {
+			str += baseStr * 0.75;
 		}
 		return Math.ceil(str);
 	}

@@ -32,10 +32,11 @@ export class EntityPanel extends React.Component<IEntityPanelProps, {}> {
 		var teamClass = "entity-team-" + this.props.entity.team;
 		return (
 			<div className={['entity-panel', selectableClass, selectedClass, teamClass].join(' ')} onClick={this.onClick}>
+				<div className="username">{this.props.entity.id}</div>
 				<div className="image-container">{image ? <img src={image} /> : undefined}</div>
 				<div className="stats-container">
 					{this.hpLine()}
-					<p>AP {this.props.entity.state.ap}/{this.props.entity.state.maxAp}</p>
+					<p>AP {this.props.entity.state.ap} / {this.props.entity.state.maxAp}</p>
 				</div>
 			</div>
 		);
@@ -47,7 +48,7 @@ export class EntityPanel extends React.Component<IEntityPanelProps, {}> {
 
 	hpLine() {
 		if(this.props.entity.state.hp > 0) {
-			return <p>HP {this.props.entity.state.hp}/{this.props.entity.state.maxHp}</p>;
+			return <p>HP {this.props.entity.state.hp} / {this.props.entity.state.maxHp}</p>;
 		} else {
 			return <p>Respawn in {this.props.entity.state.respawn}</p>;
 		}

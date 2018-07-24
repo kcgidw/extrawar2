@@ -6,7 +6,13 @@ export const ALL_STEFS: {[key: string]: IStefDef} = {
 	'STR_UP': {
 		id: 'STR_UP',
 		name: 'Strength Up',
-		desc: 'Attack damage +30%.',
+		desc: 'Strength +30%.',
 		isBeneficial: true
-	}
+	},
+	'VOLATILE': {
+		id: 'VOLATILE',
+		name: 'Volatile',
+		desc: 'Strength +75%.',
+		isBeneficial: true
+	},
 };

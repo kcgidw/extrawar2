@@ -57,6 +57,3 @@ button, input[type="button"], input[type="submit"] {
 .lobby-menu input[type="text"]#join-room-id-input {
 	width: 90px;
 }
-.lobby-menu ul, .lobby-menu ol {
-	text-align: left;
-}

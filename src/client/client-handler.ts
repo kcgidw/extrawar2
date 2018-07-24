@@ -2,7 +2,7 @@ import { IEntityProfile, Phase, TargetWhat } from '../common/game-core/common';
 import * as Msgs from '../common/messages';
 import { SOCKET_MSG } from '../common/messages';
 import { ISkillDef } from '../common/game-info/skills';
-import { actionDefTargetsEntity } from '../server/lobby/util';
+import { actionDefTargetsEntity } from '../common/match-util';
 
 export const socket = io('/lobby');
 export const clientSocket = socket;

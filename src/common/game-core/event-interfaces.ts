@@ -1,7 +1,8 @@
 import { IMatchState, Lane, Team } from "./common";
 import { Skills } from "../game-info/skills";
 import { Entity } from "./entity";
-import { actionDefTargetsEntity } from "../../server/lobby/util";
+import { actionDefTargetsEntity } from "../match-util";
+import { ALL_STEFS } from "../game-info/stefs";
 
 export interface IEventCause {
 	entityId: string;
@@ -14,7 +15,7 @@ export enum TurnEventResultType {
 	NONE='NONE',
 	HP_CHANGE='HP_CHANGE',
 	GAIN_STEF='GAIN_STEF',
-	LOSE_STEF='LOSE_STEF', 
+	// LOSE_STEF='LOSE_STEF', 
 	DEATH='DEATH',
 	RESPAWN='RESPAWN', 
 	AP_CHANGE='AP_CHANGE',
@@ -34,7 +35,8 @@ export interface IHpChangeResult extends IEventResult {
 }
 export interface IGainStefResult extends IEventResult {
 	type: TurnEventResultType.GAIN_STEF;
-	entityId: string;
+	entityId?: string;
+	laneId?: number;
 	stefId: string;
 }
 export interface IDeathResult extends IEventResult {
@@ -77,8 +79,9 @@ export const EventResultTexts: {[key: string]: (result?: IEventResult)=>string} 
 		}
 		return `${result.entityId} loses ${Math.abs(result.value)} HP.`;
 	},
-	'GAIN_STEF': undefined,
-	'LOSE_STEF': undefined,
+	'GAIN_STEF': (result: IGainStefResult) => {
+		return `${result.entityId} gains ${ALL_STEFS[result.stefId].name}.`;
+	},
 	'DEATH': (result: IDeathResult) => `${result.entityId} dies.`,
 	'RESPAWN': (result: IRespawnResult) => `${result.entityId} respawns.`,
 	'AP_CHANGE': (result: IApChangeResult) => {
@@ -119,13 +122,17 @@ export function reportCause(ms: IMatchState, cause: IEventCause): IFlatEvent[] {
 		tar = ms.lanes[cause.targetId];
 	}
 
+	var defaultResultMessage = (userEnt, targetEnt) => {
+		return `${userEnt.id} uses ${actionDef.name}.`;
+	};
+
 	var lines: IFlatEvent[] = [{
-		message: actionDef.resultMessage(ent, tar),
+		message: actionDef.resultMessage ? actionDef.resultMessage(ent, tar) : defaultResultMessage(ent, tar),
 		newState: undefined,
 	}];
 
 	for(let res of cause.results) {
-		var message = EventResultTexts[res.type](res);
+		var message = '  ' +EventResultTexts[res.type](res); // prefix result with a bit of space
 		if(message) {
 			lines.push({
 				message: message,
