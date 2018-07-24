@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { ISkillDef, Skills } from '../../common/game-info/skills';
+import { ISkillDef, Skills, ISkillInstance } from '../../common/game-info/skills';
 
 interface IActionChoicesProps {
-	choices: string[];
+	choices: ISkillInstance[];
 	onSelectAction: (actionId: string)=>any;
 	currentChoiceActionDef: ISkillDef;
 }
@@ -16,7 +16,16 @@ export class ActionChoices extends React.Component<IActionChoicesProps,{}> {
 	render() {
 		return (
 			<div className="choices">
-				{this.renderActionChoices(this.props.choices)}
+				{
+					this.props.choices.map((skill) => {
+						var def = Skills[skill.skillDefId];
+						if(!def) {
+							console.warn('bad def ' + skill.skillDefId);
+						}
+						return <ActionChoiceCard key={def.id} def={def} skill={skill} onSelect={this.onSelectAction}
+							currentlySelected={this.props.currentChoiceActionDef && def.id === this.props.currentChoiceActionDef.id} />
+					})
+				}
 			</div>
 		);
 	}
@@ -24,34 +33,37 @@ export class ActionChoices extends React.Component<IActionChoicesProps,{}> {
 	onSelectAction(actionId: string) {
 		this.props.onSelectAction(actionId);
 	}
-
-	renderActionChoices(choices: string[]) {
-		return choices.map((actionId) => 
-			<ActionChoicePanel key={actionId} def={Skills[actionId]} onSelect={this.onSelectAction}
-			currentlySelected={this.props.currentChoiceActionDef && actionId === this.props.currentChoiceActionDef.id} />
-		);
-	}
 }
 
 
-interface IActionChoicePanelProps {
+interface IActionChoiceCardProps {
+	skill: ISkillInstance;
 	def: ISkillDef;
 	onSelect: (actionId: string)=>any;
 	currentlySelected: boolean;
 }
 
-class ActionChoicePanel extends React.Component<IActionChoicePanelProps,{}> {
+class ActionChoiceCard extends React.Component<IActionChoiceCardProps,{}> {
 	constructor(props) {
 		super(props);
 		this.onSelect = this.onSelect.bind(this);
 	}
 
 	render() {
+		var classes = [
+			'choice-card',
+			this.props.currentlySelected ? 'current-action-choice' : '',
+			this.props.skill.cooldown > 0 ? 'disabled' : '',
+		].join(' ');
 		return (
-			<div className={"choice-card " + (this.props.currentlySelected ? 'current-action-choice' : '')} onClick={this.onSelect}>
-				{this.props.def.name}
-				<br/>
-				{this.props.def.desc}
+			<div className={classes} onClick={this.onSelect}>
+				<p className="card-header">{this.props.def.name}</p>
+				<p>{this.props.def.desc}</p>
+				{(() => {
+					if(this.props.skill.cooldown > 0) {
+						return <p className="cooldown">{this.props.skill.cooldown} cycles left.</p>
+					}
+				})()}
 			</div>
 		);
 	}

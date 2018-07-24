@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { IMatchState, Phase, TargetWhat } from '../common/game-core/common';
 import { Entity } from '../common/game-core/entity';
-import { ISkillDef } from '../common/game-info/skills';
+import { ISkillDef, ISkillInstance } from '../common/game-info/skills';
 import { actionDefTargetsEntity, getActingTeam } from '../server/lobby/util';
 import { ActionChoices } from './game-ui/action-choices';
 import { CharacterChoices } from './game-ui/character-choices';
@@ -12,7 +12,7 @@ interface IProps {
 	username: string;
 	matchState: IMatchState;
 	menuState: MenuState;
-	actionChoicesIds: string[];
+	actionChoices: ISkillInstance[];
 	currentSelectedActionChoice: ISkillDef;
 	currentSelectedLaneId: number;
 	currentSelectedEntityId: string;
@@ -55,7 +55,7 @@ export class GameView extends React.Component<IProps, IState> {
 			case Phase.PLAN:
 				if(this.myTurn()) {
 					innerView = (
-						< ActionChoices choices={this.props.actionChoicesIds} currentChoiceActionDef={this.props.currentSelectedActionChoice} onSelectAction={this.selectAction} />
+						< ActionChoices choices={this.props.actionChoices} currentChoiceActionDef={this.props.currentSelectedActionChoice} onSelectAction={this.selectAction} />
 					);
 				}
 				break;

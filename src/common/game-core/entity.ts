@@ -1,7 +1,8 @@
 import { User } from "../../server/lobby/user";
 import { Characters } from "../game-info/characters";
 import { ALL_STEFS } from "../game-info/stefs";
-import { IEntityProfile, IEntityState, IStefDef, IStefInstance, Team } from "./common";
+import { IEntityProfile, IEntityState, IStefDef, IStefInstance, Team, Faction } from "./common";
+import { ISkillDef, ISkillInstance } from "../game-info/skills";
 
 export class Entity {
 	isPlayer: boolean;
@@ -25,6 +26,12 @@ export class Entity {
 
 		this.team = team;
 
+		var actives: string[] = ['ATTACK', 'MOVE', 'ULTRA_HYPER_KILLER'];
+		if(character.faction === Faction.FERALIST) {
+			actives = [... actives, 'FLANK_ASSAULT', 'ADRENALINE_RUSH', ''];
+		}
+		var activeInstances: ISkillInstance[] = actives.map((id) => ({skillDefId: id, cooldown: 0}));
+
 		this.state = {
 			entityId: this.id,
 			ready: false,
@@ -38,8 +45,8 @@ export class Entity {
 			diedTurn: undefined,
 			passiveSlots: 1,
 			activeSlots: 1,
-			passives: [],
-			actives: [],
+			passiveIds: [],
+			actives: activeInstances,
 			stefs: [],
 			y: 0,
 		};

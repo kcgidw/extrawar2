@@ -51,21 +51,6 @@ export class Match implements IMatchState {
 		this.setCharacterChoices();
 	}
 
-	getUserTeam(user: User): Team {
-		return this.getUsernameTeam(user.username);
-	}
-	getUsernameTeam(username: string): Team {
-		return this.players[username].team;
-	}
-	userShouldAct(user: User): boolean {
-		if(this.players[user.username].alive) {
-			if(getActingTeam(this) === this.getUserTeam(user)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	enqueuePlayerDecision(user: User, decision: IPlayerDecisionRequest) {
 		switch(this.phase) {
 			case(Phase.CHOOSE_CHARACTER):
@@ -172,16 +157,6 @@ export class Match implements IMatchState {
 			playersReady: this.getPlayersReady()
 		};
 	}
-	getPlayersReady(): {[key: string]: boolean} {
-		var x = {};
-		for(let username of Object.keys(this.players)) {
-			x[username] = this.playerDecisions[username] !== undefined;
-		}
-		return x;
-	}
-	allPlayersReady(): boolean {
-		return Object.keys(this.playerDecisions).length === Object.keys(this.players).length;
-	}
 
 	nextPhase(phase: Phase) {
 		this.phase = phase;
@@ -215,11 +190,12 @@ export class Match implements IMatchState {
 				});
 				this.room.users.forEach((user) => {
 					var shouldAct = this.userShouldAct(user);
+					var ent = this.players[user.username];
 					user.emit(SOCKET_MSG.PROMPT_DECISION, <IPromptDecisionMessage>{
 						messageName: SOCKET_MSG.PROMPT_DECISION,
 						phase: phase,
 						matchState: this.exportState(),
-						actionChoiceIds: shouldAct ? ['ATTACK', 'MOVE', 'ULTRA_HYPER_KILLER'] : [],
+						actionChoices: shouldAct ? ent.state.actives : [],
 					});
 				});
 				if(this.allPlayersReady()) {
@@ -396,9 +372,49 @@ export class Match implements IMatchState {
 		ent.state.diedTurn = undefined;
 	}
 
+	/* Util */
+
+
+	getUserTeam(user: User): Team {
+		return this.getUsernameTeam(user.username);
+	}
+	getUsernameTeam(username: string): Team {
+		return this.players[username].team;
+	}
+	userShouldAct(user: User): boolean {
+		if(this.players[user.username].alive) {
+			if(getActingTeam(this) === this.getUserTeam(user)) {
+				return true;
+			}
+		}
+		return false;
+	}
 	teamDead(t: Team): boolean {
-		return this['team'+t].every((username) => {
-			return !this.players[username].alive;
-		});
+		return this['team'+t].every((username) => (!this.players[username].alive) );
+	}
+	getPlayersReady(): {[key: string]: boolean} {
+		var x = {};
+		for(let username of Object.keys(this.players)) {
+			x[username] = this.playerDecisions[username] !== undefined;
+		}
+		return x;
+	}
+	allPlayersReady(): boolean {
+		return Object.keys(this.playerDecisions).length === Object.keys(this.players).length;
+	}
+	findEntities(filter?: {laneId?: number, team?: Team, aliveOnly?: boolean}): Entity[] {
+		var res = Object.keys(this.players).map((username) => (this.players[username]));
+		if(filter) {
+			if(filter.laneId !== undefined) {
+				res = res.filter((ent) => (ent.state.y === filter.laneId));
+			}
+			if(filter.team !== undefined) {
+				res = res.filter((ent) => (ent.team === filter.team));
+			}
+			if(filter.aliveOnly !== undefined) {
+				res = res.filter((ent) => (ent.alive === filter.aliveOnly));
+			}
+		}
+		return res;
 	}
 }

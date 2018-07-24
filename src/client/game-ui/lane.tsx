@@ -21,7 +21,11 @@ export class Lane extends React.Component<IProps,{}> {
 	}
 
 	render() {
-		var classes = ['lane', this.props.selectable ? 'selectable' : '', this.props.selected ? 'selected' : ''].join(' ');
+		var classes = [
+			'lane',
+			this.props.selectable ? 'selectable' : '', 
+			this.props.selected ? 'selected' : ''
+		].join(' ');
 		return (
 			<div id={"lane-" + this.props.id} className={classes} onClick={this.onClick}>
 				{this.renderTeamEntities(1)}

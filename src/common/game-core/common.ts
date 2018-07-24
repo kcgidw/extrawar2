@@ -1,6 +1,7 @@
 import { Entity } from "./entity";
 import { User } from "../../server/lobby/user";
 import { randItem } from "../../server/lobby/util";
+import { ISkillInstance } from "../game-info/skills";
 
 export const ROOM_SIZE = 4;
 
@@ -62,8 +63,8 @@ export interface IEntityState {
 
 	passiveSlots: number;
 	activeSlots: number;
-	passives: number[];
-	actives: number[];
+	passiveIds: string[];
+	actives: ISkillInstance[];
 
 	stefs: IStefInstance[];
 
@@ -101,10 +102,5 @@ export class Lane {
 
 	constructor(y: number) {
 		this.y = y;
-	}
-
-	getRandomEntity(team: Team): Entity {
-		var from: Entity[] = this['team'+team];
-		return randItem<Entity>(from);
 	}
 }

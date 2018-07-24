@@ -2,7 +2,7 @@ import { Faction, IStefInstance, ITargetInfo, TargetRange, TargetWhat, Team, Lan
 import { Entity } from "../game-core/entity";
 import { IEventCause, IEventResult } from "../game-core/event-interfaces";
 import { Match } from "../../server/chat-room/match";
-import { otherTeam } from "../../server/lobby/util";
+import { otherTeam, randItem } from "../../server/lobby/util";
 
 export interface ISkillDef {
 	id: string;
@@ -11,9 +11,16 @@ export interface ISkillDef {
 	name: string;
 	desc: string;
 	keywords: string[]; // supplementary descriptons for stefs and whatnot
+	apCost: number,
+	cooldown: number,
 	target: ITargetInfo;
 	fn: (match: Match, userEntity: Entity, target: Entity|Lane, custom?: object)=>Partial<IEventCause>;
 	resultMessage?: (userEntity: Entity, target?: Entity|Lane, custom?: object)=>string;
+}
+
+export interface ISkillInstance {
+	skillDefId: string;
+	cooldown: number;
 }
 
 export const Skills: {[key: string]: ISkillDef} = {
@@ -24,6 +31,8 @@ export const Skills: {[key: string]: ISkillDef} = {
 		name: 'Attack',
 		desc: 'Attack a nearby enemy.',
 		keywords: [],
+		apCost: 0,
+		cooldown: 0,
 		target: {
 			what: TargetWhat.ENEMY,
 			range: TargetRange.NEARBY
@@ -44,6 +53,8 @@ export const Skills: {[key: string]: ISkillDef} = {
 		name: 'Move',
 		desc: 'Move to a nearby lane.',
 		keywords: [],
+		apCost: 0,
+		cooldown: 0,
 		target: {
 			what: TargetWhat.LANE,
 			range: TargetRange.NEARBY
@@ -64,6 +75,8 @@ export const Skills: {[key: string]: ISkillDef} = {
 		name: 'Ultra Hyper Killer',
 		desc: 'Ultimate attack. Deals 1000 damage. For testing only!',
 		keywords: [],
+		apCost: 0,
+		cooldown: 0,
 		target: {
 			what: TargetWhat.ENTITY,
 			range: TargetRange.ANY
@@ -86,6 +99,8 @@ export const Skills: {[key: string]: ISkillDef} = {
 		name: 'Flank Assault',
 		desc: `Move to a nearby lane, then attack a random enemy in that lane.`,
 		keywords: [],
+		apCost: 4,
+		cooldown: 4,
 		target: {
 			what: TargetWhat.LANE,
 			range: TargetRange.NEARBY
@@ -95,7 +110,7 @@ export const Skills: {[key: string]: ISkillDef} = {
 
 			// TODO movement
 
-			var targetEntity = targetLane.getRandomEntity(otherTeam(user.team));
+			var targetEntity = randItem(match.findEntities({laneId: targetLane.y, team: otherTeam(user.team), aliveOnly: true}));
 			if(targetEntity) {
 				results = results.concat(simpleAttack(match, user, targetEntity));
 			}
@@ -103,22 +118,48 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return {results: results};
 		}
 	},
-	'CHOOSE_RESPAWN_LANE': {
-		id: 'CHOOSE_RESPAWN_LANE',
+	'ADRENALINE_RUSH': {
+		id: 'ADRENALINE_RUSH',
 		active: true,
-		faction: Faction.NONE,
-		name: 'Choose Respawn Lane',
-		desc: 'You respawn next turn. Choose your respawn location.',
+		faction: Faction.FERALIST,
+		name: 'Adrenaline Rush',
+		desc: `Attack 3 times to random enemies in-lane.`,
 		keywords: [],
+		apCost: 4,
+		cooldown: 4,
 		target: {
 			what: TargetWhat.LANE,
-			range: TargetRange.ANY,
+			range: TargetRange.IN_LANE
 		},
 		fn: (match: Match, user: Entity, targetLane: Lane) => {
-			// TODO
-			return undefined;
+			var results: IEventResult[]  = [];
+
+			for(let i=0; i<3; i++) {
+				var targetEntity = randItem(match.findEntities({laneId: targetLane.y, team: otherTeam(user.team), aliveOnly: true}));
+				if(targetEntity) {
+					results = results.concat(simpleAttack(match, user, targetEntity));
+				}
+			}
+			
+			return {results: results};
 		}
-	}
+	},
+	// 'CHOOSE_RESPAWN_LANE': {
+	// 	id: 'CHOOSE_RESPAWN_LANE',
+	// 	active: true,
+	// 	faction: Faction.NONE,
+	// 	name: 'Choose Respawn Lane',
+	// 	desc: 'You respawn next turn. Choose your respawn location.',
+	// 	keywords: [],
+	// 	target: {
+	// 		what: TargetWhat.LANE,
+	// 		range: TargetRange.ANY,
+	// 	},
+	// 	fn: (match: Match, user: Entity, targetLane: Lane) => {
+	// 		// TODO
+	// 		return undefined;
+	// 	}
+	// }
 };
 
 

@@ -8,7 +8,7 @@ import { GameView } from './game-view';
 import { WaitingRoomView } from './waiting-room-view';
 import { flatReport, IActionResolutionTimeline } from '../common/game-core/event-interfaces';
 import { getActingTeam } from '../server/lobby/util';
-import { Skills, ISkillDef } from '../common/game-info/skills';
+import { Skills, ISkillDef, ISkillInstance } from '../common/game-info/skills';
 
 export enum MenuState {
 	WAITING_ROOM, CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, CHOOSE_ACTION, CHOOSE_TARGET, WAITING, RESOLVING, GAME_OVER
@@ -26,7 +26,7 @@ interface State {
 
 	ms: IMatchState;
 
-	actionChoicesIds: string[];
+	actionChoices: ISkillInstance[];
 	currentSelectedActionChoice: ISkillDef;
 	currentSelectedLaneId: number;
 	currentSelectedEntityId: string;
@@ -42,7 +42,7 @@ export class RoomView extends React.Component<Props, State> {
 			menu: MenuState.WAITING_ROOM,
 			chatLog: [],
 			roomUsernames: this.props.initialRoomUsernames,
-			actionChoicesIds: undefined,
+			actionChoices: undefined,
 			currentSelectedActionChoice: undefined,
 			currentSelectedLaneId: undefined,
 			currentSelectedEntityId: undefined,
@@ -132,7 +132,7 @@ export class RoomView extends React.Component<Props, State> {
 						nextMenu = MenuState.CHOOSE_STARTING_LANE;
 						break;
 					case(Phase.PLAN):
-						if(data.actionChoiceIds && data.actionChoiceIds.length > 0) {
+						if(getActingTeam(data.matchState) === data.matchState.players[this.props.username].team) {
 							nextMenu = MenuState.CHOOSE_ACTION;
 						} else {
 							nextMenu = MenuState.WAITING;
@@ -142,7 +142,7 @@ export class RoomView extends React.Component<Props, State> {
 				this.setState({
 					ms: data.matchState,
 					menu: nextMenu,
-					actionChoicesIds: data.actionChoiceIds,
+					actionChoices: data.actionChoices,
 					currentSelectedActionChoice: undefined,
 					currentSelectedEntityId: undefined,
 					currentSelectedLaneId: undefined,
@@ -177,7 +177,7 @@ export class RoomView extends React.Component<Props, State> {
 				selectStartingLane={this.selectStartingLane}
 				selectAction={this.selectAction}
 				selectTarget={this.selectTarget}
-				actionChoicesIds={this.state.actionChoicesIds}
+				actionChoices={this.state.actionChoices}
 				currentSelectedActionChoice={this.state.currentSelectedActionChoice}
 				currentSelectedLaneId={this.state.currentSelectedLaneId}
 				currentSelectedEntityId={this.state.currentSelectedEntityId}

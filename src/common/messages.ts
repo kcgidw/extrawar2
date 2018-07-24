@@ -1,4 +1,5 @@
 import { IMatchState, Phase } from "./game-core/common";
+import { ISkillInstance } from "./game-info/skills";
 
 export enum SOCKET_MSG {
 	'LOBBY_NUM_ONLINE'=  'LOBBY_NUM_ONLINE',
@@ -86,5 +87,5 @@ export interface IPromptDecisionMessage extends IErrorableResponse {
 	matchState: IMatchState;
 	requestorUsername?: string;
 	characterChoiceIds?: string[];
-	actionChoiceIds?: string[];
+	actionChoices?: ISkillInstance[];
 }
