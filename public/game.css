@@ -9,8 +9,9 @@
     /* position: fixed; */
 }
 
-/* #menu {
-} */
+#menu {
+    min-height: 80px;
+}
 
 #team-panel-1 {
     float: left;
