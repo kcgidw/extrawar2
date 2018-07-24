@@ -1216,6 +1216,7 @@ var TurnEventResultType;
     TurnEventResultType["RESPAWN"] = "RESPAWN";
     TurnEventResultType["AP_CHANGE"] = "AP_CHANGE";
     TurnEventResultType["CHANGE_LANE"] = "CHANGE_LANE";
+    TurnEventResultType["GAME_OVER"] = "GAME_OVER";
 })(TurnEventResultType = exports.TurnEventResultType || (exports.TurnEventResultType = {}));
 exports.EventResultTexts = {
     'NONE': () => 'Nothing happened.',
@@ -1237,6 +1238,9 @@ exports.EventResultTexts = {
     },
     'CHANGE_LANE': (result) => {
         return `${result.entityId} moves to lane ${result.laneId}.`;
+    },
+    'GAME_OVER': (result) => {
+        return `Game over! Team ${result.winner} wins!`;
     },
 };
 function flatReport(ms, causes) {
@@ -1379,6 +1383,7 @@ exports.PlayableCharacters = {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = __webpack_require__(/*! ../game-core/common */ "./src/common/game-core/common.ts");
+const util_1 = __webpack_require__(/*! ../../server/lobby/util */ "./src/server/lobby/util.ts");
 exports.Skills = {
     'ATTACK': {
         id: 'ATTACK',
@@ -1420,6 +1425,26 @@ exports.Skills = {
             return userEntity.id + ' moves.';
         }
     },
+    'ULTRA_HYPER_KILLER': {
+        id: 'ULTRA_HYPER_KILLER',
+        active: true,
+        faction: common_1.Faction.NONE,
+        name: 'Ultra Hyper Killer',
+        desc: 'Ultimate attack. Deals 1000 damage. For testing only!',
+        keywords: [],
+        target: {
+            what: common_1.TargetWhat.ENTITY,
+            range: common_1.TargetRange.ANY
+        },
+        fn: (match, userEntity, target) => {
+            var results = [];
+            results = results.concat(simpleAttack(match, userEntity, target, [], () => 1000));
+            return { results: results };
+        },
+        resultMessage: (userEntity, target) => {
+            return userEntity.id + ' uses the ULTRA HYPER KILLER!!';
+        }
+    },
     'FLANK_ASSAULT': {
         id: 'FLANK_ASSAULT',
         active: true,
@@ -1434,11 +1459,27 @@ exports.Skills = {
         fn: (match, user, targetLane) => {
             var results = [];
             // TODO movement
-            var targetEntity = targetLane.getRandomEntity(otherTeam(user.team));
+            var targetEntity = targetLane.getRandomEntity(util_1.otherTeam(user.team));
             if (targetEntity) {
                 results = results.concat(simpleAttack(match, user, targetEntity));
             }
             return { results: results };
+        }
+    },
+    'CHOOSE_RESPAWN_LANE': {
+        id: 'CHOOSE_RESPAWN_LANE',
+        active: true,
+        faction: common_1.Faction.NONE,
+        name: 'Choose Respawn Lane',
+        desc: 'You respawn next turn. Choose your respawn location.',
+        keywords: [],
+        target: {
+            what: common_1.TargetWhat.LANE,
+            range: common_1.TargetRange.ANY,
+        },
+        fn: (match, user, targetLane) => {
+            // TODO
+            return undefined;
         }
     }
 };
@@ -1461,15 +1502,6 @@ function simpleAttack(match, attacker, target, stefs, damageMod) {
         });
     }
     return results;
-}
-function otherTeam(x) {
-    if (x === 1) {
-        return 2;
-    }
-    if (x === 2) {
-        return 1;
-    }
-    throw new Error('bad team');
 }
 
 
@@ -1579,6 +1611,16 @@ function actionDefTargetsEntity(ad) {
     return [common_1.TargetWhat.ALLY, common_1.TargetWhat.ENEMY, common_1.TargetWhat.ENTITY].indexOf(ad.target.what) !== -1;
 }
 exports.actionDefTargetsEntity = actionDefTargetsEntity;
+function otherTeam(x) {
+    if (x === 1) {
+        return 2;
+    }
+    if (x === 2) {
+        return 1;
+    }
+    throw new Error('bad team');
+}
+exports.otherTeam = otherTeam;
 
 
 /***/ }),

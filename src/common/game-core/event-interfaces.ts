@@ -1,4 +1,4 @@
-import { IMatchState, Lane } from "./common";
+import { IMatchState, Lane, Team } from "./common";
 import { Skills } from "../game-info/skills";
 import { Entity } from "./entity";
 import { actionDefTargetsEntity } from "../../server/lobby/util";
@@ -19,6 +19,7 @@ export enum TurnEventResultType {
 	RESPAWN='RESPAWN', 
 	AP_CHANGE='AP_CHANGE',
 	CHANGE_LANE='CHANGE_LANE',
+	GAME_OVER='GAME_OVER',
 }
 
 export interface IEventResult {
@@ -43,6 +44,10 @@ export interface IDeathResult extends IEventResult {
 export interface IRespawnResult extends IEventResult {
 	type: TurnEventResultType.RESPAWN;
 	entityId: string;
+}
+export interface IGameOverResult extends IEventResult {
+	type: TurnEventResultType.GAME_OVER;
+	winner: Team;
 }
 export interface INoneResult extends IEventResult {
 	type: TurnEventResultType.NONE;
@@ -84,6 +89,9 @@ export const EventResultTexts: {[key: string]: (result?: IEventResult)=>string} 
 	},
 	'CHANGE_LANE': (result: IChangeLangeResult) => {
 		return `${result.entityId} moves to lane ${result.laneId}.`;
+	},
+	'GAME_OVER': (result: IGameOverResult) => {
+		return `Game over! Team ${result.winner} wins!`;
 	},
 };
 

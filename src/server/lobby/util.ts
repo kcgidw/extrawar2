@@ -44,3 +44,10 @@ export function getActingTeam(ms: IMatchState): Team {
 export function actionDefTargetsEntity(ad: ISkillDef) {
 	return [TargetWhat.ALLY, TargetWhat.ENEMY, TargetWhat.ENTITY].indexOf(ad.target.what) !== -1;
 }
+
+
+export function otherTeam(x: Team): Team {
+	if(x === 1) {return 2;}
+	if(x === 2) {return 1;}
+	throw new Error('bad team');
+}

@@ -2,6 +2,7 @@ import { Faction, IStefInstance, ITargetInfo, TargetRange, TargetWhat, Team, Lan
 import { Entity } from "../game-core/entity";
 import { IEventCause, IEventResult } from "../game-core/event-interfaces";
 import { Match } from "../../server/chat-room/match";
+import { otherTeam } from "../../server/lobby/util";
 
 export interface ISkillDef {
 	id: string;
@@ -56,6 +57,28 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return userEntity.id + ' moves.';
 		}
 	},
+	'ULTRA_HYPER_KILLER': {
+		id: 'ULTRA_HYPER_KILLER',
+		active: true,
+		faction: Faction.NONE,
+		name: 'Ultra Hyper Killer',
+		desc: 'Ultimate attack. Deals 1000 damage. For testing only!',
+		keywords: [],
+		target: {
+			what: TargetWhat.ENTITY,
+			range: TargetRange.ANY
+		},
+		fn: (match: Match, userEntity: Entity, target: Entity) => {
+			var results: IEventResult[]  = [];
+
+			results = results.concat(simpleAttack(match, userEntity, target, [], () => 1000));
+			
+			return {results: results};
+		},
+		resultMessage: (userEntity, target: Entity) => {
+			return userEntity.id + ' uses the ULTRA HYPER KILLER!!';
+		}
+	},
 	'FLANK_ASSAULT': {
 		id: 'FLANK_ASSAULT',
 		active: true,
@@ -78,6 +101,22 @@ export const Skills: {[key: string]: ISkillDef} = {
 			}
 			
 			return {results: results};
+		}
+	},
+	'CHOOSE_RESPAWN_LANE': {
+		id: 'CHOOSE_RESPAWN_LANE',
+		active: true,
+		faction: Faction.NONE,
+		name: 'Choose Respawn Lane',
+		desc: 'You respawn next turn. Choose your respawn location.',
+		keywords: [],
+		target: {
+			what: TargetWhat.LANE,
+			range: TargetRange.ANY,
+		},
+		fn: (match: Match, user: Entity, targetLane: Lane) => {
+			// TODO
+			return undefined;
 		}
 	}
 };
@@ -107,10 +146,4 @@ function simpleAttack(match: Match, attacker: Entity, target: Entity, stefs?: IS
 	}
 
 	return results;
-}
-
-function otherTeam(x: Team): Team {
-	if(x === 1) {return 2;}
-	if(x === 2) {return 1;}
-	throw new Error('bad team');
 }

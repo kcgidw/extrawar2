@@ -1,13 +1,13 @@
-import { IMatchState, Lane, Phase, Team, TargetWhat, IStefInstance } from "../../common/game-core/common";
+import { IMatchState, IStefInstance, Lane, Phase, TargetWhat, Team } from "../../common/game-core/common";
 import { Entity } from "../../common/game-core/entity";
-import { IActionResolutionTimeline, IEventCause, IEventResult, TurnEventResultType, IHpChangeResult, INoneResult, IChangeLangeResult, IGainStefResult } from "../../common/game-core/event-interfaces";
+import { IActionResolutionTimeline, IChangeLangeResult, IDeathResult, IEventCause, IEventResult, IGainStefResult, IGameOverResult, IHpChangeResult, INoneResult, TurnEventResultType } from "../../common/game-core/event-interfaces";
 import { Characters, PlayableCharacters } from "../../common/game-info/characters";
-import { IPlayerDecisionRequest, IPromptDecisionMessage, SOCKET_MSG } from "../../common/messages";
-import { User } from "../lobby/user";
-import { shuffle, getActingTeam } from "../lobby/util";
-import { ChatRoom } from "./chat-room";
 import { Skills } from "../../common/game-info/skills";
 import { MAX_STEF_DURATION } from "../../common/game-info/stefs";
+import { IPlayerDecisionRequest, IPromptDecisionMessage, SOCKET_MSG } from "../../common/messages";
+import { User } from "../lobby/user";
+import { getActingTeam, otherTeam, shuffle } from "../lobby/util";
+import { ChatRoom } from "./chat-room";
 
 const MAX_PLAYERS = 6; // TODO: any more = spectators. Make sure to update the const in lobby.ts too
 const NEXT_PHASE_DELAY = 0.4 * 1000;
@@ -25,6 +25,8 @@ export class Match implements IMatchState {
 	
 	characterChoicesIds: {[key: string]: string[]} = {};
 	playerDecisions: {[key: string]: IPlayerDecisionRequest} = {};
+
+	gameOver: boolean = false;
 
 	constructor(room: ChatRoom) {
 		this.room = room;
@@ -213,15 +215,15 @@ export class Match implements IMatchState {
 						messageName: SOCKET_MSG.PROMPT_DECISION,
 						phase: phase,
 						matchState: this.exportState(),
-						actionChoiceIds: shouldAct ? ['ATTACK', 'MOVE'] : [],
+						actionChoiceIds: shouldAct ? ['ATTACK', 'MOVE', 'ULTRA_HYPER_KILLER'] : [],
 					});
 				});
 				break;
 			case(Phase.RESOLVE):
 				var causes = [];
 				var playerDecisions = this.playerDecisions;
-				this.resetDecisions();
 				var players = Object.keys(playerDecisions);
+				this.resetDecisions();
 				players.sort((usernameA: string, usernameB: string) => {
 					var playerA = this.players[usernameA];
 					var playerB = this.players[usernameB];
@@ -249,6 +251,17 @@ export class Match implements IMatchState {
 						results: res.results,
 					};
 					causes.push(resObj);
+				});
+
+				// tick respawn timers
+				players.forEach((username) => {
+					var player = this.players[username];
+					if(!player.alive) {
+						if(--player.state.respawn === 0) {
+							player.state.maxHp = player.profile.maxHp;
+							player.state.hp = player.profile.maxHp;
+						}
+					}
 				});
 
 				this.room.nsp.to(this.room.roomId).emit(SOCKET_MSG.RESOLVE_ACTIONS, <IActionResolutionTimeline>{
@@ -283,7 +296,8 @@ export class Match implements IMatchState {
 			});
 
 			if(!ent.alive) {
-				results = results.concat(ent.onDeath());
+				ent.state.hp = 0;
+				results = results.concat(this.onDeath(ent));
 			}
 		}
 
@@ -334,5 +348,34 @@ export class Match implements IMatchState {
 			laneId: lane.y,
 			newMatchState: this.exportState(),
 		}];
+	}
+
+	onDeath(ent: Entity): IEventResult[] {
+		var results: IEventResult[] = [];
+		results.push(<IDeathResult>{
+			type: TurnEventResultType.DEATH,
+			entityId: ent.id,
+			newMatchState: this.exportState(),
+		});
+
+		ent.state.respawn = ent.state.nextRespawn;
+		ent.state.nextRespawn++;
+
+		if(this.teamDead(ent.team)) {
+			this.gameOver = true;
+			results.push(<IGameOverResult> {
+				type: TurnEventResultType.GAME_OVER,
+				winner: otherTeam(ent.team),
+				newMatchState: this.exportState(),
+			});
+		}
+		
+		return results;
+	}
+
+	teamDead(t: Team): boolean {
+		return this['team'+t].every((username) => {
+			return !this.players[username].alive;
+		});
 	}
 }

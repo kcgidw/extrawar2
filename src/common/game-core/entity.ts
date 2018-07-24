@@ -1,9 +1,7 @@
 import { User } from "../../server/lobby/user";
-import { ALL_STEFS, MAX_STEF_DURATION } from "../game-info/stefs";
-import { IEntityProfile, IEntityState, IStefDef, IStefInstance, Team, Lane } from "./common";
-import { IDeathResult, IEventResult, IHpChangeResult, INoneResult, TurnEventResultType, IChangeLangeResult } from "./event-interfaces";
-import { Match } from "../../server/chat-room/match";
 import { Characters } from "../game-info/characters";
+import { ALL_STEFS } from "../game-info/stefs";
+import { IEntityProfile, IEntityState, IStefDef, IStefInstance, Team } from "./common";
 
 export class Entity {
 	isPlayer: boolean;
@@ -60,14 +58,5 @@ export class Entity {
 	hasStef(stef: IStefDef|string): IStefInstance {
 		var stefId = stef instanceof Object ? (<IStefDef>stef).id : stef;
 		return this.state.stefs.find((se) => se.stefId === stefId);
-	}
-
-	onDeath(): IEventResult[] {
-		var results: IEventResult[] = [];
-		results.push(<IDeathResult>{
-			type: TurnEventResultType.DEATH,
-			entityId: this.id,
-		});
-		return results;
 	}
 }

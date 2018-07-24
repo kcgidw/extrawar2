@@ -12,8 +12,8 @@ interface IProps {
 	username: string;
 	matchState: IMatchState;
 	menuState: MenuState;
-	selectOption: (id:number|string)=>void;
-	actionChoicesIds: string[]
+	selectOption: (id: number|string)=>void;
+	actionChoicesIds: string[];
 	currentSelectedActionChoice: ISkillDef;
 	currentSelectedLaneId: number;
 	currentSelectedEntityId: string;
