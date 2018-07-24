@@ -54,9 +54,11 @@ export interface IEntityState {
 	hp: number;
 	maxAp: number;
 	ap: number;
+
 	deaths: number;
 	respawn: number;
 	nextRespawn: number;
+	diedTurn: number;
 
 	passiveSlots: number;
 	activeSlots: number;
@@ -77,6 +79,7 @@ export interface IStefInstance {
 	stefId: string;
 	duration: number;
 	invokerEntityId: string; // entity that applied this stef
+	invokedTurn: number;
 }
 
 export interface IMatchState {

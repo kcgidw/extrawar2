@@ -50,7 +50,10 @@ export class RoomView extends React.Component<Props, State> {
 
 		this.ShowGameView = this.ShowGameView.bind(this);
 		this.ShowWaitingRoomView = this.ShowWaitingRoomView.bind(this);
-		this.selectOption = this.selectOption.bind(this);
+		this.selectCharacter = this.selectCharacter.bind(this);
+		this.selectStartingLane = this.selectStartingLane.bind(this);
+		this.selectAction = this.selectAction.bind(this);
+		this.selectTarget = this.selectTarget.bind(this);
 	}
 
 	componentDidMount() {
@@ -169,8 +172,11 @@ export class RoomView extends React.Component<Props, State> {
 			<GameView 
 				matchState={this.state.ms} 
 				menuState={this.state.menu} 
-				username={this.props.username} 
-				selectOption={this.selectOption} 
+				username={this.props.username}
+				selectCharacter={this.selectCharacter}
+				selectStartingLane={this.selectStartingLane}
+				selectAction={this.selectAction}
+				selectTarget={this.selectTarget}
 				actionChoicesIds={this.state.actionChoicesIds}
 				currentSelectedActionChoice={this.state.currentSelectedActionChoice}
 				currentSelectedLaneId={this.state.currentSelectedLaneId}
@@ -217,55 +223,62 @@ export class RoomView extends React.Component<Props, State> {
 		return this.state.ms.turn === -1 || getActingTeam(this.state.ms) === this.state.ms.players[this.props.username].team;
 	}
 
-	selectOption(id: number|string) {
-		switch(this.state.menu) {
-			case MenuState.CHOOSE_CHARACTER:
-				let entProfId = id as string;
-				Handler.chooseCharacter(entProfId);
-				this.setState({menu: MenuState.WAITING});
-				break;
-			case MenuState.CHOOSE_STARTING_LANE:
+	selectCharacter(id: string) {
+		if(this.state.menu === MenuState.CHOOSE_CHARACTER) {
+			let entProfId = id as string;
+			Handler.chooseCharacter(entProfId);
+			this.setState({menu: MenuState.WAITING});
+		} else {
+			throw Error(''+this.state.menu);
+		}
+	}
+	selectStartingLane(id: number) {
+		if(this.state.menu === MenuState.CHOOSE_STARTING_LANE) {
+			Handler.chooseStartingLane(id);
+			this.setState({
+				currentSelectedLaneId: id,
+				menu: MenuState.WAITING
+			});
+		} else {
+			throw Error(''+this.state.menu);
+		}
+	}
+	selectAction(id: string) {
+		let actionDefId = id as string;
+		if(this.myTurn() && [MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menu) !== -1) {
+			let actionDef = Skills[actionDefId];
+			if(actionDef.target.what === TargetWhat.NONE) {
+				this.submitActionAndSetWaiting(undefined);
+				this.setState({
+					currentSelectedActionChoice: Skills[actionDefId],
+				});
+			} else {
+				this.setState({
+					currentSelectedActionChoice: Skills[actionDefId],
+					menu: MenuState.CHOOSE_TARGET,
+				});
+			}
+		} else {
+			throw Error(''+this.state.menu);
+		}
+	}
+	selectTarget(id: number|string) {
+		if(this.state.menu === MenuState.CHOOSE_TARGET) {
+			if(typeof id === 'number') {
 				let laneId = id as number;
-				Handler.chooseStartingLane(laneId);
+				this.submitActionAndSetWaiting(laneId);
 				this.setState({
 					currentSelectedLaneId: laneId,
-					menu: MenuState.WAITING
 				});
-				break;
-			case MenuState.CHOOSE_ACTION:
-				let actionDefId = id as string;
-				if(this.myTurn() && [MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menu) !== -1) {
-					let actionDef = Skills[actionDefId];
-					if(actionDef.target.what === TargetWhat.NONE) {
-						this.submitActionAndSetWaiting(undefined);
-						this.setState({
-							currentSelectedActionChoice: Skills[actionDefId],
-						});
-					} else {
-						this.setState({
-							currentSelectedActionChoice: Skills[actionDefId],
-							menu: MenuState.CHOOSE_TARGET,
-						});
-					}
-				}
-				break;
-			case MenuState.CHOOSE_TARGET:
-				if(typeof id === 'number') {
-					let laneId = id as number;
-					this.submitActionAndSetWaiting(laneId);
-					this.setState({
-						currentSelectedLaneId: laneId,
-					});
-				} else if(typeof id === 'string') {
-					let entId = id as string;
-					this.submitActionAndSetWaiting(entId);
-					this.setState({
-						currentSelectedEntityId: entId,
-					});
-				}
-				break;
-			default:
-				break;
+			} else if(typeof id === 'string') {
+				let entId = id as string;
+				this.submitActionAndSetWaiting(entId);
+				this.setState({
+					currentSelectedEntityId: entId,
+				});
+			}
+		} else {
+			throw Error(''+this.state.menu);
 		}
 	}
 

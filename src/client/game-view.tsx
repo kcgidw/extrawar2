@@ -12,11 +12,14 @@ interface IProps {
 	username: string;
 	matchState: IMatchState;
 	menuState: MenuState;
-	selectOption: (id: number|string)=>void;
 	actionChoicesIds: string[];
 	currentSelectedActionChoice: ISkillDef;
 	currentSelectedLaneId: number;
 	currentSelectedEntityId: string;
+	selectCharacter;
+	selectStartingLane;
+	selectAction;
+	selectTarget;
 }
 export enum MenuState {
 	WAITING_ROOM, CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, CHOOSE_ACTION, CHOOSE_TARGET, WAITING, RESOLVING, GAME_OVER
@@ -32,7 +35,12 @@ export class GameView extends React.Component<IProps, IState> {
 
 		this.lanesSelectable = this.lanesSelectable.bind(this);
 		this.entitiesSelectable = this.entitiesSelectable.bind(this);
-		this.selectOption = this.selectOption.bind(this);
+
+		this.selectCharacter = this.selectCharacter.bind(this);
+		this.selectStartingLane = this.selectStartingLane.bind(this);
+		this.selectAction = this.selectAction.bind(this);
+		this.selectTarget = this.selectTarget.bind(this);
+		this.selectLane = this.selectLane.bind(this);
 	}
 
 	render() {
@@ -41,22 +49,17 @@ export class GameView extends React.Component<IProps, IState> {
 		switch(this.props.matchState.phase) {
 			case Phase.CHOOSE_CHARACTER:
 				innerView = (
-					<div id="menu">
-						< CharacterChoices choices={this.props.matchState.characterChoicesIds[this.props.username]} onSelectCharacter={this.selectOption} />
-					</div>
+					< CharacterChoices choices={this.props.matchState.characterChoicesIds[this.props.username]} onSelectCharacter={this.selectCharacter} />
 				);
-				break;
-			case Phase.CHOOSE_STARTING_LANE:
 				break;
 			case Phase.PLAN:
 				if(this.myTurn()) {
 					innerView = (
-						<div id="menu">
-							< ActionChoices choices={this.props.actionChoicesIds} currentChoiceActionDef={this.props.currentSelectedActionChoice} onSelectAction={this.selectOption} />
-						</div>
+						< ActionChoices choices={this.props.actionChoicesIds} currentChoiceActionDef={this.props.currentSelectedActionChoice} onSelectAction={this.selectAction} />
 					);
 				}
 				break;
+			case Phase.CHOOSE_STARTING_LANE:
 			case Phase.RESOLVE:
 				break;
 			default:
@@ -71,13 +74,15 @@ export class GameView extends React.Component<IProps, IState> {
 				< TeamPanel matchState={this.props.matchState} team={1} />
 				< TeamPanel matchState={this.props.matchState} team={2} />
 
-				{innerView}
+				<div id="menu">
+					{innerView}
+				</div>
 
 				<div id="lanes-container">
 					<div id="lanes">
 						{entitiesByLane.map((ents, idx) => (
-							<Lane key={idx} id={idx} onSelect={this.selectOption} selectable={this.lanesSelectable()} selected={this.props.currentSelectedLaneId === idx} 
-							entities={ents} entitiesSelectable={this.entitiesSelectable()} onSelectEntity={this.selectOption} selectedEntityId={this.props.currentSelectedEntityId} />
+							<Lane key={idx} id={idx} onSelect={this.selectLane} selectable={this.lanesSelectable()} selected={this.props.currentSelectedLaneId === idx} 
+							entities={ents} entitiesSelectable={this.entitiesSelectable()} onSelectEntity={this.selectTarget} selectedEntityId={this.props.currentSelectedEntityId} />
 						))}
 					</div>
 				</div>
@@ -123,8 +128,26 @@ export class GameView extends React.Component<IProps, IState> {
 		return this.props.matchState.turn === -1 || getActingTeam(this.props.matchState) === this.props.matchState.players[this.props.username].team;
 	}
 
-	selectOption(id: number|string): void {
-		this.props.selectOption(id);
+	selectCharacter(id) {
+		this.props.selectCharacter(id);
+	}
+	selectStartingLane(id) {
+		this.props.selectStartingLane(id);
+	}
+	selectAction(id) {
+		this.props.selectAction(id);
+	}
+	selectTarget(id) {
+		this.props.selectTarget(id);
+	}
+	selectLane(id) {
+		if(this.props.menuState === MenuState.CHOOSE_STARTING_LANE) {
+			this.selectStartingLane(id);
+		} else if(this.props.menuState === MenuState.CHOOSE_TARGET) {
+			this.selectTarget(id);
+		} else {
+			throw Error(''+this.props.menuState);
+		}
 	}
 }
 

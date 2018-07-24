@@ -387,6 +387,7 @@ class EntityPanel extends React.Component {
     constructor(props) {
         super(props);
         this.onClick = this.onClick.bind(this);
+        this.hpLine = this.hpLine.bind(this);
     }
     render() {
         var prof = characters_1.Characters[this.props.entity.profileId];
@@ -403,11 +404,7 @@ class EntityPanel extends React.Component {
         return (React.createElement("div", { className: ['entity-panel', selectableClass, selectedClass, teamClass].join(' '), onClick: this.onClick },
             React.createElement("div", { className: "image-container" }, image ? React.createElement("img", { src: image }) : undefined),
             React.createElement("div", { className: "stats-container" },
-                React.createElement("p", null,
-                    "HP ",
-                    this.props.entity.state.hp,
-                    "/",
-                    this.props.entity.state.maxHp),
+                this.hpLine(),
                 React.createElement("p", null,
                     "AP ",
                     this.props.entity.state.ap,
@@ -416,6 +413,20 @@ class EntityPanel extends React.Component {
     }
     onClick() {
         this.props.onSelect(this.props.entity.id);
+    }
+    hpLine() {
+        if (this.props.entity.state.hp > 0) {
+            return React.createElement("p", null,
+                "HP ",
+                this.props.entity.state.hp,
+                "/",
+                this.props.entity.state.maxHp);
+        }
+        else {
+            return React.createElement("p", null,
+                "Respawn in ",
+                this.props.entity.state.respawn);
+        }
     }
 }
 exports.EntityPanel = EntityPanel;
@@ -530,23 +541,24 @@ class GameView extends React.Component {
         this.state = {};
         this.lanesSelectable = this.lanesSelectable.bind(this);
         this.entitiesSelectable = this.entitiesSelectable.bind(this);
-        this.selectOption = this.selectOption.bind(this);
+        this.selectCharacter = this.selectCharacter.bind(this);
+        this.selectStartingLane = this.selectStartingLane.bind(this);
+        this.selectAction = this.selectAction.bind(this);
+        this.selectTarget = this.selectTarget.bind(this);
+        this.selectLane = this.selectLane.bind(this);
     }
     render() {
         var innerView;
         switch (this.props.matchState.phase) {
             case common_1.Phase.CHOOSE_CHARACTER:
-                innerView = (React.createElement("div", { id: "menu" },
-                    React.createElement(character_choices_1.CharacterChoices, { choices: this.props.matchState.characterChoicesIds[this.props.username], onSelectCharacter: this.selectOption })));
-                break;
-            case common_1.Phase.CHOOSE_STARTING_LANE:
+                innerView = (React.createElement(character_choices_1.CharacterChoices, { choices: this.props.matchState.characterChoicesIds[this.props.username], onSelectCharacter: this.selectCharacter }));
                 break;
             case common_1.Phase.PLAN:
                 if (this.myTurn()) {
-                    innerView = (React.createElement("div", { id: "menu" },
-                        React.createElement(action_choices_1.ActionChoices, { choices: this.props.actionChoicesIds, currentChoiceActionDef: this.props.currentSelectedActionChoice, onSelectAction: this.selectOption })));
+                    innerView = (React.createElement(action_choices_1.ActionChoices, { choices: this.props.actionChoicesIds, currentChoiceActionDef: this.props.currentSelectedActionChoice, onSelectAction: this.selectAction }));
                 }
                 break;
+            case common_1.Phase.CHOOSE_STARTING_LANE:
             case common_1.Phase.RESOLVE:
                 break;
             default:
@@ -557,9 +569,9 @@ class GameView extends React.Component {
             React.createElement("div", { id: "game-prompt" }, this.getPrompt()),
             React.createElement(team_panel_1.TeamPanel, { matchState: this.props.matchState, team: 1 }),
             React.createElement(team_panel_1.TeamPanel, { matchState: this.props.matchState, team: 2 }),
-            innerView,
+            React.createElement("div", { id: "menu" }, innerView),
             React.createElement("div", { id: "lanes-container" },
-                React.createElement("div", { id: "lanes" }, entitiesByLane.map((ents, idx) => (React.createElement(lane_1.Lane, { key: idx, id: idx, onSelect: this.selectOption, selectable: this.lanesSelectable(), selected: this.props.currentSelectedLaneId === idx, entities: ents, entitiesSelectable: this.entitiesSelectable(), onSelectEntity: this.selectOption, selectedEntityId: this.props.currentSelectedEntityId })))))));
+                React.createElement("div", { id: "lanes" }, entitiesByLane.map((ents, idx) => (React.createElement(lane_1.Lane, { key: idx, id: idx, onSelect: this.selectLane, selectable: this.lanesSelectable(), selected: this.props.currentSelectedLaneId === idx, entities: ents, entitiesSelectable: this.entitiesSelectable(), onSelectEntity: this.selectTarget, selectedEntityId: this.props.currentSelectedEntityId })))))));
     }
     lanesSelectable() {
         return this.props.menuState === MenuState.CHOOSE_STARTING_LANE
@@ -595,8 +607,28 @@ class GameView extends React.Component {
     myTurn() {
         return this.props.matchState.turn === -1 || util_1.getActingTeam(this.props.matchState) === this.props.matchState.players[this.props.username].team;
     }
-    selectOption(id) {
-        this.props.selectOption(id);
+    selectCharacter(id) {
+        this.props.selectCharacter(id);
+    }
+    selectStartingLane(id) {
+        this.props.selectStartingLane(id);
+    }
+    selectAction(id) {
+        this.props.selectAction(id);
+    }
+    selectTarget(id) {
+        this.props.selectTarget(id);
+    }
+    selectLane(id) {
+        if (this.props.menuState === MenuState.CHOOSE_STARTING_LANE) {
+            this.selectStartingLane(id);
+        }
+        else if (this.props.menuState === MenuState.CHOOSE_TARGET) {
+            this.selectTarget(id);
+        }
+        else {
+            throw Error('' + this.props.menuState);
+        }
     }
 }
 exports.GameView = GameView;
@@ -808,7 +840,10 @@ class RoomView extends React.Component {
         };
         this.ShowGameView = this.ShowGameView.bind(this);
         this.ShowWaitingRoomView = this.ShowWaitingRoomView.bind(this);
-        this.selectOption = this.selectOption.bind(this);
+        this.selectCharacter = this.selectCharacter.bind(this);
+        this.selectStartingLane = this.selectStartingLane.bind(this);
+        this.selectAction = this.selectAction.bind(this);
+        this.selectTarget = this.selectTarget.bind(this);
     }
     componentDidMount() {
         this.handlers = [
@@ -908,7 +943,7 @@ class RoomView extends React.Component {
     }
     ShowGameView() {
         return this.state.ms !== undefined ?
-            React.createElement(game_view_1.GameView, { matchState: this.state.ms, menuState: this.state.menu, username: this.props.username, selectOption: this.selectOption, actionChoicesIds: this.state.actionChoicesIds, currentSelectedActionChoice: this.state.currentSelectedActionChoice, currentSelectedLaneId: this.state.currentSelectedLaneId, currentSelectedEntityId: this.state.currentSelectedEntityId }) : null;
+            React.createElement(game_view_1.GameView, { matchState: this.state.ms, menuState: this.state.menu, username: this.props.username, selectCharacter: this.selectCharacter, selectStartingLane: this.selectStartingLane, selectAction: this.selectAction, selectTarget: this.selectTarget, actionChoicesIds: this.state.actionChoicesIds, currentSelectedActionChoice: this.state.currentSelectedActionChoice, currentSelectedLaneId: this.state.currentSelectedLaneId, currentSelectedEntityId: this.state.currentSelectedEntityId }) : null;
     }
     ShowWaitingRoomView() {
         return this.state.menu === MenuState.WAITING_ROOM ? React.createElement(waiting_room_view_1.WaitingRoomView, { roomId: this.props.roomId, usernames: this.state.roomUsernames, onStartGame: this.sendStartGame }) : null;
@@ -944,57 +979,68 @@ class RoomView extends React.Component {
     myTurn() {
         return this.state.ms.turn === -1 || util_1.getActingTeam(this.state.ms) === this.state.ms.players[this.props.username].team;
     }
-    selectOption(id) {
-        switch (this.state.menu) {
-            case MenuState.CHOOSE_CHARACTER:
-                let entProfId = id;
-                Handler.chooseCharacter(entProfId);
-                this.setState({ menu: MenuState.WAITING });
-                break;
-            case MenuState.CHOOSE_STARTING_LANE:
+    selectCharacter(id) {
+        if (this.state.menu === MenuState.CHOOSE_CHARACTER) {
+            let entProfId = id;
+            Handler.chooseCharacter(entProfId);
+            this.setState({ menu: MenuState.WAITING });
+        }
+        else {
+            throw Error('' + this.state.menu);
+        }
+    }
+    selectStartingLane(id) {
+        if (this.state.menu === MenuState.CHOOSE_STARTING_LANE) {
+            Handler.chooseStartingLane(id);
+            this.setState({
+                currentSelectedLaneId: id,
+                menu: MenuState.WAITING
+            });
+        }
+        else {
+            throw Error('' + this.state.menu);
+        }
+    }
+    selectAction(id) {
+        let actionDefId = id;
+        if (this.myTurn() && [MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menu) !== -1) {
+            let actionDef = skills_1.Skills[actionDefId];
+            if (actionDef.target.what === common_1.TargetWhat.NONE) {
+                this.submitActionAndSetWaiting(undefined);
+                this.setState({
+                    currentSelectedActionChoice: skills_1.Skills[actionDefId],
+                });
+            }
+            else {
+                this.setState({
+                    currentSelectedActionChoice: skills_1.Skills[actionDefId],
+                    menu: MenuState.CHOOSE_TARGET,
+                });
+            }
+        }
+        else {
+            throw Error('' + this.state.menu);
+        }
+    }
+    selectTarget(id) {
+        if (this.state.menu === MenuState.CHOOSE_TARGET) {
+            if (typeof id === 'number') {
                 let laneId = id;
-                Handler.chooseStartingLane(laneId);
+                this.submitActionAndSetWaiting(laneId);
                 this.setState({
                     currentSelectedLaneId: laneId,
-                    menu: MenuState.WAITING
                 });
-                break;
-            case MenuState.CHOOSE_ACTION:
-                let actionDefId = id;
-                if (this.myTurn() && [MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menu) !== -1) {
-                    let actionDef = skills_1.Skills[actionDefId];
-                    if (actionDef.target.what === common_1.TargetWhat.NONE) {
-                        this.submitActionAndSetWaiting(undefined);
-                        this.setState({
-                            currentSelectedActionChoice: skills_1.Skills[actionDefId],
-                        });
-                    }
-                    else {
-                        this.setState({
-                            currentSelectedActionChoice: skills_1.Skills[actionDefId],
-                            menu: MenuState.CHOOSE_TARGET,
-                        });
-                    }
-                }
-                break;
-            case MenuState.CHOOSE_TARGET:
-                if (typeof id === 'number') {
-                    let laneId = id;
-                    this.submitActionAndSetWaiting(laneId);
-                    this.setState({
-                        currentSelectedLaneId: laneId,
-                    });
-                }
-                else if (typeof id === 'string') {
-                    let entId = id;
-                    this.submitActionAndSetWaiting(entId);
-                    this.setState({
-                        currentSelectedEntityId: entId,
-                    });
-                }
-                break;
-            default:
-                break;
+            }
+            else if (typeof id === 'string') {
+                let entId = id;
+                this.submitActionAndSetWaiting(entId);
+                this.setState({
+                    currentSelectedEntityId: entId,
+                });
+            }
+        }
+        else {
+            throw Error('' + this.state.menu);
         }
     }
     submitActionAndSetWaiting(targetId) {

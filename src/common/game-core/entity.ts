@@ -35,6 +35,7 @@ export class Entity {
 			deaths: 0,
 			respawn: 0,
 			nextRespawn: 1,
+			diedTurn: undefined,
 			passiveSlots: 1,
 			activeSlots: 1,
 			passives: [],

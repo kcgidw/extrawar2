@@ -8,6 +8,7 @@ import { IPlayerDecisionRequest, IPromptDecisionMessage, SOCKET_MSG } from "../.
 import { User } from "../lobby/user";
 import { getActingTeam, otherTeam, shuffle } from "../lobby/util";
 import { ChatRoom } from "./chat-room";
+import { arch } from "os";
 
 const MAX_PLAYERS = 6; // TODO: any more = spectators. Make sure to update the const in lobby.ts too
 const NEXT_PHASE_DELAY = 0.4 * 1000;
@@ -57,11 +58,10 @@ export class Match implements IMatchState {
 		return this.players[username].team;
 	}
 	userShouldAct(user: User): boolean {
-		if(this.turn % 2 === 1 && this.getUserTeam(user) === 1) {
-			return true;
-		}
-		if(this.turn % 2 === 0 && this.getUserTeam(user) === 2) {
-			return true;
+		if(this.players[user.username].alive) {
+			if(getActingTeam(this) === this.getUserTeam(user)) {
+				return true;
+			}
 		}
 		return false;
 	}
@@ -70,13 +70,13 @@ export class Match implements IMatchState {
 		switch(this.phase) {
 			case(Phase.CHOOSE_CHARACTER):
 				this.playerDecisions[user.username] = decision;
-				if(this.allReady()) {
+				if(this.allPlayersReady()) {
 					this.resolveDecisionsChooseCharacter();
 				}
 				break;
 			case(Phase.CHOOSE_STARTING_LANE):
 				this.playerDecisions[user.username] = decision;
-				if(this.allReady()) {
+				if(this.allPlayersReady()) {
 					this.resolveDecisionsChooseStartingLane();
 				}
 				break;
@@ -84,7 +84,7 @@ export class Match implements IMatchState {
 				let player = this.players[user.username];
 				if(player.team === getActingTeam(this.exportState())) {
 					this.playerDecisions[user.username] = decision;
-					if(this.teamReady(getActingTeam(this.exportState()))) {
+					if(this.allPlayersReady()) {
 						this.resolveDecisionsChooseAction();
 					}
 				}
@@ -94,7 +94,7 @@ export class Match implements IMatchState {
 					username: user.username,
 					phase: Phase.RESOLVE,
 				};
-				if(this.allReady()) {
+				if(this.allPlayersReady()) {
 					this.nextPhase(Phase.PLAN);
 				}
 				break;
@@ -179,12 +179,8 @@ export class Match implements IMatchState {
 		}
 		return x;
 	}
-	allReady(): boolean {
+	allPlayersReady(): boolean {
 		return Object.keys(this.playerDecisions).length === Object.keys(this.players).length;
-	}
-	teamReady(t: Team): boolean {
-		var teamString = 'team'+t;
-		return this[teamString].every((username) => (this.playerDecisions[username] !== undefined));
 	}
 
 	nextPhase(phase: Phase) {
@@ -209,7 +205,15 @@ export class Match implements IMatchState {
 					this.turn++;
 				}
 				this.room.users.forEach((user) => {
-					var player = this.players[user.username];
+					var shouldAct = this.userShouldAct(user);
+					if(!shouldAct) {
+						this.playerDecisions[user.username] = {
+							username: user.username,
+							phase: this.phase,
+						};
+					}
+				});
+				this.room.users.forEach((user) => {
 					var shouldAct = this.userShouldAct(user);
 					user.emit(SOCKET_MSG.PROMPT_DECISION, <IPromptDecisionMessage>{
 						messageName: SOCKET_MSG.PROMPT_DECISION,
@@ -218,6 +222,11 @@ export class Match implements IMatchState {
 						actionChoiceIds: shouldAct ? ['ATTACK', 'MOVE', 'ULTRA_HYPER_KILLER'] : [],
 					});
 				});
+				if(this.allPlayersReady()) {
+					setTimeout(() => {
+						this.nextPhase(Phase.PLAN);
+					}, NEXT_PHASE_DELAY);
+				}
 				break;
 			case(Phase.RESOLVE):
 				var causes = [];
@@ -236,33 +245,39 @@ export class Match implements IMatchState {
 				players.forEach((username) => {
 					var decision = playerDecisions[username];
 					var actionDef = Skills[decision.actionId];
-					var target: Entity|Lane;
-					if(actionDef.target.what === TargetWhat.LANE) {
-						target = this.lanes[decision.targetLane];
+					if(actionDef && !this.gameOver) {
+						var target: Entity|Lane;
+						if(actionDef.target.what === TargetWhat.LANE) {
+							target = this.lanes[decision.targetLane];
+						}
+						if(actionDef.target.what === TargetWhat.ALLY || actionDef.target.what === TargetWhat.ENEMY || actionDef.target.what === TargetWhat.ENTITY) {
+							target = this.players[decision.targetEntity];
+						}
+						var res = actionDef.fn(this, this.players[username], target, {});
+						var resObj: IEventCause = {
+							entityId: (<IEventCause>res).entityId || username,
+							actionDefId: (<IEventCause>res).actionDefId || actionDef.id,
+							targetId: (<Entity>target).id || (<Lane>target).y,
+							results: res.results,
+						};
+						causes.push(resObj);
 					}
-					if(actionDef.target.what === TargetWhat.ALLY || actionDef.target.what === TargetWhat.ENEMY || actionDef.target.what === TargetWhat.ENTITY) {
-						target = this.players[decision.targetEntity];
-					}
-					var res = actionDef.fn(this, this.players[username], target, {});
-					var resObj: IEventCause = {
-						entityId: (<IEventCause>res).entityId || username,
-						actionDefId: (<IEventCause>res).actionDefId || actionDef.id,
-						targetId: (<Entity>target).id || (<Lane>target).y,
-						results: res.results,
-					};
-					causes.push(resObj);
 				});
 
-				// tick respawn timers
-				players.forEach((username) => {
-					var player = this.players[username];
-					if(!player.alive) {
-						if(--player.state.respawn === 0) {
-							player.state.maxHp = player.profile.maxHp;
-							player.state.hp = player.profile.maxHp;
+				// end-of-turn events
+				if(!this.gameOver) {
+					// tick respawn timers at the end of the opponent's turns
+					players.forEach((username) => {
+						var player = this.players[username];
+						if(!player.alive && player.state.diedTurn !== this.turn && player.team !== getActingTeam(this)) {
+							// don't tick if the death is "fresh". Need a meaningful turn of death before respawn
+							player.state.respawn--;
+							if(player.state.respawn === 0) {
+								this.respawn(player);
+							}
 						}
-					}
-				});
+					});
+				}
 
 				this.room.nsp.to(this.room.roomId).emit(SOCKET_MSG.RESOLVE_ACTIONS, <IActionResolutionTimeline>{
 					causes: causes,
@@ -325,7 +340,8 @@ export class Match implements IMatchState {
 				stef = {
 					stefId: stefId,
 					duration: duration,
-					invokerEntityId: invokerEntity.id
+					invokerEntityId: invokerEntity.id,
+					invokedTurn: this.turn,
 				};
 			}
 			results.push(<IGainStefResult>{
@@ -360,6 +376,7 @@ export class Match implements IMatchState {
 
 		ent.state.respawn = ent.state.nextRespawn;
 		ent.state.nextRespawn++;
+		ent.state.diedTurn = this.turn;
 
 		if(this.teamDead(ent.team)) {
 			this.gameOver = true;
@@ -371,6 +388,12 @@ export class Match implements IMatchState {
 		}
 		
 		return results;
+	}
+
+	respawn(ent: Entity) {
+		ent.state.maxHp = ent.profile.maxHp;
+		ent.state.hp = ent.profile.maxHp;
+		ent.state.diedTurn = undefined;
 	}
 
 	teamDead(t: Team): boolean {
