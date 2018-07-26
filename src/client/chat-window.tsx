@@ -13,6 +13,7 @@ interface IChatWindowState {
 }
 
 export class ChatWindow extends React.Component<Props,IChatWindowState> {
+	ref: any;
 
 	constructor(props) {
 		super(props);
@@ -24,12 +25,14 @@ export class ChatWindow extends React.Component<Props,IChatWindowState> {
 
 		this.onSubmit = this.onSubmit.bind(this);
 		this.updateMessage = this.updateMessage.bind(this);
+
+		this.ref = React.createRef();
 	}
 
 	render() {
 		return (
 			<div id="game-chat">
-				<div id="messages-container" className="messages-container">
+				<div id="messages-container" className="messages-container" ref={this.ref}>
 					<ol>{renderChatLog(this.props.logs)}</ol>
 				</div>
 				<form className="chat-form" action="" onSubmit={this.onSubmit}>
@@ -38,6 +41,20 @@ export class ChatWindow extends React.Component<Props,IChatWindowState> {
 				</form>
 			</div>
 		);
+	}
+
+	getSnapshotBeforeUpdate(prevProps, prevState) {
+		if(prevProps.logs.length < this.props.logs.length) {
+			var log = this.ref.current;
+			return log.scrollHeight - log.scrollTop;
+		}
+		return null;
+	}
+	componentDidUpdate(prevProps, prevState, snapshot) {
+		if(snapshot !== null) {
+			var log = this.ref.current;
+			log.scrollTop = log.scrollHeight - snapshot;
+		}
 	}
 
 	updateMessage(e) {
@@ -73,7 +90,7 @@ function renderChatLog(messages: Msgs.IChatPostMessageResponse[]) {
 			throw Error('bad message' + msg.message);
 		}
 		return (
-			<li key={''+idx+msg.username+msg.timestamp.getTime()}>
+			<li key={''+idx+msg.username}>
 				{displayMessage}
 			</li>
 		);

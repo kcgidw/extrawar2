@@ -132,7 +132,7 @@ export function reportCause(ms: IMatchState, cause: IEventCause): IFlatEvent[] {
 	}];
 
 	for(let res of cause.results) {
-		var message = '  ' +EventResultTexts[res.type](res); // prefix result with a bit of space
+		var message = '* ' +EventResultTexts[res.type](res); // note the prefix
 		if(message) {
 			lines.push({
 				message: message,
