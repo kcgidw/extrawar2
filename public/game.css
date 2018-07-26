@@ -134,3 +134,7 @@
 .entity-panel.entity-team-2 {
     float: right;
 }
+
+.popover.show {
+    position: fixed;
+}

@@ -1,14 +1,15 @@
 import * as React from 'react';
 import { IMatchState, Phase, TargetWhat } from '../common/game-core/common';
+import { flatReport, IActionResolutionTimeline } from '../common/game-core/event-interfaces';
+import { ISkillDef, ISkillInstance, Skills } from '../common/game-info/skills';
+import { getActingTeam, getUsernameTeam, validEntityTarget, validLaneTarget } from '../common/match-util';
 import * as Msgs from '../common/messages';
 import { SOCKET_MSG } from '../common/messages';
 import { ChatWindow } from './chat-window';
 import * as Handler from './client-handler';
+import { Popover } from './game-ui/popover';
 import { GameView } from './game-view';
 import { WaitingRoomView } from './waiting-room-view';
-import { flatReport, IActionResolutionTimeline } from '../common/game-core/event-interfaces';
-import { Skills, ISkillDef, ISkillInstance } from '../common/game-info/skills';
-import { getActingTeam, getUsernameTeam } from '../common/match-util';
 
 export enum MenuState {
 	WAITING_ROOM, CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, CHOOSE_ACTION, CHOOSE_TARGET, WAITING, RESOLVING, GAME_OVER
@@ -30,6 +31,8 @@ interface State {
 	currentSelectedActionChoice: ISkillDef;
 	currentSelectedLaneId: number;
 	currentSelectedEntityId: string;
+
+	notify: string;
 }
 
 export class RoomView extends React.Component<Props, State> {
@@ -46,6 +49,7 @@ export class RoomView extends React.Component<Props, State> {
 			currentSelectedActionChoice: undefined,
 			currentSelectedLaneId: undefined,
 			currentSelectedEntityId: undefined,
+			notify: undefined,
 		};
 
 		this.ShowGameView = this.ShowGameView.bind(this);
@@ -54,6 +58,7 @@ export class RoomView extends React.Component<Props, State> {
 		this.selectStartingLane = this.selectStartingLane.bind(this);
 		this.selectAction = this.selectAction.bind(this);
 		this.selectTarget = this.selectTarget.bind(this);
+		this.notifyInvalidTarget = this.notifyInvalidTarget.bind(this);
 	}
 
 	componentDidMount() {
@@ -163,6 +168,7 @@ export class RoomView extends React.Component<Props, State> {
 				<ChatWindow logs={this.state.chatLog} />
 				<this.ShowGameView />
 				<this.ShowWaitingRoomView />
+				< Popover message={this.state.notify} />
 			</div>
 		);
 	}
@@ -200,7 +206,7 @@ export class RoomView extends React.Component<Props, State> {
 			username: undefined,
 			timestamp: new Date(),
 			message: msg,
-			systemMessage: true,
+			messageClass: Msgs.ChatMessageClass.SYSTEM,
 		});
 	}
 	addResolveMessage(msgName: SOCKET_MSG, msg: string) {
@@ -209,7 +215,16 @@ export class RoomView extends React.Component<Props, State> {
 			username: undefined,
 			timestamp: new Date(),
 			message: msg,
-			resolveMessage: true,
+			messageClass: Msgs.ChatMessageClass.RESOLVE,
+		});
+	}
+	addErrorMessage(msgName: SOCKET_MSG, msg: string) {
+		this.addUserChatMessage({
+			messageName: msgName,
+			username: undefined,
+			timestamp: new Date(),
+			message: msg,
+			messageClass: Msgs.ChatMessageClass.SYS_ERR,
 		});
 	}
 
@@ -263,19 +278,29 @@ export class RoomView extends React.Component<Props, State> {
 		}
 	}
 	selectTarget(id: number|string) {
+		var user = this.state.ms.players[this.props.username];
 		if(this.state.menu === MenuState.CHOOSE_TARGET) {
 			if(typeof id === 'number') {
 				let laneId = id as number;
-				this.submitActionAndSetWaiting(laneId);
-				this.setState({
-					currentSelectedLaneId: laneId,
-				});
+				if(validLaneTarget(user, laneId, this.state.currentSelectedActionChoice)) {
+					this.submitActionAndSetWaiting(laneId);
+					this.setState({
+						currentSelectedLaneId: laneId,
+					});
+				} else {
+					this.addErrorMessage(SOCKET_MSG.PLAYER_DECISION, 'Invalid target.');
+				}
 			} else if(typeof id === 'string') {
 				let entId = id as string;
-				this.submitActionAndSetWaiting(entId);
-				this.setState({
-					currentSelectedEntityId: entId,
-				});
+				let ent = this.state.ms.players[entId];
+				if(validEntityTarget(user, ent, this.state.currentSelectedActionChoice)) {
+					this.submitActionAndSetWaiting(entId);
+					this.setState({
+						currentSelectedEntityId: entId,
+					});
+				} else {
+					this.addErrorMessage(SOCKET_MSG.PLAYER_DECISION, 'Invalid target.');
+				}
 			}
 		} else {
 			// let the click fall through
@@ -286,6 +311,18 @@ export class RoomView extends React.Component<Props, State> {
 		Handler.chooseActionAndTarget(this.state.currentSelectedActionChoice, targetId);
 		this.setState({
 			menu: MenuState.WAITING,
+		});
+	}
+
+	notifyInvalidTarget() {
+		this.setState({
+			notify: 'Invalid target.'
+		}, () => {
+			setTimeout(() => {
+				this.setState({
+					notify: undefined
+				});
+			}, 5*1000);
 		});
 	}
 }

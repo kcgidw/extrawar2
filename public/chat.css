@@ -43,5 +43,8 @@ span.system-message {
 	color: aqua;
 }
 span.resolve-message {
+	color: lime;
+}
+span.system-error-message {
 	color: orange;
 }

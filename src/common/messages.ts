@@ -52,14 +52,16 @@ export interface IRoomUsersResponse extends IErrorableResponse {
 export interface IChatPostMessageRequest {
 	message: string;
 }
+export enum ChatMessageClass {
+	CHAT, SYSTEM, RESOLVE, SYS_ERR
+}
 export interface IChatPostMessageResponse extends IErrorableResponse {
 	username: string;
 	timestamp: Date;
 	message: string;
 
 	// client fields
-	resolveMessage?: boolean;
-	systemMessage?: boolean;
+	messageClass: ChatMessageClass;
 }
 
 export interface IPlayerDecisionRequest {

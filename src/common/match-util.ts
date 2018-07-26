@@ -1,8 +1,8 @@
 
-import { IMatchState, Team, TargetWhat } from "./game-core/common";
 import { User } from "../server/lobby/user";
-import { ISkillDef } from "./game-info/skills";
+import { IMatchState, TargetRange, TargetWhat, Team } from "./game-core/common";
 import { Entity } from "./game-core/entity";
+import { ISkillDef } from "./game-info/skills";
 
 export function getUserTeam (ms: IMatchState, user: User): Team {
     return getUsernameTeam(ms, user.username);
@@ -59,4 +59,31 @@ export function otherTeam(x: Team): Team {
 	if(x === 1) {return 2;}
 	if(x === 2) {return 1;}
 	throw new Error('bad team');
+}
+
+export function inRange(userY: number, targetY: number, actionDef: ISkillDef): boolean {
+    if(actionDef.target.range === TargetRange.IN_LANE) {
+        return userY === targetY;
+    } else if(actionDef.target.range === TargetRange.NEARBY) {
+        return Math.abs(userY - targetY) <= 1;
+    } else { // range = ANY
+        return true;
+    }
+}
+export function validEntityTarget(user: Entity, target: Entity, actionDef: ISkillDef): boolean {
+    if(!actionDefTargetsEntity(actionDef)) {
+        return false;
+    }
+    if((actionDef.target.what === TargetWhat.ALLY && target.team !== user.team)
+    || (actionDef.target.what === TargetWhat.SELF && user.id !== target.id)
+    || (actionDef.target.what === TargetWhat.ENEMY && target.team === user.team)) {
+        return false;
+    }
+    return inRange(user.state.y, target.state.y, actionDef);
+}
+export function validLaneTarget(user: Entity, laneId: number, actionDef: ISkillDef): boolean {
+    if(actionDef.target.what !== TargetWhat.LANE) {
+        return false;
+    }
+    return inRange(user.state.y, laneId, actionDef);
 }

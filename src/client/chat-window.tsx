@@ -82,13 +82,22 @@ function renderChatLog(messages: Msgs.IChatPostMessageResponse[]) {
 			displayMessage = <span className="user-message">
 				<span className="chat-user-tag">[{msg.username}]: </span>{msg.message}
 			</span>;
-		} else if(msg.systemMessage) {
-			displayMessage = <span className="system-message">{msg.message}</span>;
-		} else if(msg.resolveMessage) {
-			displayMessage = <span className="resolve-message">{msg.message}</span>;
 		} else {
-			throw Error('bad message' + msg.message);
+			var msgClass;
+			switch(msg.messageClass) {
+				case Msgs.ChatMessageClass.RESOLVE:
+					msgClass = 'resolve-message';
+					break;
+				case Msgs.ChatMessageClass.SYSTEM:
+					msgClass = 'system-message';
+					break;
+				case Msgs.ChatMessageClass.SYS_ERR:
+					msgClass = 'system-error-message';
+					break;
+			}
+			displayMessage = <span className={msgClass}>{msg.message}</span>;
 		}
+
 		return (
 			<li key={''+idx+msg.username}>
 				{displayMessage}
