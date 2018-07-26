@@ -14,14 +14,35 @@
 }
 
 .team-panel {
-    font-size: 14px;
+    font-size: 12px;
 }
 #team-panel-1 {
     float: left;
 }
 #team-panel-2 {
     float: right;
+    text-align: right;
 }
+.team-entity-panel {
+    width: 150px;
+    margin-bottom: 15px;
+}
+.team-entity-panel p {
+    margin: 0 0;
+}
+.team-entity-panel img {
+    width: 30px;
+}
+.team-entity-panel.team-1 img {
+    float: left;
+    margin-right: 5px;
+}
+.team-entity-panel.team-2 img {
+    float: right;
+    margin-left: 5px;
+}
+
+
 .choices {
     width: 600px;
     margin: auto;
@@ -60,10 +81,10 @@
 }
 #lanes {
     margin: 0 auto;
-    width: 600px;
+    width: 500px;
 }
 .lane {
-    height: 120px;
+    height: 90px;
     background-color: #365641;
     margin-bottom: 4px;
     border-radius: 2px;
@@ -85,8 +106,8 @@
     border: 1px solid rgba(0,0,0,0.1);
     border-radius: 2px;
     padding: 4px;
-    width: 80px;
-    height: 90px;
+    width: 70px;
+    height: 80px;
     font-size: 12px;
     display: inline-block;
 }
@@ -95,7 +116,7 @@
     text-align: center;
 }
 .entity-panel img {
-    width: 60px;
+    width: 40px;
 }
 .entity-panel .stats-container p {
     margin: 0;

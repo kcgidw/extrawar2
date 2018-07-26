@@ -278,7 +278,7 @@ export class RoomView extends React.Component<Props, State> {
 				});
 			}
 		} else {
-			throw Error(''+this.state.menu);
+			// let the click fall through
 		}
 	}
 

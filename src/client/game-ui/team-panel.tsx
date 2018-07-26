@@ -1,6 +1,8 @@
 import * as React from 'react';
-import { Team } from "../../common/game-core/common";
+import { Team, IEntityProfile } from "../../common/game-core/common";
 import { IMatchState } from "../../common/game-core/common";
+import { Entity } from '../../common/game-core/entity';
+import { Characters } from '../../common/game-info/characters';
 
 interface ITeamProps {
 	matchState: IMatchState;
@@ -17,18 +19,50 @@ export class TeamPanel extends React.Component<ITeamProps,ITeamState> {
 	}
 
 	render() {
+		var ms = this.props.matchState;
+		var teamUsernames: string[] = ms['team'+this.props.team];
 		return (
 			<div id={"team-panel-"+this.props.team} className="team-panel">
-				{this.renderReady()}
+				{teamUsernames.map((username) => (<TeamEntityPanel key={username} ent={ms.players[username]} ready={ms.playersReady[username]} team={this.props.team} />))}
 			</div>
 		);
 	}
+}
 
-	renderReady() {
-		var teamUsernames: string[] = this.props.matchState['team'+this.props.team];
-		return teamUsernames.map((username) => {
-			var ready = this.props.matchState.playersReady[username];
-			return <p key={username}>{username}{ready ? " - READY!" : ''}</p>;
-		});
+interface ITeamEntityPanelProps {
+	ent: Entity;
+	ready: boolean;
+	team: Team;
+}
+class TeamEntityPanel extends React.Component<ITeamEntityPanelProps,{}> {
+	constructor(props) {
+		super(props);
+	}
+
+	render() {
+		var ent = this.props.ent;
+		var profile = Characters[this.props.ent.profileId];
+
+		var show: boolean = !profile.emptyProfile;
+		var imageElem = null;
+		var hpElem = null, apElem = null, respawnElem = null, ready = null;
+		if(show) {
+			imageElem = <img src={'images/' + profile.image} />;
+			hpElem = ent.state.hp > 0 ? <p>{ent.state.hp} / {ent.state.maxHp} HP</p> : null;
+			respawnElem = ent.state.hp <= 0 ? <p>Respawn in {ent.state.respawn}</p> : null;
+			apElem = <p>{ent.state.ap} / {ent.state.maxAp} AP</p>;
+		}
+		if(this.props.ready) {
+			ready = ' - READY!';
+		}
+
+		return (
+			<div className={"team-entity-panel " + "team-"+this.props.team}>
+				<p>{this.props.ent.id}{ready}</p>
+				{imageElem}
+				{hpElem}{respawnElem}
+				{apElem}
+			</div>
+		);
 	}
 }

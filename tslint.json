@@ -19,7 +19,7 @@
         "no-empty": {
             "severity": "warn"
         },
-        "max-classes-per-file": [false],
+        "max-classes-per-file": false,
         "indent": [true, "tabs"],
         "whitespace": [true, "check-preblock"],
         "no-trailing-whitespace": [false],
@@ -37,7 +37,8 @@
             "severity": "warn"
         },
         "max-line-length": [false],
-        "eofline": [false]
+        "eofline": [false],
+        "align": [false],
     },
     "rulesDirectory": [],
     "linterOptions": {

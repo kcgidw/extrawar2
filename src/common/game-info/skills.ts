@@ -14,8 +14,8 @@ export interface ISkillDef {
 	name: string;
 	desc: string;
 	keywords: string[]; // supplementary descriptons for stefs and whatnot
-	apCost: number,
-	cooldown: number,
+	apCost: number;
+	cooldown: number;
 	target: ITargetInfo;
 	fn: (match: Match, userEntity: Entity, target: Entity|Lane, custom?: object)=>Partial<IEventCause>;
 	resultMessage?: (userEntity: Entity, target?: Entity|Lane, custom?: object)=>string;
@@ -256,13 +256,13 @@ export const Skills: {[key: string]: ISkillDef} = {
 	// }
 };
 
-interface simpleAttackOptions {
+interface ISimpleAttackOptions {
 	stefs?: IStefInstance[];
 	damageMod?: (attacker?: Entity, target?: Entity)=>number;
 	selfDamage?: (attacker?: Entity)=>number;
 	ignoreLanePenalty?: boolean;
 }
-function simpleAttack(match: Match, attacker: Entity, target: Entity, options: simpleAttackOptions = {}) {
+function simpleAttack(match: Match, attacker: Entity, target: Entity, options: ISimpleAttackOptions = {}) {
 	var results: IEventResult[] = [];
 
 	var damage;
@@ -291,8 +291,8 @@ function simpleAttack(match: Match, attacker: Entity, target: Entity, options: s
 	}
 
 	if(options.selfDamage) { // also for lifesteal!
-		let damage = options.selfDamage(attacker);
-		if(damage !== 0) {
+		let sd = options.selfDamage(attacker);
+		if(sd !== 0) {
 			results = results.concat(match.changeEntityHp(attacker, damage * -1));
 		}
 	}
