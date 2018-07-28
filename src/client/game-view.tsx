@@ -53,12 +53,6 @@ export class GameView extends React.Component<IProps, IState> {
 				);
 				break;
 			case Phase.PLAN:
-				if(this.myTurn()) {
-					innerView = (
-						< ActionChoices choices={this.props.actionChoices} currentChoiceActionDef={this.props.currentSelectedActionChoice} onSelectAction={this.selectAction} />
-					);
-				}
-				break;
 			case Phase.CHOOSE_STARTING_LANE:
 			case Phase.RESOLVE:
 				break;

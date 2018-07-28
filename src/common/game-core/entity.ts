@@ -69,4 +69,10 @@ export class Entity {
 		var stefId = stef instanceof Object ? (<IStefDef>stef).id : stef;
 		return this.state.stefs.find((se) => se.stefId === stefId);
 	}
+
+	resetCooldown(actionId: string) {
+		var def = Skills[actionId];
+		var inst = this.state.actives.find((curInst) => (curInst.skillDefId === actionId));
+		inst.cooldown = def.cooldown;
+	}
 }

@@ -54,6 +54,7 @@ export class ChatRoom {
 			username: user.username,
 			timestamp: new Date(),
 			message: req.message,
+			messageClass: Messages.ChatMessageClass.CHAT,
 		};
 		this.chatLog.push(msg);
 		while(this.chatLog.length > CHAT_LOG_CAPACITY) { // should happen just once, but to be safe

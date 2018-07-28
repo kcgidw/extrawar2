@@ -165,6 +165,9 @@ export class Match implements IMatchState {
 	}
 
 	nextPhase(phase: Phase) {
+		if(this.gameOver) {
+			return;
+		}
 		this.phase = phase;
 		switch(phase) {
 			case(Phase.CHOOSE_STARTING_LANE):
@@ -227,6 +230,7 @@ export class Match implements IMatchState {
 				players.forEach((username) => {
 					var decision = playerDecisions[username];
 					var actionDef = Skills[decision.actionId];
+					var entity = this.players[username];
 					if(actionDef && !this.gameOver) {
 						console.log('Resolving decision...');
 						console.log(decision);
@@ -238,9 +242,12 @@ export class Match implements IMatchState {
 							target = this.players[decision.targetEntity];
 						}
 						if(actionDef.target.what === TargetWhat.SELF) {
-							target = this.players[username];
+							target = entity;
 						}
-						var res = actionDef.fn(this, this.players[username], target, {});
+						if(actionDef.cooldown > 0) {
+							entity.resetCooldown(actionDef.id);
+						}
+						var res = actionDef.fn(this, entity, target, {});
 						var resObj: IEventCause = {
 							entityId: (<IEventCause>res).entityId || username,
 							actionDefId: (<IEventCause>res).actionDefId || actionDef.id,

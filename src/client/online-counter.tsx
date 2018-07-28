@@ -34,10 +34,4 @@ export class OnlineCounter extends React.Component<{}, IOnlineCounterState> {
 			</div>
 		);
 	}
-
-	updateCount(x: number) {
-		this.setState({
-			count: x
-		});
-	}
 }

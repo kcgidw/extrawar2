@@ -10,6 +10,7 @@ import * as Handler from './client-handler';
 import { Popover } from './game-ui/popover';
 import { GameView } from './game-view';
 import { WaitingRoomView } from './waiting-room-view';
+import { SkilList } from './game-ui/skill-list';
 
 export enum MenuState {
 	WAITING_ROOM, CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, CHOOSE_ACTION, CHOOSE_TARGET, WAITING, RESOLVING, GAME_OVER
@@ -165,10 +166,11 @@ export class RoomView extends React.Component<Props, State> {
 	render() {
 		return (
 			<div id="match">
-				<ChatWindow logs={this.state.chatLog} />
 				<this.ShowGameView />
 				<this.ShowWaitingRoomView />
 				< Popover message={this.state.notify} />
+				<ChatWindow logs={this.state.chatLog} />
+				<SkilList skills={this.state.actionChoices} onSelect={this.selectAction} currentChoiceActionDef={this.state.currentSelectedActionChoice} />
 			</div>
 		);
 	}

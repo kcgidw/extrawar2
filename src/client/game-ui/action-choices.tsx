@@ -15,7 +15,7 @@ export class ActionChoices extends React.Component<IActionChoicesProps,{}> {
 
 	render() {
 		return (
-			<div className="choices">
+			<div className="center-choices">
 				{
 					this.props.choices.map((skill) => {
 						var def = Skills[skill.skillDefId];

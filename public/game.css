@@ -1,3 +1,4 @@
+/* top header */
 #game-prompt {
     width: 100%;
     background-color: #222;
@@ -6,7 +7,6 @@
     margin-bottom: 18px;
     height: 25px;
     line-height: 25px;
-    /* position: fixed; */
 }
 
 #menu {
@@ -43,7 +43,7 @@
 }
 
 
-.choices {
+.center-choices {
     width: 600px;
     margin: auto;
     text-align: center;
@@ -64,17 +64,24 @@
 .choice-card:hover:not(.disabled) {
     background-color: #dfdec5;
 }
+.choice-card.disabled:hover {
+    background-color: red;
+}
 .choice-card p {
-    margin: 4px;
+    margin: 0px;
 }
 .choice-card .card-header {
     font-weight: bold;
+    font-size: 14px;
 }
 .choice-card .cooldown {
     font-weight: bold;
 }
 .choice-card .disabled {
     opacity: 0.6;
+}
+.choice-card.selected {
+    border: 3px solid yellow;
 }
 
 #lanes-container {
@@ -95,10 +102,6 @@
 }
 .lane.selected {
     background-color: #457549;
-    border: 3px solid yellow;
-}
-
-.current-action-choice {
     border: 3px solid yellow;
 }
 
@@ -137,4 +140,22 @@
 
 .popover.show {
     position: fixed;
+}
+
+
+/* Skill list */
+.skill-list {
+	position: fixed;
+	width: 300px;
+	height: 320px;
+    overflow-y: scroll;
+	bottom: 0px;
+    right: 0px;
+    background-color: rgba(0,0,0,0.5);
+	border: solid 1px #555;
+}
+.skill-list .skill-card {
+    width: 80%;
+    margin: 15px auto 0;
+    display: block;
 }

@@ -17,7 +17,7 @@ export class CharacterChoices extends React.Component<ICharacterChoicesProps,{}>
 
 	render() {
 		return (
-			<div className="choices">
+			<div className="center-choices">
 					{this.renderCharacterChoices(this.props.choices)}
 			</div>
 		);
