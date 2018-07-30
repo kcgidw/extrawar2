@@ -28,6 +28,9 @@ export class Entity {
 
 		var actives: string[] = ['ATTACK', 'MOVE', 'ULTRA_HYPER_KILLER'];
 		actives = actives.concat(Object.keys(Skills).filter((skId) => (Skills[skId].faction === character.faction && Skills[skId].active === true)));
+		if(this.profile.emptyProfile) {
+			actives = [];
+		}
 		var activeInstances: ISkillInstance[] = actives.map((id) => ({
 			skillDefId: id,
 			turnUsed: undefined,

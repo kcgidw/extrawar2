@@ -147,7 +147,7 @@ export class GameView extends React.Component<IProps, IState> {
 
 function getEntitiesByLane(ms: IMatchState): Entity[][] {
 	var entities = ms.players;
-	var res = [[],[],[],[]];
+	var res = [[],[],[],[],[]];
 	for(let username of Object.keys(ms.players)) {
 		var ent = ms.players[username];
 		var y = ent.state.y;

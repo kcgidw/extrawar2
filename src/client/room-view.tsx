@@ -67,6 +67,9 @@ export class RoomView extends React.Component<Props, State> {
 
 	componentDidMount() {
 		this.handlers = [
+			Handler.generateHandler('disconnect', () => {
+				this.addErrorMessage(SOCKET_MSG.LOBBY_NUM_ONLINE, 'Connection lost.');
+			}),
 			Handler.generateHandler<Msgs.IChatPostMessageResponse>(SOCKET_MSG.CHAT_POST_MESSAGE,
 				(data) => {
 					this.addUserChatMessage(data);
@@ -157,7 +160,7 @@ export class RoomView extends React.Component<Props, State> {
 					currentSelectedEntityId: undefined,
 					currentSelectedLaneId: undefined,
 				});
-			})
+			}),
 		];
 	}
 
@@ -170,7 +173,7 @@ export class RoomView extends React.Component<Props, State> {
 	render() {
 		var skillList = this.state.ms ? <SkillList skills={this.me().state.actives}
 			onSelect={this.selectAction} currentChoiceActionDef={this.state.currentSelectedActionChoice}
-			disableAll={usernameShouldAct(this.state.ms, this.props.username)}/> : null;
+			disableAll={!usernameShouldAct(this.state.ms, this.props.username)}/> : null;
 		return (
 			<div id="match">
 				<this.ShowGameView />
@@ -244,7 +247,7 @@ export class RoomView extends React.Component<Props, State> {
 	}
 
 	myTurn(): boolean {
-		return this.state.ms.turn === -1 || getActingTeam(this.state.ms) === this.state.ms.players[this.props.username].team;
+		return this.state.ms.turn === -1 || getActingTeam(this.state.ms) === this.me().team;
 	}
 	me(): Entity {
 		return this.state.ms.players[this.props.username];
@@ -285,17 +288,26 @@ export class RoomView extends React.Component<Props, State> {
 		}
 		if([MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menu) !== -1) {
 			let actionDef = Skills[actionDefId];
-			if(actionDef.target.what === TargetWhat.NONE) {
-				this.setState({
-					currentSelectedActionChoice: Skills[actionDefId],
-				}, () => {
-					this.submitActionAndSetWaiting(undefined);
-				});
-			} else {
-				this.setState({
-					currentSelectedActionChoice: Skills[actionDefId],
-					menu: MenuState.CHOOSE_TARGET,
-				});
+			let instance = this.me().state.actives.find((i) => (i.skillDefId === id));
+			if(instance) {
+				if(instance.cooldown > 1) { // accelerate
+					this.setState({
+						currentSelectedActionChoice: Skills[actionDefId],
+					}, () => {
+						this.submitActionAndSetWaiting(this.state.currentSelectedActionChoice.id, true);
+					});
+				} else if(actionDef.target.what === TargetWhat.NONE) { // submit now
+					this.setState({
+						currentSelectedActionChoice: Skills[actionDefId],
+					}, () => {
+						this.submitActionAndSetWaiting(undefined);
+					});
+				} else { // choose target
+					this.setState({
+						currentSelectedActionChoice: Skills[actionDefId],
+						menu: MenuState.CHOOSE_TARGET,
+					});
+				}
 			}
 		} else {
 			console.warn('unwarranted action select');
@@ -331,8 +343,14 @@ export class RoomView extends React.Component<Props, State> {
 		}
 	}
 
-	submitActionAndSetWaiting(targetId: number|string) {
-		Handler.chooseActionAndTarget(this.state.currentSelectedActionChoice, targetId);
+	submitActionAndSetWaiting(targetId: number|string, accel?: boolean) {
+		var action: ISkillDef;
+		if(accel) {
+			action = Skills.ACCEL;
+		} else {
+			action = this.state.currentSelectedActionChoice;
+		}
+		Handler.chooseActionAndTarget(action, targetId, accel);
 		this.setState({
 			menu: MenuState.WAITING,
 		});

@@ -102,7 +102,7 @@
     width: 500px;
 }
 .lane {
-    height: 90px;
+    height: 70px;
     background-color: #365641;
     margin-bottom: 4px;
     border-radius: 2px;
@@ -119,9 +119,8 @@
 .entity-panel {
     border: 1px solid rgba(0,0,0,0.1);
     border-radius: 2px;
-    padding: 4px;
     width: 70px;
-    height: 80px;
+    height: 70px;
     font-size: 12px;
     display: inline-block;
 }

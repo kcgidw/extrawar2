@@ -1,8 +1,8 @@
 import { IMatchState, IStefInstance, Lane, Phase, TargetWhat, Team } from "../../common/game-core/common";
 import { Entity } from "../../common/game-core/entity";
-import { IActionResolutionTimeline, IChangeLangeResult, IDeathResult, IEventCause, IEventResult, IGainStefResult, IGameOverResult, IHpChangeResult, INoneResult, TurnEventResultType, IRespawnResult } from "../../common/game-core/event-interfaces";
+import { IActionResolutionTimeline, IChangeLangeResult, IDeathResult, IEventCause, IEventResult, IGainStefResult, IGameOverResult, IHpChangeResult, INoneResult, TurnEventResultType, IRespawnResult, IAccelResult } from "../../common/game-core/event-interfaces";
 import { Characters, PlayableCharacters } from "../../common/game-info/characters";
-import { Skills } from "../../common/game-info/skills";
+import { Skills, ISkillInstance } from "../../common/game-info/skills";
 import { MAX_STEF_DURATION, ALL_STEFS } from "../../common/game-info/stefs";
 import { IPlayerDecisionRequest, IPromptDecisionMessage, SOCKET_MSG } from "../../common/messages";
 import { User } from "../lobby/user";
@@ -13,6 +13,7 @@ import { getActingTeam, otherTeam, getUsernameTeam, userShouldAct, teamDead, fin
 
 const MAX_PLAYERS = 6; // TODO: any more = spectators. Make sure to update the const in lobby.ts too
 const NEXT_PHASE_DELAY = 0.4 * 1000;
+const NUM_LANES = 5;
 
 export class Match implements IMatchState {
 	room: ChatRoom;
@@ -34,7 +35,10 @@ export class Match implements IMatchState {
 
 	constructor(room: ChatRoom) {
 		this.room = room;
-		this.lanes = [ new Lane(0), new Lane(1), new Lane(2), new Lane(3) ];
+		this.lanes = [];
+		for(let i=0; i<NUM_LANES; i++) {
+			this.lanes.push(new Lane(i));
+		}
 
 		// set teams
 		var team: Team;
@@ -234,7 +238,8 @@ export class Match implements IMatchState {
 					if(actionDef && !this.gameOver) {
 						console.log('Resolving decision...');
 						console.log(decision);
-						var target: Entity|Lane;
+
+						let target: Entity|Lane|ISkillInstance;
 						if(actionDef.target.what === TargetWhat.LANE) {
 							target = this.lanes[decision.targetLane];
 						}
@@ -244,15 +249,21 @@ export class Match implements IMatchState {
 						if(actionDef.target.what === TargetWhat.SELF) {
 							target = entity;
 						}
+						if(actionDef.id === 'ACCEL') {
+							target = entity.state.actives.find((a) => (a.skillDefId === decision.targetSkill));
+						} else {
+							entity.state.actives.find((a) => (a.skillDefId === decision.actionId)).turnUsed = this.turn;
+						}
+
 						if(actionDef.cooldown > 0) {
 							entity.resetCooldown(actionDef.id);
 						}
-						entity.state.actives.find((a) => (a.skillDefId === decision.actionId)).turnUsed = this.turn;
-						var res = actionDef.fn(this, entity, target, {});
-						var resObj: IEventCause = {
+
+						let res = actionDef.fn(this, entity, <any>target, {});
+						let resObj: IEventCause = {
 							entityId: (<IEventCause>res).entityId || username,
 							actionDefId: (<IEventCause>res).actionDefId || actionDef.id,
-							targetId: target ? ((<Entity>target).id || (<Lane>target).y) : undefined,
+							targetId: target ? ((<Entity>target).id || (<Lane>target).y || (<ISkillInstance>target).skillDefId) : undefined,
 							results: res.results,
 						};
 						causes.push(resObj);
@@ -262,7 +273,7 @@ export class Match implements IMatchState {
 				// end-of-turn events
 				console.log(`turn ${this.turn} ending`);
 				if(!this.gameOver) {
-					var endTurnCause: IEventCause = {
+					let endTurnCause: IEventCause = {
 						entityId: undefined,
 						actionDefId: 'TURN_END',
 						targetId: undefined,
@@ -302,7 +313,7 @@ export class Match implements IMatchState {
 							});
 						}
 					});
-					causes = causes.concat(endTurnCause);
+					causes.push(endTurnCause);
 				}
 
 				this.room.nsp.to(this.room.roomId).emit(SOCKET_MSG.RESOLVE_ACTIONS, <IActionResolutionTimeline>{
@@ -468,6 +479,24 @@ export class Match implements IMatchState {
 			type: TurnEventResultType.RESPAWN,
 			entityId: ent.id,
 			newMatchState: this,
+		}];
+	}
+
+	accelerate(ent: Entity, skInst: ISkillInstance): IEventResult[] {
+		if(skInst === undefined || skInst.cooldown <= 1) {
+			return [<INoneResult>{
+				type: TurnEventResultType.NONE,
+				entityId: ent.id,
+				reason: 'Invalid or unnecessary acceleration',
+				newMatchState: this.exportState()
+			}];
+		}
+		skInst.cooldown --;
+		return [<IAccelResult>{
+			type: TurnEventResultType.ACCEL,
+			entityId: ent.id,
+			skillDefId: skInst.skillDefId,
+			newMatchState: this.exportState(),
 		}];
 	}
 

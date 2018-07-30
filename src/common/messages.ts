@@ -70,6 +70,7 @@ export interface IPlayerDecisionRequest {
 	actionId?: string;
 	targetLane?: number;
 	targetEntity?: number;
+	targetSkill?: string;
 	entityProfileId?: string; // choose character
 	startingLane?: number; // choose starting lane
 }

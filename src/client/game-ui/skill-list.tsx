@@ -25,7 +25,8 @@ export class SkillList extends React.Component<Props, {}> {
 
 	renderSkill(sk: ISkillInstance) {
 		var def = Skills[sk.skillDefId];
-		var cooldownText = sk.cooldown > 0 ? (sk.cooldown === 1 ? 'Ready next turn' : `${sk.cooldown} cycles left`) : 'Ready (5 cycles)';
+		var cool = `${def.cooldown - sk.cooldown}/${def.cooldown}`;
+		var cooldownText = sk.cooldown === 1 ? `Ready next turn ` + cool : cool + ' ready';
 		var currentlySelected = this.props.currentChoiceActionDef && this.props.currentChoiceActionDef.id === sk.skillDefId ? 'selected' : '';
 		var disabled = this.props.disableAll || sk.cooldown > 0 ? 'disabled' : '';
 		var accelText = sk.cooldown > 1 ? 'Accelerate!?' : '';

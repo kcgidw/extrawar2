@@ -21,6 +21,7 @@ export enum TurnEventResultType {
 	AP_CHANGE='AP_CHANGE',
 	CHANGE_LANE='CHANGE_LANE',
 	GAME_OVER='GAME_OVER',
+	ACCEL='ACCEL',
 }
 
 export interface IEventResult {
@@ -66,6 +67,11 @@ export interface IChangeLangeResult extends IEventResult {
 	entityId: string;
 	laneId: number;
 }
+export interface IAccelResult extends IEventResult {
+	type: TurnEventResultType.ACCEL;
+	entityId: string;
+	skillDefId: string;
+}
 
 export interface IActionResolutionTimeline {
 	causes: IEventCause[];
@@ -84,6 +90,7 @@ export const EventResultTexts: {[key: string]: (result?: IEventResult)=>string} 
 	},
 	'DEATH': (result: IDeathResult) => `${result.entityId} dies.`,
 	'RESPAWN': (result: IRespawnResult) => `${result.entityId} respawns.`,
+	'ACCEL': (result: IAccelResult) => `${result.entityId} accelerates.`,
 	'AP_CHANGE': (result: IApChangeResult) => {
 		if(result.value > 0) {
 			return `${result.entityId} gains ${result.value} AP.`;

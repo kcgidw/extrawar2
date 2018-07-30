@@ -29,7 +29,7 @@ export interface ISkillInstance {
 
 function generateSkillDef(id: string, active: boolean, faction: Faction, name: string, desc: string,
 	keywords: string[], apCost: number, cooldown: number, target: ITargetInfo,
-	fn: (match: Match, userEntity: Entity, target: Entity|Lane, custom?: object)=>Partial<IEventCause>,
+	fn: (match: Match, userEntity: Entity, target: Entity|Lane|ISkillInstance, custom?: object)=>Partial<IEventCause>,
 	resultMessage?: (userEntity: Entity, target?: Entity|Lane, custom?: object)=>string): ISkillDef {
 		return {
 			id, active, faction, name, desc, keywords, apCost, cooldown, target, fn, resultMessage
@@ -107,6 +107,17 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return userEntity.id + ' uses the ULTRA HYPER KILLER!!';
 		}
 	},
+	'ACCEL': generateSkillDef('ACCEL', true, Faction.NONE, 'Accelerate', '', [], undefined, undefined,
+		{ what: TargetWhat.NONE, range: undefined },
+		function fn(match, user, targetSkill: ISkillInstance) {
+			var results: IEventResult[]  = [];
+			results = results.concat(match.accelerate(user, targetSkill));
+			return {results: results};
+		},
+		function resultMessage(user) {
+			return `${user.id} accelerates.`;
+		}
+	),
 	'TURN_END': generateSkillDef('TURN_END', false, Faction.NONE, 'Turn Ending', '', [], undefined, undefined, 
 		{ what: TargetWhat.NONE, range: undefined }, undefined,
 		() => ('The turn is ending.')),

@@ -4,7 +4,9 @@ import { SOCKET_MSG } from '../common/messages';
 import { ISkillDef } from '../common/game-info/skills';
 import { actionDefTargetsEntity } from '../common/match-util';
 
-export const socket = io('/lobby');
+export const socket = io('/lobby', {
+	timeout: 100000
+});
 export const clientSocket = socket;
 socket.emit(SOCKET_MSG.LOBBY_NUM_ONLINE);
 
@@ -44,12 +46,13 @@ export function chooseStartingLane(laneId: number) {
 	} as Msgs.IPlayerDecisionRequest);
 }
 
-export function chooseActionAndTarget(actionDef: ISkillDef, targetId: number|string) {
+export function chooseActionAndTarget(actionDef: ISkillDef, targetId: number|string, accel?: boolean) {
 	socket.emit(SOCKET_MSG.PLAYER_DECISION, {
 		phase: Phase.CHOOSE_CHARACTER,
 		actionId: actionDef.id,
 		targetEntity: actionDefTargetsEntity(actionDef) ? targetId : undefined,
 		targetLane: actionDef.target.what === TargetWhat.LANE ? targetId : undefined,
+		targetSkill: accel ? targetId : undefined,
 	} as Msgs.IPlayerDecisionRequest);
 }
 
