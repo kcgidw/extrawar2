@@ -4,6 +4,13 @@ import { IMatchState, TargetRange, TargetWhat, Team } from "./game-core/common";
 import { Entity } from "./game-core/entity";
 import { ISkillDef } from "./game-info/skills";
 
+export function isAlive(ms: IMatchState, username: string): boolean {
+    return ms.players[username].state.hp > 0;
+}
+export function teamDead(ms: IMatchState, t: Team): boolean {
+    return ms['team'+t].every((username) => (!ms.players[username].alive) );
+}
+
 export function getUserTeam (ms: IMatchState, user: User): Team {
     return getUsernameTeam(ms, user.username);
 }
@@ -14,17 +21,13 @@ export function userShouldAct(ms: IMatchState, user: User): boolean {
     return usernameShouldAct(ms, user.username);
 }
 export function usernameShouldAct(ms: IMatchState, username: string): boolean {
-    if(ms.players[username].alive) {
+    if(isAlive(ms, username)) {
         if(getActingTeam(ms) === getUsernameTeam(ms, username)) {
             return true;
         }
     }
     return false;
 }
-export function teamDead(ms: IMatchState, t: Team): boolean {
-    return ms['team'+t].every((username) => (!ms.players[username].alive) );
-}
-
 export function findEntities(match: IMatchState, filter?: {laneId?: number, laneRange?: number, team?: Team, aliveOnly?: boolean}): Entity[] {
     var res = Object.keys(match.players).map((username) => (match.players[username]));
     if(filter) {
@@ -37,7 +40,7 @@ export function findEntities(match: IMatchState, filter?: {laneId?: number, lane
         }
         filter.aliveOnly = filter.aliveOnly !== undefined ? filter.aliveOnly : true;
         if(filter.aliveOnly) {
-            res = res.filter((ent) => (ent.alive === filter.aliveOnly));
+            res = res.filter((ent) => (isAlive(match, ent.id) === filter.aliveOnly));
         }
     }
     return res;
@@ -77,6 +80,9 @@ export function validEntityTarget(user: Entity, target: Entity, actionDef: ISkil
     if((actionDef.target.what === TargetWhat.ALLY && target.team !== user.team)
     || (actionDef.target.what === TargetWhat.SELF && user.id !== target.id)
     || (actionDef.target.what === TargetWhat.ENEMY && target.team === user.team)) {
+        return false;
+    }
+    if(target.state.hp <= 0) {
         return false;
     }
     return inRange(user.state.y, target.state.y, actionDef);

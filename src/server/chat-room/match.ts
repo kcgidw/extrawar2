@@ -9,7 +9,7 @@ import { User } from "../lobby/user";
 import { shuffle } from "../lobby/util";
 import { ChatRoom } from "./chat-room";
 import { arch } from "os";
-import { getActingTeam, otherTeam, getUsernameTeam, userShouldAct, teamDead } from "../../common/match-util";
+import { getActingTeam, otherTeam, getUsernameTeam, userShouldAct, teamDead, findEntities } from "../../common/match-util";
 
 const MAX_PLAYERS = 6; // TODO: any more = spectators. Make sure to update the const in lobby.ts too
 const NEXT_PHASE_DELAY = 0.4 * 1000;
@@ -70,7 +70,7 @@ export class Match implements IMatchState {
 				break;
 			case(Phase.PLAN):
 				let player = this.players[user.username];
-				if(player.team === getActingTeam(this.exportState())) {
+				if(player.team === getActingTeam(this.exportState()) && player.alive) {
 					this.playerDecisions[user.username] = decision;
 					if(this.allPlayersReady()) {
 						this.resolveDecisionsChooseAction();
@@ -270,13 +270,21 @@ export class Match implements IMatchState {
 					};
 					players.forEach((username) => {
 						var player = this.players[username];
-						if(player.team === getActingTeam(this)) {
+						if(player.team === getActingTeam(this)) { // at the end of a player's turn
+						} else { // end of opponent turn,  start of player's next turn
+							// tick cooldowns
+							player.state.actives.forEach((active) => {
+								if(active.cooldown > 0) {
+									active.cooldown--;
+								}
+							});
+
 							// tick respawn
 							if(!player.alive && this.turn > player.state.diedTurn) {
 								// don't tick if death is "fresh". Need a meaningful turn of death before respawn
 								player.state.respawn--;
 								if(player.state.respawn === 0) {
-									this.respawn(player);
+									endTurnCause.results = endTurnCause.results.concat(this.respawn(player));
 								}
 							}
 							
@@ -290,13 +298,6 @@ export class Match implements IMatchState {
 									if(stef.duration === 0) {
 										player.loseStef(stef.stefId);
 									}
-								}
-							});
-						} else {
-							// tick cooldowns... effectively at the start of a player's turn
-							player.state.actives.forEach((active) => {
-								if(active.cooldown > 0) {
-									active.cooldown--;
 								}
 							});
 						}
@@ -398,7 +399,7 @@ export class Match implements IMatchState {
 			stef = {
 				stefId: stefId,
 				duration: duration,
-				invokerEntityId: invokerEntity.id,
+				invokerEntityId: invokerEntity ? invokerEntity.id : undefined,
 				invokedTurn: this.turn,
 			};
 			stefs.push(stef);
@@ -443,6 +444,13 @@ export class Match implements IMatchState {
 				winner: otherTeam(ent.team),
 				newMatchState: this.exportState(),
 			});
+		}
+
+		if(ent.hasPassive('EULOGY')) {
+			var teammates = this.team1.filter((name) => (name !== ent.id));
+			for(let allyName of teammates) {
+				results = results.concat(this.applyStefToEntity(this.players[allyName], 'STR_UP', ent.state.respawn + 1, ent));
+			}
 		}
 		
 		return results;

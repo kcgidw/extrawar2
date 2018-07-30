@@ -1,16 +1,17 @@
 import * as React from 'react';
 import { IMatchState, Phase, TargetWhat } from '../common/game-core/common';
+import { Entity } from '../common/game-core/entity';
 import { flatReport, IActionResolutionTimeline } from '../common/game-core/event-interfaces';
 import { ISkillDef, ISkillInstance, Skills } from '../common/game-info/skills';
-import { getActingTeam, getUsernameTeam, validEntityTarget, validLaneTarget } from '../common/match-util';
+import { getActingTeam, usernameShouldAct, validEntityTarget, validLaneTarget } from '../common/match-util';
 import * as Msgs from '../common/messages';
 import { SOCKET_MSG } from '../common/messages';
 import { ChatWindow } from './chat-window';
 import * as Handler from './client-handler';
 import { Popover } from './game-ui/popover';
+import { SkillList } from './game-ui/skill-list';
 import { GameView } from './game-view';
 import { WaitingRoomView } from './waiting-room-view';
-import { SkillList } from './game-ui/skill-list';
 
 export enum MenuState {
 	WAITING_ROOM, CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, CHOOSE_ACTION, CHOOSE_TARGET, WAITING, RESOLVING, GAME_OVER
@@ -60,6 +61,8 @@ export class RoomView extends React.Component<Props, State> {
 		this.selectAction = this.selectAction.bind(this);
 		this.selectTarget = this.selectTarget.bind(this);
 		this.notifyInvalidTarget = this.notifyInvalidTarget.bind(this);
+		this.me = this.me.bind(this);
+		this.myTurn = this.myTurn.bind(this);
 	}
 
 	componentDidMount() {
@@ -138,7 +141,8 @@ export class RoomView extends React.Component<Props, State> {
 						nextMenu = MenuState.CHOOSE_STARTING_LANE;
 						break;
 					case(Phase.PLAN):
-						if(getActingTeam(data.matchState) === getUsernameTeam(this.state.ms, this.props.username)) {
+						// note: We're checking for the upcoming matchstate
+						if(usernameShouldAct(data.matchState, this.props.username)) {
 							nextMenu = MenuState.CHOOSE_ACTION;
 						} else {
 							nextMenu = MenuState.WAITING;
@@ -164,7 +168,9 @@ export class RoomView extends React.Component<Props, State> {
 	}
 
 	render() {
-		var skillList = this.state.ms ? <SkillList skills={this.state.ms.players[this.props.username].state.actives} onSelect={this.selectAction} currentChoiceActionDef={this.state.currentSelectedActionChoice} disableAll={!this.myTurn()}/> : null;
+		var skillList = this.state.ms ? <SkillList skills={this.me().state.actives}
+			onSelect={this.selectAction} currentChoiceActionDef={this.state.currentSelectedActionChoice}
+			disableAll={usernameShouldAct(this.state.ms, this.props.username)}/> : null;
 		return (
 			<div id="match">
 				<this.ShowGameView />
@@ -240,6 +246,12 @@ export class RoomView extends React.Component<Props, State> {
 	myTurn(): boolean {
 		return this.state.ms.turn === -1 || getActingTeam(this.state.ms) === this.state.ms.players[this.props.username].team;
 	}
+	me(): Entity {
+		return this.state.ms.players[this.props.username];
+	}
+	iAmAlive(): boolean {
+		return this.me().state.hp > 0;
+	}
 
 	selectCharacter(id: string) {
 		if(this.state.menu === MenuState.CHOOSE_CHARACTER) {
@@ -263,7 +275,15 @@ export class RoomView extends React.Component<Props, State> {
 	}
 	selectAction(id: string) {
 		let actionDefId = id as string;
-		if(this.myTurn() && [MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menu) !== -1) {
+		if(!this.myTurn()) {
+			this.addErrorMessage(SOCKET_MSG.PLAYER_DECISION, `It's not your turn.`);
+			return;
+		}
+		if(!this.iAmAlive()) {
+			this.addErrorMessage(SOCKET_MSG.PLAYER_DECISION, `You can't act - you're dead.`);
+			return;
+		}
+		if([MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menu) !== -1) {
 			let actionDef = Skills[actionDefId];
 			if(actionDef.target.what === TargetWhat.NONE) {
 				this.setState({

@@ -34,6 +34,11 @@ export class Entity {
 			cooldown: Skills[id].cooldown
 		}));
 
+		var passives = Object.keys(Skills).filter((sk) => {
+			var def = Skills[sk];
+			return def.active === false && def.faction === this.profile.faction;
+		});
+
 		this.state = {
 			entityId: this.id,
 			ready: false,
@@ -47,7 +52,7 @@ export class Entity {
 			diedTurn: undefined,
 			passiveSlots: 1,
 			activeSlots: 1,
-			passiveIds: [],
+			passiveIds: passives,
 			actives: activeInstances,
 			stefs: [],
 			y: 0,

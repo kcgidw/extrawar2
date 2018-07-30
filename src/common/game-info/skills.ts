@@ -166,7 +166,7 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return {results: results};
 		}
 	},
-	'IMMORTAL_FURY': generateSkillDef('IMMORTAL_FURY', false, Faction.FERALIST,
+	'IMMORTAL_FURY': generateSkillDef('IMMORTAL_FURY', false, Faction.MOLTEN,
 		'Immortal Fury',
 		'When you respawn, gain Armor (3) and Strength Up (3).',
 		[], 4, undefined, undefined, undefined),

@@ -24,11 +24,28 @@
     text-align: right;
 }
 .team-entity-panel {
-    width: 150px;
+    width: 300px;
     margin-bottom: 15px;
 }
 .team-entity-panel p {
     margin: 0 0;
+}
+.team-entity-panel .curHp, .team-entity-panel .name, .team-entity-panel .respawn {
+    font-size: 14px;
+}
+.team-entity-panel .passives {
+    font-style: italic;
+    color: #93e4b3;
+}
+#team-panel-1 .passives span, #team-panel-1 .stefs span{
+    margin-right: 20px;
+}
+#team-panel-2 .passives span, #team-panel-2 .stefs span{
+    margin-left: 20px;
+}
+.team-entity-panel .stefs {
+        font-style: italic;
+    color: #d4bdbd
 }
 .team-entity-panel img {
     width: 30px;
@@ -155,4 +172,8 @@
 }
 .skill-list .skill-card p.card-cooldown {
     color: #800;
+}
+.skill-list .skill-card p.card-accel {
+    color: yellow;
+    text-align: center;
 }
