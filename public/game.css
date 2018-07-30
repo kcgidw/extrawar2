@@ -64,8 +64,8 @@
 .choice-card:hover:not(.disabled) {
     background-color: #dfdec5;
 }
-.choice-card.disabled:hover {
-    background-color: red;
+.choice-card.disabled {
+    background-color: #777;
 }
 .choice-card p {
     margin: 0px;
@@ -73,12 +73,6 @@
 .choice-card .card-header {
     font-weight: bold;
     font-size: 14px;
-}
-.choice-card .cooldown {
-    font-weight: bold;
-}
-.choice-card .disabled {
-    opacity: 0.6;
 }
 .choice-card.selected {
     border: 3px solid yellow;
@@ -151,11 +145,14 @@
     overflow-y: scroll;
 	bottom: 0px;
     right: 0px;
-    background-color: rgba(0,0,0,0.5);
-	border: solid 1px #555;
+    background-color: #555;
+	border: solid 1px #222;
 }
 .skill-list .skill-card {
     width: 80%;
     margin: 15px auto 0;
     display: block;
+}
+.skill-list .skill-card p.card-cooldown {
+    color: #800;
 }

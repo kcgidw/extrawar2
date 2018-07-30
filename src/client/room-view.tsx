@@ -10,7 +10,7 @@ import * as Handler from './client-handler';
 import { Popover } from './game-ui/popover';
 import { GameView } from './game-view';
 import { WaitingRoomView } from './waiting-room-view';
-import { SkilList } from './game-ui/skill-list';
+import { SkillList } from './game-ui/skill-list';
 
 export enum MenuState {
 	WAITING_ROOM, CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, CHOOSE_ACTION, CHOOSE_TARGET, WAITING, RESOLVING, GAME_OVER
@@ -164,13 +164,14 @@ export class RoomView extends React.Component<Props, State> {
 	}
 
 	render() {
+		var skillList = this.state.ms ? <SkillList skills={this.state.ms.players[this.props.username].state.actives} onSelect={this.selectAction} currentChoiceActionDef={this.state.currentSelectedActionChoice} disableAll={!this.myTurn()}/> : null;
 		return (
 			<div id="match">
 				<this.ShowGameView />
 				<this.ShowWaitingRoomView />
 				< Popover message={this.state.notify} />
 				<ChatWindow logs={this.state.chatLog} />
-				<SkilList skills={this.state.actionChoices} onSelect={this.selectAction} currentChoiceActionDef={this.state.currentSelectedActionChoice} />
+				{skillList}
 			</div>
 		);
 	}
@@ -265,9 +266,10 @@ export class RoomView extends React.Component<Props, State> {
 		if(this.myTurn() && [MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menu) !== -1) {
 			let actionDef = Skills[actionDefId];
 			if(actionDef.target.what === TargetWhat.NONE) {
-				this.submitActionAndSetWaiting(undefined);
 				this.setState({
 					currentSelectedActionChoice: Skills[actionDefId],
+				}, () => {
+					this.submitActionAndSetWaiting(undefined);
 				});
 			} else {
 				this.setState({
@@ -276,7 +278,7 @@ export class RoomView extends React.Component<Props, State> {
 				});
 			}
 		} else {
-			throw Error(''+this.state.menu);
+			console.warn('unwarranted action select');
 		}
 	}
 	selectTarget(id: number|string) {

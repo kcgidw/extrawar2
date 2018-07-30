@@ -5,9 +5,10 @@ interface Props {
 	skills: ISkillInstance[];
 	onSelect: (skillId: string)=>any;
 	currentChoiceActionDef: ISkillDef;
+	disableAll: boolean;
 }
 
-export class SkilList extends React.Component<Props, {}> {
+export class SkillList extends React.Component<Props, {}> {
 	constructor(props) {
 		super(props);
 		this.selectSkill = this.selectSkill.bind(this);
@@ -24,14 +25,16 @@ export class SkilList extends React.Component<Props, {}> {
 
 	renderSkill(sk: ISkillInstance) {
 		var def = Skills[sk.skillDefId];
-		var cooldownText = sk.cooldown > 0 ? `${sk.cooldown} cycles left` : '';
+		var cooldownText = sk.cooldown > 0 ? (sk.cooldown === 1 ? 'Ready next turn' : `${sk.cooldown} cycles left`) : 'Ready (5 cycles)';
 		var currentlySelected = this.props.currentChoiceActionDef && this.props.currentChoiceActionDef.id === sk.skillDefId ? 'selected' : '';
-		var disabled = sk.cooldown > 0 ? 'disabled' : '';
+		var disabled = this.props.disableAll || sk.cooldown > 0 ? 'disabled' : '';
+		var accelText = sk.cooldown > 1 ? 'Accelerate!?' : '';
 		return (
 			<div key={def.id} className={`skill-card choice-card ${currentlySelected} ${disabled}`} onClick={()=>{this.selectSkill(def.id)}}>
 				<p className="card-header">{def.name}</p>
 				<p className="card-desc">{def.desc}</p>
 				<p className="card-cooldown">{cooldownText}</p>
+				<p className="card-accel">{accelText}</p>
 			</div>
 		);
 	}

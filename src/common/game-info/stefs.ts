@@ -15,4 +15,10 @@ export const ALL_STEFS: {[key: string]: IStefDef} = {
 		desc: 'Strength +75%.',
 		isBeneficial: true
 	},
+	'POISON': {
+		id: 'POISON',
+		name: 'Poison',
+		desc: 'Take 10 damage each cycle.',
+		isBeneficial: false,
+	},
 };

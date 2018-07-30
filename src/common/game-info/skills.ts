@@ -23,6 +23,7 @@ export interface ISkillDef {
 
 export interface ISkillInstance {
 	skillDefId: string;
+	turnUsed: number;
 	cooldown: number;
 }
 
@@ -85,7 +86,7 @@ export const Skills: {[key: string]: ISkillDef} = {
 		active: true,
 		faction: Faction.NONE,
 		name: 'Ultra Hyper Killer',
-		desc: 'Deals 1000 damage!',
+		desc: 'Deal 1000 damage!',
 		keywords: [],
 		apCost: 0,
 		cooldown: 0,
@@ -106,6 +107,9 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return userEntity.id + ' uses the ULTRA HYPER KILLER!!';
 		}
 	},
+	'TURN_END': generateSkillDef('TURN_END', false, Faction.NONE, 'Turn Ending', '', [], undefined, undefined, 
+		{ what: TargetWhat.NONE, range: undefined }, undefined,
+		() => ('The turn is ending.')),
 	'NO_HOLDS': generateSkillDef('NO_HOLDS', false, Faction.FERALIST,
 		'No Holds Barred',
 		'Deal +20% attack damage to in-lane enemies.',
@@ -117,8 +121,8 @@ export const Skills: {[key: string]: ISkillDef} = {
 		name: 'Flank Assault',
 		desc: `Move to a nearby lane, then attack a random enemy in that lane.`,
 		keywords: [],
-		apCost: 4,
-		cooldown: 4,
+		apCost: 5,
+		cooldown: 5,
 		target: {
 			what: TargetWhat.LANE,
 			range: TargetRange.NEARBY
@@ -143,8 +147,8 @@ export const Skills: {[key: string]: ISkillDef} = {
 		name: 'Adrenaline Rush',
 		desc: `Attack 3 times to random enemies in-lane.`,
 		keywords: [],
-		apCost: 4,
-		cooldown: 4,
+		apCost: 6,
+		cooldown: 6,
 		target: {
 			what: TargetWhat.LANE,
 			range: TargetRange.IN_LANE
@@ -171,12 +175,12 @@ export const Skills: {[key: string]: ISkillDef} = {
 		active: true,
 		faction: Faction.MOLTEN,
 		name: 'Agni Burst',
-		desc: `Attack a nearby enemy [dx1.5] and other nearby enemies [dx0.5]. Take 8 damage.`,
+		desc: `Attack all nearby enemies. Take 10 damage.`,
 		keywords: [],
-		apCost: 4,
-		cooldown: 4,
+		apCost: 6,
+		cooldown: 6,
 		target: {
-			what: TargetWhat.ENEMY,
+			what: TargetWhat.NONE,
 			range: TargetRange.NEARBY
 		},
 		fn: (match: Match, user: Entity, target: Entity) => {
@@ -184,12 +188,12 @@ export const Skills: {[key: string]: ISkillDef} = {
 			var tars = findEntities(match, {
 				laneId: user.state.y,
 				laneRange: 1,
+				team: otherTeam(user.team),
 			});
 			tars.forEach((ent) => {
-				var isMainTarget = ent.id === target.id;
-				results = results.concat(simpleAttack(match, user, target, {
-					damageMod: (attacker) => (user.profile.str * (isMainTarget ? 1.5 : 0.5)),
-					selfDamage: (isMainTarget ? () => (8) : undefined),
+				results = results.concat(simpleAttack(match, user, ent, {
+					damageMod: (attacker) => (user.profile.str * 1.25),
+					selfDamage: () => (10),
 				}));
 			});
 			return {results: results};
@@ -200,17 +204,17 @@ export const Skills: {[key: string]: ISkillDef} = {
 		active: true,
 		faction: Faction.MOLTEN,
 		name: 'Phlogistic Fusion',
-		desc: `Gain Volatile (2).`,
+		desc: `Gain Volatile (1).`,
 		keywords: ['VOLATILE'],
-		apCost: 2,
-		cooldown: 2,
+		apCost: 3,
+		cooldown: 3,
 		target: {
 			what: TargetWhat.SELF,
 			range: TargetRange.IN_LANE
 		},
 		fn: (match: Match, user: Entity, target: Entity) => {
 			var results: IEventResult[]  = [];
-			results = results.concat(match.applyStefToEntity(user, 'VOLATILE', 2, user));
+			results = results.concat(match.applyStefToEntity(user, 'VOLATILE', 1, user));
 			return {results: results};
 		}
 	},
@@ -225,8 +229,8 @@ export const Skills: {[key: string]: ISkillDef} = {
 		name: 'Equivalent Exchange',
 		desc: 'Heal a nearby ally 50 HP. Lose 50 HP.',
 		keywords: [],
-		apCost: 4,
-		cooldown: 4,
+		apCost: 5,
+		cooldown: 5,
 		target: {
 			what: TargetWhat.ALLY,
 			range: TargetRange.NEARBY
@@ -237,7 +241,25 @@ export const Skills: {[key: string]: ISkillDef} = {
 			results = results.concat(match.changeEntityHp(user, -50));
 			return {results: results};
 		}
-	}
+	},
+	'STAIN': generateSkillDef('STAIN', true, Faction.ABERRANT,
+		'Stain',
+		'Attack a nearby enemy and apply Poison (5).',
+		['POISON'], 6, 6,
+		{what: TargetWhat.ENEMY, range: TargetRange.NEARBY},
+		function fn(match: Match, user: Entity, target: Entity) {
+			var results: IEventResult[]  = [];
+			results = results.concat(simpleAttack(match, user, target, {
+				stefs: [{
+					stefId: ALL_STEFS.POISON.id,
+					duration: 5,
+					invokerEntityId: user.id,
+					invokedTurn: undefined,
+				}],
+			}));
+			return {results: results};
+		}
+	),
 	// 'CHOOSE_RESPAWN_LANE': {
 	// 	id: 'CHOOSE_RESPAWN_LANE',
 	// 	active: true,
@@ -274,11 +296,14 @@ function simpleAttack(match: Match, attacker: Entity, target: Entity, options: I
 		damage = str;
 	}
 
+	if(target.state.y === attacker.state.y && attacker.hasPassive('NO_HOLDS')) {
+		damage *= 1.20;
+	}
 	if(target.state.y !== attacker.state.y && !options.ignoreLanePenalty) {
 		// off-lane penalty
 		damage -= damage * 0.30;
 	}
-	if(target.hasStef(ALL_STEFS.ARMOR)) {
+	if(target.getStef(ALL_STEFS.ARMOR)) {
 		damage -= damage * 0.25;
 	}
 
@@ -293,7 +318,7 @@ function simpleAttack(match: Match, attacker: Entity, target: Entity, options: I
 	if(options.selfDamage) { // also for lifesteal!
 		let sd = options.selfDamage(attacker);
 		if(sd !== 0) {
-			results = results.concat(match.changeEntityHp(attacker, damage * -1));
+			results = results.concat(match.changeEntityHp(attacker, sd * -1));
 		}
 	}
 

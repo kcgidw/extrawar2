@@ -28,7 +28,11 @@ export class Entity {
 
 		var actives: string[] = ['ATTACK', 'MOVE', 'ULTRA_HYPER_KILLER'];
 		actives = actives.concat(Object.keys(Skills).filter((skId) => (Skills[skId].faction === character.faction && Skills[skId].active === true)));
-		var activeInstances: ISkillInstance[] = actives.map((id) => ({skillDefId: id, cooldown: 0}));
+		var activeInstances: ISkillInstance[] = actives.map((id) => ({
+			skillDefId: id,
+			turnUsed: undefined,
+			cooldown: Skills[id].cooldown
+		}));
 
 		this.state = {
 			entityId: this.id,
@@ -53,10 +57,10 @@ export class Entity {
 	get curStr() {
 		var baseStr = this.profile.str;
 		var str = baseStr;
-		if(this.hasStef(ALL_STEFS.STR_UP)) {
+		if(this.getStef(ALL_STEFS.STR_UP)) {
 			str += baseStr * 0.30;
 		}
-		if(this.hasStef(ALL_STEFS.VOLATILE)) {
+		if(this.getStef(ALL_STEFS.VOLATILE)) {
 			str += baseStr * 0.75;
 		}
 		return Math.ceil(str);
@@ -65,9 +69,20 @@ export class Entity {
 		return this.state.hp > 0;
 	}
 
-	hasStef(stef: IStefDef|string): IStefInstance {
+	getStef(stef: IStefDef|string): IStefInstance {
 		var stefId = stef instanceof Object ? (<IStefDef>stef).id : stef;
 		return this.state.stefs.find((se) => se.stefId === stefId);
+	}
+
+	loseStef(stefId: string) {
+		var stefIdx = this.state.stefs.findIndex((cur) => (cur.stefId === stefId));
+		if(stefIdx !== -1) {
+			this.state.stefs.splice(stefIdx, 1);
+		}
+	}
+
+	hasPassive(id: string): boolean {
+		return this.state.passiveIds.indexOf(id) > -1;
 	}
 
 	resetCooldown(actionId: string) {

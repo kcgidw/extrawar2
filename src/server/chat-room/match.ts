@@ -1,9 +1,9 @@
 import { IMatchState, IStefInstance, Lane, Phase, TargetWhat, Team } from "../../common/game-core/common";
 import { Entity } from "../../common/game-core/entity";
-import { IActionResolutionTimeline, IChangeLangeResult, IDeathResult, IEventCause, IEventResult, IGainStefResult, IGameOverResult, IHpChangeResult, INoneResult, TurnEventResultType } from "../../common/game-core/event-interfaces";
+import { IActionResolutionTimeline, IChangeLangeResult, IDeathResult, IEventCause, IEventResult, IGainStefResult, IGameOverResult, IHpChangeResult, INoneResult, TurnEventResultType, IRespawnResult } from "../../common/game-core/event-interfaces";
 import { Characters, PlayableCharacters } from "../../common/game-info/characters";
 import { Skills } from "../../common/game-info/skills";
-import { MAX_STEF_DURATION } from "../../common/game-info/stefs";
+import { MAX_STEF_DURATION, ALL_STEFS } from "../../common/game-info/stefs";
 import { IPlayerDecisionRequest, IPromptDecisionMessage, SOCKET_MSG } from "../../common/messages";
 import { User } from "../lobby/user";
 import { shuffle } from "../lobby/util";
@@ -247,11 +247,12 @@ export class Match implements IMatchState {
 						if(actionDef.cooldown > 0) {
 							entity.resetCooldown(actionDef.id);
 						}
+						entity.state.actives.find((a) => (a.skillDefId === decision.actionId)).turnUsed = this.turn;
 						var res = actionDef.fn(this, entity, target, {});
 						var resObj: IEventCause = {
 							entityId: (<IEventCause>res).entityId || username,
 							actionDefId: (<IEventCause>res).actionDefId || actionDef.id,
-							targetId: (<Entity>target).id || (<Lane>target).y,
+							targetId: target ? ((<Entity>target).id || (<Lane>target).y) : undefined,
 							results: res.results,
 						};
 						causes.push(resObj);
@@ -259,19 +260,48 @@ export class Match implements IMatchState {
 				});
 
 				// end-of-turn events
-				console.log('turn end');
+				console.log(`turn ${this.turn} ending`);
 				if(!this.gameOver) {
-					// tick respawn timers at the end of the opponent's turns
+					var endTurnCause: IEventCause = {
+						entityId: undefined,
+						actionDefId: 'TURN_END',
+						targetId: undefined,
+						results: [],
+					};
 					players.forEach((username) => {
 						var player = this.players[username];
-						if(!player.alive && player.state.diedTurn !== this.turn && player.team !== getActingTeam(this)) {
-							// don't tick if the death is "fresh". Need a meaningful turn of death before respawn
-							player.state.respawn--;
-							if(player.state.respawn === 0) {
-								this.respawn(player);
+						if(player.team === getActingTeam(this)) {
+							// tick respawn
+							if(!player.alive && this.turn > player.state.diedTurn) {
+								// don't tick if death is "fresh". Need a meaningful turn of death before respawn
+								player.state.respawn--;
+								if(player.state.respawn === 0) {
+									this.respawn(player);
+								}
 							}
+							
+							// tick stefs
+							player.state.stefs.forEach((stef) => {
+								if(this.turn > stef.invokedTurn && stef.duration > 0) {
+									stef.duration--;
+									if(stef.stefId === ALL_STEFS.POISON.id) {
+										endTurnCause.results = endTurnCause.results.concat(this.changeEntityHp(player, -10));
+									}
+									if(stef.duration === 0) {
+										player.loseStef(stef.stefId);
+									}
+								}
+							});
+						} else {
+							// tick cooldowns... effectively at the start of a player's turn
+							player.state.actives.forEach((active) => {
+								if(active.cooldown > 0) {
+									active.cooldown--;
+								}
+							});
 						}
 					});
+					causes = causes.concat(endTurnCause);
 				}
 
 				this.room.nsp.to(this.room.roomId).emit(SOCKET_MSG.RESOLVE_ACTIONS, <IActionResolutionTimeline>{
@@ -287,7 +317,7 @@ export class Match implements IMatchState {
 
 	/* Action enactments */
 
-	changeEntityHp(ent: Entity, change: number, custom?: object): IEventResult[] {
+	changeEntityHp(ent: Entity, change: number, options?: object): IEventResult[] {
 		var results: IEventResult[] = [];
 
 		change = Math.ceil(change);
@@ -418,10 +448,19 @@ export class Match implements IMatchState {
 		return results;
 	}
 
-	respawn(ent: Entity) {
+	respawn(ent: Entity): IEventResult[] {
 		ent.state.maxHp = ent.profile.maxHp;
 		ent.state.hp = ent.profile.maxHp;
 		ent.state.diedTurn = undefined;
+		if(ent.hasPassive('IMMORTAL_FURY')) {
+			this.applyStefToEntity(ent, 'ARMOR', 3, undefined);
+			this.applyStefToEntity(ent, 'STR_UP', 3, undefined);
+		}
+		return [<IRespawnResult>{
+			type: TurnEventResultType.RESPAWN,
+			entityId: ent.id,
+			newMatchState: this,
+		}];
 	}
 
 	/* Util */

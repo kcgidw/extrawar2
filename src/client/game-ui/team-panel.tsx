@@ -3,6 +3,7 @@ import { Team, IEntityProfile } from "../../common/game-core/common";
 import { IMatchState } from "../../common/game-core/common";
 import { Entity } from '../../common/game-core/entity';
 import { Characters } from '../../common/game-info/characters';
+import { ALL_STEFS } from '../../common/game-info/stefs';
 
 interface ITeamProps {
 	matchState: IMatchState;
@@ -45,12 +46,22 @@ class TeamEntityPanel extends React.Component<ITeamEntityPanelProps,{}> {
 
 		var show: boolean = !profile.emptyProfile;
 		var imageElem = null;
-		var hpElem = null, apElem = null, respawnElem = null, ready = null;
+		var hpElem = null, apElem = null, respawnElem = null, ready = null, stefsElem = null;
 		if(show) {
 			imageElem = <img src={'images/' + profile.image} />;
 			hpElem = ent.state.hp > 0 ? <p>{ent.state.hp} / {ent.state.maxHp} HP</p> : null;
 			respawnElem = ent.state.hp <= 0 ? <p>Respawn in {ent.state.respawn}</p> : null;
 			apElem = <p>{ent.state.ap} / {ent.state.maxAp} AP</p>;
+			stefsElem = (
+				<div className="stefs">
+					{ent.state.stefs.map((stef) => {
+						var def = ALL_STEFS[stef.stefId];
+						return (<span key={''+stef.stefId+stef.invokerEntityId}>
+							{def.name} ({stef.duration}) &nbsp;&nbsp;&nbsp;&nbsp;
+						</span>);
+					})}
+				</div>
+			);
 		}
 		if(this.props.ready) {
 			ready = ' - READY!';
@@ -62,6 +73,7 @@ class TeamEntityPanel extends React.Component<ITeamEntityPanelProps,{}> {
 				{imageElem}
 				{hpElem}{respawnElem}
 				{apElem}
+				{stefsElem}
 			</div>
 		);
 	}

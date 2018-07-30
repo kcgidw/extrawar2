@@ -116,10 +116,12 @@ export function reportCause(ms: IMatchState, cause: IEventCause): IFlatEvent[] {
 	var ent = ms.players[cause.entityId];
 	var tar: Entity|Lane;
 
-	if(actionDefTargetsEntity(actionDef)) {
-		tar = ms.phase[cause.targetId];
-	} else {
-		tar = ms.lanes[cause.targetId];
+	if(actionDef) {
+		if(actionDefTargetsEntity(actionDef)) {
+			tar = ms.phase[cause.targetId];
+		} else {
+			tar = ms.lanes[cause.targetId];
+		}
 	}
 
 	var defaultResultMessage = (userEnt, targetEnt) => {
