@@ -15,13 +15,16 @@
 
 .team-panel {
     font-size: 12px;
+    position: fixed;
 }
 #team-panel-1 {
     float: left;
+    left: 0;
 }
 #team-panel-2 {
     float: right;
     text-align: right;
+    right: 0;
 }
 .team-entity-panel {
     width: 300px;
@@ -117,12 +120,12 @@
 }
 
 .entity-panel {
-    border: 1px solid rgba(0,0,0,0.1);
     border-radius: 2px;
     width: 70px;
     height: 70px;
     font-size: 12px;
     display: inline-block;
+    box-sizing: border-box;
 }
 .entity-panel .image-container {
     width: 100%;

@@ -202,10 +202,10 @@ export const Skills: {[key: string]: ISkillDef} = {
 			});
 			tars.forEach((ent) => {
 				results = results.concat(simpleAttack(match, user, ent, {
-					damageMod: (attacker) => (user.profile.str * 1.25),
-					selfDamage: () => (10),
+					damageMod: (attacker) => (user.profile.str * 1.20)
 				}));
 			});
+			results = results.concat(match.changeEntityHp(user, -10));
 			return {results: results};
 		}
 	},
@@ -239,8 +239,8 @@ export const Skills: {[key: string]: ISkillDef} = {
 		name: 'Equivalent Exchange',
 		desc: 'Heal a nearby ally 50 HP. Lose 50 HP.',
 		keywords: [],
-		apCost: 5,
-		cooldown: 5,
+		apCost: 4,
+		cooldown: 4,
 		target: {
 			what: TargetWhat.ALLY,
 			range: TargetRange.NEARBY
@@ -274,7 +274,7 @@ export const Skills: {[key: string]: ISkillDef} = {
 		'When you accelerate, recover 10 HP.', [], undefined, undefined, undefined, undefined
 	),
 	'PHOTO': generateSkillDef('PHOTO', true, Faction.KINDRED, 'Photosynthesis',
-		'Apply Rejuvenation (4) to a nearby lane.', [], 6, 6, {what: TargetWhat.LANE, range: TargetRange.NEARBY},
+		'Apply Rejuvenation (4) to a nearby lane.', ['REJUV'], 6, 6, {what: TargetWhat.LANE, range: TargetRange.NEARBY},
 		function fn(match, user, targetLane: Lane) {
 			var results: IEventResult[]  = [];
 			results = results.concat(match.applyStefToLane(targetLane, user.team, 'REJUV', 4, user));

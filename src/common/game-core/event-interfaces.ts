@@ -77,11 +77,19 @@ export interface IActionResolutionTimeline {
 	causes: IEventCause[];
 }
 
-export const EventResultTexts: {[key: string]: (result?: IEventResult)=>string} = {
+export enum DamageSource {
+	ATTACK='attack', RECOIL='recoil', POISON='poison', SCORCH='scorch'
+}
+
+export const EventResultTexts: {[key: string]: (result?: IEventResult, options?: any)=>string} = {
 	'NONE': ()=>'Nothing happened.',
-	'HP_CHANGE': (result: IHpChangeResult) => {
+	'HP_CHANGE': (result: IHpChangeResult, source?: DamageSource) => {
 		if(result.value > 0) {
-			return `${result.entityId} gains ${result.value} HP.`;
+			return `${result.entityId} recovers ${result.value} HP.`;
+		} else {
+			if(source !== undefined) {
+				return `${result.entityId} takes ${Math.abs(result.value)} ${source} damage.`;
+			}
 		}
 		return `${result.entityId} loses ${Math.abs(result.value)} HP.`;
 	},
