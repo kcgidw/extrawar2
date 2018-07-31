@@ -281,15 +281,13 @@ export class Match implements IMatchState {
 					};
 					players.forEach((username) => {
 						var player = this.players[username];
-						if(player.team === getActingTeam(this)) { // at the end of a player's turn
-						} else { // end of opponent turn,  start of player's next turn
-							// tick cooldowns
-							player.state.actives.forEach((active) => {
-								if(active.cooldown > 0) {
-									active.cooldown--;
-								}
-							});
 
+						if(player.team === getActingTeam(this)) { // at the end of a player's turn
+							// trigger poison
+							if(player.getStef(ALL_STEFS.POISON.id)) {
+								endTurnCause.results = endTurnCause.results.concat(this.changeEntityHp(player, -10));
+							}
+						} else { // end of opponent turn, aka start of player's turn
 							// tick respawn
 							if(!player.alive && this.turn > player.state.diedTurn) {
 								// don't tick if death is "fresh". Need a meaningful turn of death before respawn
@@ -298,14 +296,18 @@ export class Match implements IMatchState {
 									endTurnCause.results = endTurnCause.results.concat(this.respawn(player));
 								}
 							}
-							
+
+							// tick cooldowns
+							player.state.actives.forEach((active) => {
+								if(active.cooldown > 0) {
+									active.cooldown--;
+								}
+							});
+
 							// tick stefs
 							player.state.stefs.forEach((stef) => {
 								if(this.turn > stef.invokedTurn && stef.duration > 0) {
 									stef.duration--;
-									if(stef.stefId === ALL_STEFS.POISON.id) {
-										endTurnCause.results = endTurnCause.results.concat(this.changeEntityHp(player, -10));
-									}
 									if(stef.duration === 0) {
 										player.loseStef(stef.stefId);
 									}

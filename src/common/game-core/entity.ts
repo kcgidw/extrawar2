@@ -51,7 +51,7 @@ export class Entity {
 			maxAp: 9,
 			deaths: 0,
 			respawn: 0,
-			nextRespawn: 1,
+			nextRespawn: 2,
 			diedTurn: undefined,
 			passiveSlots: 1,
 			activeSlots: 1,
