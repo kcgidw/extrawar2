@@ -478,7 +478,7 @@ export class Match implements IMatchState {
 		return [<IRespawnResult>{
 			type: TurnEventResultType.RESPAWN,
 			entityId: ent.id,
-			newMatchState: this,
+			newMatchState: this.exportState(),
 		}];
 	}
 
@@ -492,12 +492,16 @@ export class Match implements IMatchState {
 			}];
 		}
 		skInst.cooldown --;
-		return [<IAccelResult>{
+		var results: IEventResult[] = [<IAccelResult>{
 			type: TurnEventResultType.ACCEL,
 			entityId: ent.id,
 			skillDefId: skInst.skillDefId,
 			newMatchState: this.exportState(),
 		}];
+		if(ent.hasPassive('VITALITY')) {
+			results = results.concat(this.changeEntityHp(ent, 10));
+		}
+		return results;
 	}
 
 	/* Util */

@@ -120,11 +120,11 @@ export const Skills: {[key: string]: ISkillDef} = {
 	),
 	'TURN_END': generateSkillDef('TURN_END', false, Faction.NONE, 'Turn Ending', '', [], undefined, undefined, 
 		{ what: TargetWhat.NONE, range: undefined }, undefined,
-		() => ('The turn is ending.')),
-	'NO_HOLDS': generateSkillDef('NO_HOLDS', false, Faction.FERALIST,
-		'No Holds Barred',
-		'Deal +20% attack damage to in-lane enemies.',
-		[], 4, undefined, undefined, undefined),
+		() => ('The turn is ending.')
+	),
+	'NO_HOLDS': generateSkillDef('NO_HOLDS', false, Faction.FERALIST, 'No Holds Barred',
+		'Deal +20% attack damage to in-lane enemies.', [], 4, undefined, undefined, undefined
+	),
 	'FLANK_ASSAULT': {
 		id: 'FLANK_ASSAULT',
 		active: true,
@@ -177,10 +177,9 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return {results: results};
 		}
 	},
-	'IMMORTAL_FURY': generateSkillDef('IMMORTAL_FURY', false, Faction.MOLTEN,
-		'Immortal Fury',
-		'When you respawn, gain Armor (3) and Strength Up (3).',
-		[], 4, undefined, undefined, undefined),
+	'IMMORTAL_FURY': generateSkillDef('IMMORTAL_FURY', false, Faction.MOLTEN, 'Immortal Fury',
+		'When you respawn, gain Armor (3) and Strength Up (3).', [], 4, undefined, undefined, undefined
+	),
 	'AGNI_BURST': {
 		id: 'AGNI_BURST',
 		active: true,
@@ -229,10 +228,10 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return {results: results};
 		}
 	},
-	'EULOGY': generateSkillDef('EULOGY', false, Faction.ABERRANT,
-		'Eulogy', 
+	'EULOGY': generateSkillDef('EULOGY', false, Faction.ABERRANT, 'Eulogy', 
 		'When you die, apply Strength Up (X) to allies, where X = your respawn counter + 1.',
-		['STR_UP'], 2, undefined, undefined, undefined),
+		['STR_UP'], 2, undefined, undefined, undefined
+	),
 	'EQUIV_EX': {
 		id: 'EQUIV_EX',
 		active: true,
@@ -268,6 +267,17 @@ export const Skills: {[key: string]: ISkillDef} = {
 					invokedTurn: undefined,
 				}],
 			}));
+			return {results: results};
+		}
+	),
+	'VITALITY': generateSkillDef('VITALITY', false, Faction.KINDRED, 'Vitality',
+		'When you accelerate, recover 10 HP.', [], undefined, undefined, undefined, undefined
+	),
+	'PHOTO': generateSkillDef('PHOTO', true, Faction.KINDRED, 'Photosynthesis',
+		'Apply Rejuvenation (4) to a nearby lane.', [], 6, 6, {what: TargetWhat.LANE, range: TargetRange.NEARBY},
+		function fn(match, user, targetLane: Lane) {
+			var results: IEventResult[]  = [];
+			results = results.concat(match.applyStefToLane(targetLane, user.team, 'REJUV', 4, user));
 			return {results: results};
 		}
 	),
