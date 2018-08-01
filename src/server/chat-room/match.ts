@@ -8,7 +8,7 @@ import { IPlayerDecisionRequest, IPromptDecisionMessage, SOCKET_MSG } from "../.
 import { User } from "../lobby/user";
 import { shuffle } from "../lobby/util";
 import { ChatRoom } from "./chat-room";
-import { arch } from "os";
+import * as _ from 'lodash';
 import { getActingTeam, otherTeam, getUsernameTeam, userShouldAct, teamDead, findEntities } from "../../common/match-util";
 
 const MAX_PLAYERS = 6; // TODO: any more = spectators. Make sure to update the const in lobby.ts too
@@ -74,7 +74,7 @@ export class Match implements IMatchState {
 				break;
 			case(Phase.PLAN):
 				let player = this.players[user.username];
-				if(player.team === getActingTeam(this.exportState()) && player.alive) {
+				if(player.team === getActingTeam(this.snapshot()) && player.alive) {
 					this.playerDecisions[user.username] = decision;
 					if(this.allPlayersReady()) {
 						this.resolveDecisionsChooseAction();
@@ -155,16 +155,16 @@ export class Match implements IMatchState {
 		return this.characterChoicesIds;
 	}
 
-	exportState(): IMatchState {
+	snapshot(): IMatchState {
 		return {
-			players: this.players,
-			team1: this.team1,
-			team2: this.team2,
-			turn: this.turn,
-			phase: this.phase,
-			lanes: this.lanes,
-			characterChoicesIds: this.characterChoicesIds,
-			playersReady: this.getPlayersReady()
+			players: _.cloneDeep(this.players),
+			team1: _.cloneDeep(this.team1),
+			team2: _.cloneDeep(this.team2),
+			turn: _.cloneDeep(this.turn),
+			phase: _.cloneDeep(this.phase),
+			lanes: _.cloneDeep(this.lanes),
+			characterChoicesIds: _.cloneDeep(this.characterChoicesIds),
+			playersReady: _.cloneDeep(this.getPlayersReady()),
 		};
 	}
 
@@ -181,7 +181,7 @@ export class Match implements IMatchState {
 					user.emit(SOCKET_MSG.PROMPT_DECISION, <IPromptDecisionMessage>{
 						messageName: SOCKET_MSG.PROMPT_DECISION,
 						phase: phase,
-						matchState: this.exportState(),
+						matchState: this.snapshot(),
 					});
 				});
 				break;
@@ -207,7 +207,7 @@ export class Match implements IMatchState {
 					user.emit(SOCKET_MSG.PROMPT_DECISION, <IPromptDecisionMessage>{
 						messageName: SOCKET_MSG.PROMPT_DECISION,
 						phase: phase,
-						matchState: this.exportState(),
+						matchState: this.snapshot(),
 						actionChoices: shouldAct ? ent.state.actives : [],
 					});
 				});
@@ -352,7 +352,7 @@ export class Match implements IMatchState {
 				type: TurnEventResultType.HP_CHANGE,
 				entityId: ent.username,
 				value: change,
-				newMatchState: this.exportState(),
+				newMatchState: this.snapshot(),
 			});
 
 			if(!ent.alive) {
@@ -380,7 +380,7 @@ export class Match implements IMatchState {
 				type: TurnEventResultType.GAIN_STEF,
 				entityId: ent.id,
 				stefId: stefId,
-				newMatchState: this.exportState()
+				newMatchState: this.snapshot()
 			});
 		}
 		return results;
@@ -396,7 +396,7 @@ export class Match implements IMatchState {
 			type: TurnEventResultType.GAIN_STEF,
 			laneId: lane.y,
 			stefId: stefId,
-			newMatchState: this.exportState()
+			newMatchState: this.snapshot()
 		});
 		return results;
 	}
@@ -427,14 +427,14 @@ export class Match implements IMatchState {
 				type: TurnEventResultType.NONE,
 				entityId: ent.id,
 				reason: 'Lane out of range',
-				newMatchState: this.exportState()
+				newMatchState: this.snapshot()
 			}];
 		}
 		return [<IChangeLangeResult>{
 			type: TurnEventResultType.CHANGE_LANE,
 			entityId: ent.id,
 			laneId: lane.y,
-			newMatchState: this.exportState(),
+			newMatchState: this.snapshot(),
 		}];
 	}
 
@@ -443,10 +443,9 @@ export class Match implements IMatchState {
 		results.push(<IDeathResult>{
 			type: TurnEventResultType.DEATH,
 			entityId: ent.id,
-			newMatchState: this.exportState(),
+			newMatchState: this.snapshot(),
 		});
 
-		ent.state.respawn = ent.state.nextRespawn;
 		ent.state.nextRespawn++;
 		ent.state.diedTurn = this.turn;
 
@@ -455,7 +454,7 @@ export class Match implements IMatchState {
 			results.push(<IGameOverResult> {
 				type: TurnEventResultType.GAME_OVER,
 				winner: otherTeam(ent.team),
-				newMatchState: this.exportState(),
+				newMatchState: this.snapshot(),
 			});
 		}
 
@@ -473,6 +472,7 @@ export class Match implements IMatchState {
 		ent.state.maxHp = ent.profile.maxHp;
 		ent.state.hp = ent.profile.maxHp;
 		ent.state.diedTurn = undefined;
+		ent.state.respawn = ent.state.nextRespawn;
 		if(ent.hasPassive('IMMORTAL_FURY')) {
 			this.applyStefToEntity(ent, 'ARMOR', 3, undefined);
 			this.applyStefToEntity(ent, 'STR_UP', 3, undefined);
@@ -480,7 +480,7 @@ export class Match implements IMatchState {
 		return [<IRespawnResult>{
 			type: TurnEventResultType.RESPAWN,
 			entityId: ent.id,
-			newMatchState: this.exportState(),
+			newMatchState: this.snapshot(),
 		}];
 	}
 
@@ -490,7 +490,7 @@ export class Match implements IMatchState {
 				type: TurnEventResultType.NONE,
 				entityId: ent.id,
 				reason: 'Invalid or unnecessary acceleration',
-				newMatchState: this.exportState()
+				newMatchState: this.snapshot()
 			}];
 		}
 		skInst.cooldown --;
@@ -498,7 +498,7 @@ export class Match implements IMatchState {
 			type: TurnEventResultType.ACCEL,
 			entityId: ent.id,
 			skillDefId: skInst.skillDefId,
-			newMatchState: this.exportState(),
+			newMatchState: this.snapshot(),
 		}];
 		if(ent.hasPassive('VITALITY')) {
 			results = results.concat(this.changeEntityHp(ent, 10));

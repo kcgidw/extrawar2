@@ -87,7 +87,7 @@ export const EventResultTexts: {[key: string]: (result?: IEventResult, options?:
 		if(result.value > 0) {
 			return `${result.entityId} recovers ${result.value} HP.`;
 		} else {
-			if(source !== undefined) {
+			if(source !== undefined) { // TODO use this
 				return `${result.entityId} takes ${Math.abs(result.value)} ${source} damage.`;
 			}
 		}

@@ -12,7 +12,7 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 			let rmId: string = chatRoom.roomId;
 
 			let match = chatRoom.createMatch();
-			let mstate = match.exportState();
+			let mstate = match.snapshot();
 			
 			chatRoom.users.forEach((curUsr) => {
 				curUsr.emit(SOCKET_MSG.START_GAME, <Msgs.IPromptDecisionMessage>{
@@ -48,7 +48,7 @@ export function handleMatch(nsp: SocketIO.Namespace, sock: SocketIO.Socket) {
 		}
 
 		if(errMsg === undefined) {
-			nsp.to(chatRoom.roomId).emit(SOCKET_MSG.PLAYERS_READY, {matchState: chatRoom.match.exportState()});
+			nsp.to(chatRoom.roomId).emit(SOCKET_MSG.PLAYERS_READY, {matchState: chatRoom.match.snapshot()});
 		} else {
 			sock.emit(SOCKET_MSG.PLAYER_DECISION, <Msgs.IPlayerDecisionResponse>{
 				messageName: SOCKET_MSG.PLAYER_DECISION,
