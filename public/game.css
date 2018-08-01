@@ -179,3 +179,12 @@
     color: yellow;
     text-align: center;
 }
+
+div.damage {
+    transition: top 0.5s;
+}
+.damage-text {
+    font-size: 28px;
+    font-family: Arial;
+    font-weight: bold;
+}
