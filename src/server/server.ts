@@ -2,6 +2,9 @@ import * as express from 'express';
 import * as http from 'http';
 import * as socketio from 'socket.io';
 import { handleLobby } from './lobby/lobby-handler';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 const httpServer = new http.Server(app);

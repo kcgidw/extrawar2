@@ -31,10 +31,13 @@ export class Match implements IMatchState {
 
 	gameOver: boolean = false;
 
-	debugEnableRoster: boolean = true;
-	debugEnableSkills: boolean = true;
+	debugEnableRoster: boolean;
+	debugEnableSkills: boolean;
 
 	constructor(room: ChatRoom) {
+		this.debugEnableRoster = process.env.DEBUG === 'true';
+		this.debugEnableSkills = process.env.DEBUG === 'true';
+
 		this.room = room;
 		this.lanes = [];
 		for(let i=0; i<NUM_LANES; i++) {
