@@ -94,6 +94,9 @@ export const EventResultTexts: {[key: string]: (result?: IEventResult, options?:
 		return `${result.entityId} loses ${Math.abs(result.value)} HP.`;
 	},
 	'GAIN_STEF': (result: IGainStefResult) => {
+		if(result.laneId !== undefined) {
+			return `Lane ${result.laneId} gains ${ALL_STEFS[result.stefId].name}.`;
+		}
 		return `${result.entityId} gains ${ALL_STEFS[result.stefId].name}.`;
 	},
 	'DEATH': (result: IDeathResult) => `${result.entityId} dies.`,

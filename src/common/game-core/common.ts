@@ -102,5 +102,24 @@ export class Lane {
 
 	constructor(y: number) {
 		this.y = y;
+		this.stefs1 = [];
+		this.stefs2 = [];
+	}
+
+	getStef(stefId: string, team: Team) {
+		var t = this.getTeamStefs(team);
+		return t.find((stef) => (stef.stefId === stefId));
+	}
+
+	getTeamStefs(team: Team): IStefInstance[] {
+		var t: IStefInstance[] = this['stefs' + team];
+		return t;
+	}
+
+	loseStef(stefId: string, team: Team) {
+		var stefIdx = this.getTeamStefs(team).findIndex((stef) => (stef.stefId === stefId));
+		if(stefIdx !== -1) {
+			this.getTeamStefs(team).splice(stefIdx, 1);
+		}
 	}
 }

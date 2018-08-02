@@ -4,7 +4,7 @@ import { Entity } from '../common/game-core/entity';
 import { ISkillDef, ISkillInstance } from '../common/game-info/skills';
 import { ActionChoices } from './game-ui/action-choices';
 import { CharacterChoices } from './game-ui/character-choices';
-import { Lane } from './game-ui/lane';
+import { LanePanel } from './game-ui/lane';
 import { TeamPanel } from './game-ui/team-panel';
 import { actionDefTargetsEntity, getActingTeam } from '../common/match-util';
 
@@ -75,8 +75,10 @@ export class GameView extends React.Component<IProps, IState> {
 				<div id="lanes-container">
 					<div id="lanes">
 						{entitiesByLane.map((ents, idx) => (
-							<Lane key={idx} id={idx} onSelect={this.selectLane} selectable={this.lanesSelectable()} selected={this.props.currentSelectedLaneId === idx} 
-							entities={ents} entitiesSelectable={this.entitiesSelectable()} onSelectEntity={this.selectTarget} selectedEntityId={this.props.currentSelectedEntityId} />
+							<LanePanel key={idx} id={idx} onSelect={this.selectLane} selectable={this.lanesSelectable()} selected={this.props.currentSelectedLaneId === idx} 
+							entities={ents} entitiesSelectable={this.entitiesSelectable()}
+							onSelectEntity={this.selectTarget} selectedEntityId={this.props.currentSelectedEntityId}
+							laneData={this.props.matchState.lanes[idx]} />
 						))}
 					</div>
 				</div>

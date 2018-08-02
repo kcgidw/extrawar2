@@ -27,4 +27,10 @@ export const ALL_STEFS: {[key: string]: IStefDef} = {
 		desc: 'Take 10 damage each cycle.',
 		isBeneficial: false,
 	},
+	'REJUV': {
+		id: 'REJUV',
+		name: 'Rejuvenation',
+		desc: 'Recover 10 HP each cycle.',
+		isBeneficial: true,
+	}
 };

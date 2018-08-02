@@ -31,7 +31,8 @@ export class Match implements IMatchState {
 
 	gameOver: boolean = false;
 
-	debug: boolean = true;
+	debugEnableRoster: boolean = true;
+	debugEnableSkills: boolean = true;
 
 	constructor(room: ChatRoom) {
 		this.room = room;
@@ -101,8 +102,16 @@ export class Match implements IMatchState {
 		for(let username of Object.keys(this.playerDecisions)) {
 			let choice = this.playerDecisions[username];
 			let entProfile = Characters[choice.entityProfileId];
-			this.players[username] = new Entity(this.room.findUser(username), getUsernameTeam(this, username), entProfile);
+			let ent = new Entity(this.room.findUser(username), getUsernameTeam(this, username), entProfile);
+			this.players[username] = ent;
+			
+			if(this.debugEnableSkills) {
+				ent.state.actives.forEach((a) => {
+					a.cooldown = 0;
+				});
+			}
 		}
+
 		setTimeout(() => {
 			this.nextPhase(Phase.CHOOSE_STARTING_LANE);
 		}, NEXT_PHASE_DELAY);
@@ -112,6 +121,7 @@ export class Match implements IMatchState {
 			let choice = this.playerDecisions[username];
 			this.players[username].state.y = choice.startingLane;
 		}
+		
 		setTimeout(() => {
 			this.nextPhase(Phase.PLAN);
 		}, NEXT_PHASE_DELAY);
@@ -138,7 +148,7 @@ export class Match implements IMatchState {
 		var charsShuffled: string[] = Object.keys(PlayableCharacters);
 		shuffle(charsShuffled);
 
-		var numChoices = this.debug ? 6 : 2;
+		var numChoices = this.debugEnableRoster ? 6 : 2;
 
 		var idx = 0;
 		var pcs = Object.keys(PlayableCharacters);
@@ -270,52 +280,9 @@ export class Match implements IMatchState {
 					}
 				});
 
-				// end-of-turn events
-				console.log(`turn ${this.turn} ending`);
 				if(!this.gameOver) {
-					let endTurnCause: IEventCause = {
-						entityId: undefined,
-						actionDefId: 'TURN_END',
-						targetId: undefined,
-						results: [],
-					};
-					players.forEach((username) => {
-						var player = this.players[username];
-
-						if(player.team === getActingTeam(this)) { // at the end of a player's turn
-							// trigger poison
-							if(player.getStef(ALL_STEFS.POISON.id)) {
-								endTurnCause.results = endTurnCause.results.concat(this.changeEntityHp(player, -10));
-							}
-						} else { // end of opponent turn, aka start of player's turn
-							// tick respawn
-							if(!player.alive && this.turn > player.state.diedTurn) {
-								// don't tick if death is "fresh". Need a meaningful turn of death before respawn
-								player.state.respawn--;
-								if(player.state.respawn === 0) {
-									endTurnCause.results = endTurnCause.results.concat(this.respawn(player));
-								}
-							}
-
-							// tick cooldowns
-							player.state.actives.forEach((active) => {
-								if(active.cooldown > 0) {
-									active.cooldown--;
-								}
-							});
-
-							// tick stefs
-							player.state.stefs.forEach((stef) => {
-								if(this.turn > stef.invokedTurn && stef.duration > 0) {
-									stef.duration--;
-									if(stef.duration === 0) {
-										player.loseStef(stef.stefId);
-									}
-								}
-							});
-						}
-					});
-					causes.push(endTurnCause);
+					console.log(`turn ${this.turn} ending`);
+					causes.push(this.turnEnding(players));
 				}
 
 				this.room.nsp.to(this.room.roomId).emit(SOCKET_MSG.RESOLVE_ACTIONS, <IActionResolutionTimeline>{
@@ -388,7 +355,7 @@ export class Match implements IMatchState {
 
 	applyStefToLane(lane: Lane, toSide:Team, stefId: string, duration: number, invokerEntity: Entity): IEventResult[] {
 		var results: IEventResult[] = [];
-		var stefs: IStefInstance[] = lane['stefs'+toSide];
+		var stefs: IStefInstance[] = lane.getTeamStefs(toSide);
 
 		this.applyStef(stefs, stefId, duration, invokerEntity);
 
@@ -506,7 +473,79 @@ export class Match implements IMatchState {
 		return results;
 	}
 
+	turnEnding(playerIds: string[]): IEventCause {
+		var endTurnCause: IEventCause = {
+			entityId: undefined,
+			actionDefId: 'TURN_END',
+			targetId: undefined,
+			results: [],
+		};
+
+		playerIds.forEach((username) => {
+			var player = this.players[username];
+
+			if(player.team === getActingTeam(this)) { // at the end of a player's turn
+				// trigger poison
+				if(player.getStef(ALL_STEFS.POISON.id)) {
+					endTurnCause.results = endTurnCause.results.concat(this.changeEntityHp(player, -10));
+				}
+
+				// trigger rejuvenation
+				let lane = this.lanes[player.state.y];
+				if(lane.getStef('REJUV', player.team)) {
+					endTurnCause.results = endTurnCause.results.concat(this.changeEntityHp(player, 10));
+				}
+
+				// tick respawn
+				if(!player.alive && this.turn > player.state.diedTurn) {
+					// don't tick if death is "fresh". Need a meaningful turn of death before respawn
+					player.state.respawn--;
+					if(player.state.respawn === 0) {
+						endTurnCause.results = endTurnCause.results.concat(this.respawn(player));
+					}
+				}
+
+				// tick cooldowns
+				player.state.actives.forEach((active) => {
+					if(active.cooldown > 0) {
+						active.cooldown--;
+					}
+				});
+
+				// tick stefs
+				player.state.stefs.forEach((stef) => {
+					if(this.turn > stef.invokedTurn && stef.duration > 0) {
+						stef.duration--;
+						if(stef.duration === 0) {
+							player.loseStef(stef.stefId);
+						}
+					}
+				});
+
+			} else { // end of opponent turn, aka start of player's turn
+			}
+		});
+
+		this.lanes.forEach((lane) => {
+			var actingTeam = getActingTeam(this);
+			lane.getTeamStefs(actingTeam).forEach((stef) => {
+				stef.duration--;
+				if(stef.duration === 0) {
+					lane.loseStef(stef.stefId, actingTeam);
+				}
+			});
+		});
+
+		return endTurnCause;
+	}
+
 	/* Util */
+	getPlayerIds(): string[] {
+		return Object.keys(this.players);
+	}
+	getPlayers(): Entity[] {
+		return this.getPlayerIds().map((id) => (this.players[id]));
+	}
 	getPlayersReady(): {[key: string]: boolean} {
 		var x = {};
 		for(let username of Object.keys(this.players)) {
