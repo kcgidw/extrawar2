@@ -12,6 +12,7 @@ import { Popover } from './game-ui/popover';
 import { SkillList } from './game-ui/skill-list';
 import { GameView } from './game-view';
 import { WaitingRoomView } from './waiting-room-view';
+import { Timer } from './timer';
 
 export enum MenuState {
 	WAITING_ROOM, CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, CHOOSE_ACTION, CHOOSE_TARGET, WAITING, RESOLVING, GAME_OVER
@@ -35,6 +36,8 @@ interface State {
 	currentSelectedEntityId: string;
 
 	notify: string;
+
+	timer: Timer;
 }
 
 export class RoomView extends React.Component<Props, State> {
@@ -52,6 +55,7 @@ export class RoomView extends React.Component<Props, State> {
 			currentSelectedLaneId: undefined,
 			currentSelectedEntityId: undefined,
 			notify: undefined,
+			timer: undefined
 		};
 
 		this.ShowGameView = this.ShowGameView.bind(this);
@@ -147,6 +151,16 @@ export class RoomView extends React.Component<Props, State> {
 						// note: We're checking for the upcoming matchstate
 						if(usernameShouldAct(data.matchState, this.props.username)) {
 							nextMenu = MenuState.CHOOSE_ACTION;
+							let timer = new Timer(30 * 1000,
+								()=>{
+									this.setState({timer: timer})
+								}, () => {
+									this.timeUp(timer);
+								}
+							);
+							this.setState({
+								timer: timer
+							});
 						} else {
 							nextMenu = MenuState.WAITING;
 						}
@@ -199,6 +213,7 @@ export class RoomView extends React.Component<Props, State> {
 				currentSelectedActionChoice={this.state.currentSelectedActionChoice}
 				currentSelectedLaneId={this.state.currentSelectedLaneId}
 				currentSelectedEntityId={this.state.currentSelectedEntityId}
+				timeLeftMs={this.state.timer ? this.state.timer.timeLeftMs() : null}
 			/> : null;
 	}
 	ShowWaitingRoomView() {
@@ -351,8 +366,10 @@ export class RoomView extends React.Component<Props, State> {
 			action = this.state.currentSelectedActionChoice;
 		}
 		Handler.chooseActionAndTarget(action, targetId, accel);
+		this.state.timer.kill();
 		this.setState({
 			menu: MenuState.WAITING,
+			timer: undefined,
 		});
 	}
 
@@ -366,5 +383,12 @@ export class RoomView extends React.Component<Props, State> {
 				});
 			}, 5*1000);
 		});
+	}
+
+	timeUp(t: Timer) {
+		this.setState({
+			timer: t
+		});
+		alert('Time up');
 	}
 }

@@ -7,6 +7,7 @@ import { CharacterChoices } from './game-ui/character-choices';
 import { LanePanel } from './game-ui/lane';
 import { TeamPanel } from './game-ui/team-panel';
 import { actionDefTargetsEntity, getActingTeam } from '../common/match-util';
+import { TimerPanel } from './game-ui/timer-panel';
 
 interface IProps {
 	username: string;
@@ -20,6 +21,7 @@ interface IProps {
 	selectStartingLane;
 	selectAction;
 	selectTarget;
+	timeLeftMs: number;
 }
 export enum MenuState {
 	WAITING_ROOM, CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, CHOOSE_ACTION, CHOOSE_TARGET, WAITING, RESOLVING, GAME_OVER
@@ -28,6 +30,8 @@ interface IState {
 }
 
 export class GameView extends React.Component<IProps, IState> {
+	timerRef: any;
+
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -64,7 +68,11 @@ export class GameView extends React.Component<IProps, IState> {
 
 		return (
 			<div id="game-view">
-				<div id="game-prompt">{this.getPrompt()}</div>
+				<div id="top-bar">
+					{this.props.timeLeftMs ? <TimerPanel timeLeftMs={this.props.timeLeftMs} /> : null}
+					<div id="game-prompt">{this.getPrompt()}</div>				
+				</div>
+
 				< TeamPanel matchState={this.props.matchState} team={1} />
 				< TeamPanel matchState={this.props.matchState} team={2} />
 
