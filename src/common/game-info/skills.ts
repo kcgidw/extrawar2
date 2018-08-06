@@ -123,7 +123,7 @@ export const Skills: {[key: string]: ISkillDef} = {
 		() => ('The turn is ending.')
 	),
 	'NO_HOLDS': generateSkillDef('NO_HOLDS', false, Faction.FERALIST, 'No Holds Barred',
-		'Deal +20% attack damage to in-lane enemies.', [], 4, undefined, undefined, undefined
+		'Deal +20% attack damage to in-lane enemies.', [], 5, undefined, undefined, undefined
 	),
 	'FLANK_ASSAULT': {
 		id: 'FLANK_ASSAULT',
@@ -178,7 +178,7 @@ export const Skills: {[key: string]: ISkillDef} = {
 		}
 	},
 	'IMMORTAL_FURY': generateSkillDef('IMMORTAL_FURY', false, Faction.MOLTEN, 'Immortal Fury',
-		'When you respawn, gain Armor (3) and Strength Up (3).', [], 4, undefined, undefined, undefined
+		'When you respawn, gain Armor (3) and Strength Up (3).', [], 5, undefined, undefined, undefined
 	),
 	'AGNI_BURST': {
 		id: 'AGNI_BURST',
@@ -230,7 +230,7 @@ export const Skills: {[key: string]: ISkillDef} = {
 	},
 	'EULOGY': generateSkillDef('EULOGY', false, Faction.ABERRANT, 'Eulogy', 
 		'When you die, apply Strength Up (X) to allies, where X = your respawn counter + 1.',
-		['STR_UP'], 2, undefined, undefined, undefined
+		['STR_UP'], 3, undefined, undefined, undefined
 	),
 	'EQUIV_EX': {
 		id: 'EQUIV_EX',
@@ -264,13 +264,13 @@ export const Skills: {[key: string]: ISkillDef} = {
 					stefId: ALL_STEFS.POISON.id,
 					duration: 5,
 					invokerEntityId: user.id,
-					invokedTurn: undefined,
+					invokedTurn: match.turn,
 				}],
 			}));
 			return {results: results};
 		}
 	),
-	'VITALITY': generateSkillDef('VITALITY', false, Faction.KINDRED, 'Vitality',
+	'INVIGORATION': generateSkillDef('INVIGORATION', false, Faction.KINDRED, 'Invigoration',
 		'When you accelerate, recover 10 HP.', [], undefined, undefined, undefined, undefined
 	),
 	'PHOTO': generateSkillDef('PHOTO', true, Faction.KINDRED, 'Photosynthesis',
@@ -278,6 +278,21 @@ export const Skills: {[key: string]: ISkillDef} = {
 		function fn(match, user, targetLane: Lane) {
 			var results: IEventResult[]  = [];
 			results = results.concat(match.applyStefToLane(targetLane, user.team, 'REJUV', 4, user));
+			return {results: results};
+		}
+	),
+	'VITAL_BURST': generateSkillDef('VITAL_BURST', true, Faction.KINDRED, 'Vital Burst',
+		'Attack a nearby enemy and apply Strength Down (3).', ['STR_DOWN'], 6, 6, {what: TargetWhat.ENEMY, range: TargetRange.NEARBY},
+		function fn(match, user, target: Entity) {
+			var results: IEventResult[]  = [];
+			results = results.concat(simpleAttack(match, user, target, {
+				stefs: [{
+					stefId: 'STR_DOWN',
+					duration: 3,
+					invokerEntityId: user.id,
+					invokedTurn: match.turn,
+				}]
+			}));
 			return {results: results};
 		}
 	),

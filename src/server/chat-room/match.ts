@@ -470,8 +470,8 @@ export class Match implements IMatchState {
 			skillDefId: skInst.skillDefId,
 			newMatchState: this.snapshot(),
 		}];
-		if(ent.hasPassive('VITALITY')) {
-			results = results.concat(this.changeEntityHp(ent, 10));
+		if(ent.hasPassive('INVIGORATION')) {
+			results = results.concat(this.applyStefToEntity(ent, 'STR_UP', 1, ent));
 		}
 		return results;
 	}

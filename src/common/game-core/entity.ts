@@ -68,6 +68,9 @@ export class Entity {
 		if(this.getStef(ALL_STEFS.STR_UP)) {
 			str += baseStr * 0.30;
 		}
+		if(this.getStef(ALL_STEFS.STR_DOWN)) {
+			str -= baseStr * 0.30;
+		}
 		if(this.getStef(ALL_STEFS.VOLATILE)) {
 			str += baseStr * 0.75;
 		}
