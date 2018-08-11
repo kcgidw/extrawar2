@@ -5,6 +5,7 @@ import { ChatRoom } from '../chat-room/chat-room';
 import { Lobby } from './lobby';
 import { User } from './user';
 import { handleChat } from '../chat-room/chat-handler';
+import { IMatchState } from '../../common/game-core/common';
 
 var lobby: Lobby;
 
@@ -58,11 +59,14 @@ export function handleLobby(io: SocketIO.Server) {
 
 		sock.on(SOCKET_MSG.LOBBY_JOIN_ROOM, (data: Msgs.IJoinRoomRequest) => {
 			var response: Msgs.IRoomUsersResponse = lobby.joinRoom(sock, data.roomId);
+			var room: ChatRoom = lobby.rooms.get(data.roomId);
+			var existingMatchState: IMatchState = room.match ? room.match.snapshot() : undefined;
 			if(response.error === undefined) {
 				sock.emit(SOCKET_MSG.LOBBY_JOIN_ROOM, <Msgs.IJoinRoomResponse>{
 					roomId: response.roomId,
 					users: response.users,
 					username: response.username,
+					matchState: existingMatchState,
 				});
 				sock.to(response.roomId).emit(SOCKET_MSG.LOBBY_ROOM_USERS, response);
 			} else {

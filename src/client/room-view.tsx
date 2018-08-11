@@ -22,6 +22,7 @@ interface Props {
 	username: string;
 	initialRoomUsernames: string[];
 	roomId: string;
+	importedMatchState: IMatchState;
 }
 interface State {
 	roomUsernames: string[];
@@ -45,9 +46,20 @@ export class RoomView extends React.Component<Props, State> {
 
 	constructor(props) {
 		super(props);
+
+		let importedState = this.props.importedMatchState;
+		let startingMenu = MenuState.WAITING_ROOM;
+		if(importedState) {
+			if(usernameShouldAct(importedState, this.props.username)) {
+				startingMenu = MenuState.CHOOSE_ACTION;
+			} else {
+				startingMenu = MenuState.WAITING;
+			}
+		}
+
 		this.state = {
-			ms: undefined,
-			menu: MenuState.WAITING_ROOM,
+			ms: importedState,
+			menu: startingMenu,
 			chatLog: [],
 			roomUsernames: this.props.initialRoomUsernames,
 			actionChoices: undefined,
@@ -277,7 +289,7 @@ export class RoomView extends React.Component<Props, State> {
 			Handler.chooseCharacter(entProfId);
 			this.setState({menu: MenuState.WAITING});
 		} else {
-			throw Error(''+this.state.menu);
+			// event falls through
 		}
 	}
 	selectStartingLane(id: number) {

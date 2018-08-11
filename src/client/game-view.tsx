@@ -96,11 +96,14 @@ export class GameView extends React.Component<IProps, IState> {
 
 	lanesSelectable(): boolean {
 		return this.props.menuState === MenuState.CHOOSE_STARTING_LANE
-		|| (this.myTurn() && this.props.menuState === MenuState.CHOOSE_TARGET && this.props.currentSelectedActionChoice.target.what === TargetWhat.LANE);
+		|| (this.myTurn() && this.props.menuState === MenuState.CHOOSE_TARGET
+			&& this.props.currentSelectedActionChoice
+			&& this.props.currentSelectedActionChoice.target.what === TargetWhat.LANE);
 	}
 	
 	entitiesSelectable(): boolean {
 		return this.myTurn()
+		&& this.props.currentSelectedActionChoice
 		&& this.props.menuState === MenuState.CHOOSE_TARGET
 		&& actionDefTargetsEntity(this.props.currentSelectedActionChoice);
 	}

@@ -18,8 +18,7 @@ interface IViewsState {
 	roomId: string;
 	roomUsernames: string[];
 	myUsername: string;
-	
-	matchState: IMatchState;
+	importedMatchState: IMatchState;
 }
 export class Views extends React.Component<{}, IViewsState> {
 	handlers: Array<()=>any>;
@@ -31,7 +30,7 @@ export class Views extends React.Component<{}, IViewsState> {
 			roomId: undefined,
 			roomUsernames: undefined,
 			myUsername: undefined,
-			matchState: undefined,
+			importedMatchState: undefined,
 		};
 	}
 
@@ -55,6 +54,7 @@ export class Views extends React.Component<{}, IViewsState> {
 					this.setState({
 						roomId: data.roomId,
 						roomUsernames: data.users,
+						importedMatchState: data.matchState,
 					});
 					this.setView(VIEW.IN_ROOM);
 				}
@@ -83,7 +83,7 @@ export class Views extends React.Component<{}, IViewsState> {
 			case(VIEW.ROOM_OPTIONS):
 				return (< RoomOptionsView />);
 			case(VIEW.IN_ROOM):
-				return < RoomView roomId={this.state.roomId} username={this.state.myUsername} initialRoomUsernames={this.state.roomUsernames} />;
+				return < RoomView roomId={this.state.roomId} username={this.state.myUsername} initialRoomUsernames={this.state.roomUsernames} importedMatchState={this.state.importedMatchState} />;
 			default:
 				console.error('Bad view ' + this.state.curView);
 		}

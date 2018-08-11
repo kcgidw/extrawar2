@@ -429,7 +429,7 @@ export class Match implements IMatchState {
 		}
 
 		if(ent.hasPassive('EULOGY')) {
-			var teammates = this.team1.filter((name) => (name !== ent.id));
+			var teammates = this['team'+ent.team].filter((name) => (name !== ent.id));
 			for(let allyName of teammates) {
 				results = results.concat(this.applyStefToEntity(this.players[allyName], 'STR_UP', ent.state.respawn + 1, ent));
 			}

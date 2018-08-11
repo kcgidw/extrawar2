@@ -41,6 +41,7 @@ export interface IJoinRoomResponse extends IErrorableResponse {
 	roomId: string;
 	users: string[];
 	username: string;
+	matchState: IMatchState;
 	// prevChat: IChatPostMessageResponse[]; // TODO
 }
 export interface IRoomUsersResponse extends IErrorableResponse {
