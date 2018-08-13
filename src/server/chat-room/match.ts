@@ -55,7 +55,7 @@ export class Match implements IMatchState {
 				team = 2;
 				this.team2.push(usr.username);
 			}
-			char = new Entity(usr, team, Characters.UNKNOWN);
+			char = new Entity(usr.username, team, Characters.UNKNOWN);
 			this.players[usr.username] = char;
 		});
 
@@ -105,7 +105,7 @@ export class Match implements IMatchState {
 		for(let username of Object.keys(this.playerDecisions)) {
 			let choice = this.playerDecisions[username];
 			let entProfile = Characters[choice.entityProfileId];
-			let ent = new Entity(this.room.findUser(username), getUsernameTeam(this, username), entProfile);
+			let ent = new Entity(username, getUsernameTeam(this, username), entProfile);
 			this.players[username] = ent;
 			
 			if(this.debugEnableSkills) {
@@ -151,7 +151,7 @@ export class Match implements IMatchState {
 		var charsShuffled: string[] = Object.keys(PlayableCharacters);
 		shuffle(charsShuffled);
 
-		var numChoices = this.debugEnableRoster ? 6 : 2;
+		var numChoices = this.debugEnableRoster ? 6 : 3;
 
 		var idx = 0;
 		var pcs = Object.keys(PlayableCharacters);

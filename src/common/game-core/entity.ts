@@ -5,7 +5,6 @@ import { IEntityProfile, IEntityState, IStefDef, IStefInstance, Team, Faction } 
 import { ISkillDef, ISkillInstance, Skills } from "../game-info/skills";
 
 export class Entity {
-	isPlayer: boolean;
 	id: string;
 	displayName: string;
 	profileId: string;
@@ -19,9 +18,8 @@ export class Entity {
 		return Characters[this.profileId];
 	}
 
-	constructor(user: User, team: Team, character: IEntityProfile) {
-		this.id = user.username;
-		this.isPlayer = user !== undefined;
+	constructor(username: string, team: Team, character: IEntityProfile) {
+		this.id = username;
 		this.profileId = character.id;
 
 		this.team = team;
@@ -101,4 +99,9 @@ export class Entity {
 		var inst = this.state.actives.find((curInst) => (curInst.skillDefId === actionId));
 		inst.cooldown = def.cooldown;
 	}
+
+	// static fromJson(json: any): Entity {
+	// 	let ent: Entity = new Entity(json.id, json.team, Characters[json.profileId]);
+	// 	return ent;
+	// }
 }

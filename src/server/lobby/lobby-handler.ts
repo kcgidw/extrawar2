@@ -60,8 +60,8 @@ export function handleLobby(io: SocketIO.Server) {
 		sock.on(SOCKET_MSG.LOBBY_JOIN_ROOM, (data: Msgs.IJoinRoomRequest) => {
 			var response: Msgs.IRoomUsersResponse = lobby.joinRoom(sock, data.roomId);
 			var room: ChatRoom = lobby.rooms.get(data.roomId);
-			var existingMatchState: IMatchState = room.match ? room.match.snapshot() : undefined;
 			if(response.error === undefined) {
+				let existingMatchState: IMatchState = room.match ? room.match.snapshot() : undefined;
 				sock.emit(SOCKET_MSG.LOBBY_JOIN_ROOM, <Msgs.IJoinRoomResponse>{
 					roomId: response.roomId,
 					users: response.users,

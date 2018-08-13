@@ -38,5 +38,11 @@ export const ALL_STEFS: {[key: string]: IStefDef} = {
 		name: 'Rejuvenation',
 		desc: 'Recover 10 HP each cycle.',
 		isBeneficial: true,
-	}
+	},
+	'PANIC': {
+		id: 'PANIC',
+		name: 'Panic',
+		desc: 'Cannot use skills.',
+		isBeneficial: false,
+	},
 };

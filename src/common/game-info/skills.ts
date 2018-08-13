@@ -123,7 +123,7 @@ export const Skills: {[key: string]: ISkillDef} = {
 		() => ('The turn is ending.')
 	),
 	'NO_HOLDS': generateSkillDef('NO_HOLDS', false, Faction.FERALIST, 'No Holds Barred',
-		'Deal +20% attack damage to in-lane enemies.', [], 5, undefined, undefined, undefined
+		'Deal +20% attack damage to in-lane enemies.', [], 4, undefined, undefined, undefined
 	),
 	'FLANK_ASSAULT': {
 		id: 'FLANK_ASSAULT',
@@ -177,6 +177,17 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return {results: results};
 		}
 	},
+	'BRUTE': generateSkillDef('BRUTE', true, Faction.FERALIST, 'Brute Rage',
+		'Gain Strength Up (4) and Panic (2).', ['STR_UP', 'PANIC'], 5, 5, {what: TargetWhat.SELF, range: TargetRange.IN_LANE},
+		function fn (match: Match, user: Entity, target: Entity) {
+			var results: IEventResult[]  = [];
+			results = results.concat(
+				match.applyStefToEntity(target, ALL_STEFS.STR_UP.id, 4, user),
+				match.applyStefToEntity(target, ALL_STEFS.PANIC.id, 2, user)
+			);
+			return {results: results};
+		}
+	),
 	'IMMORTAL_FURY': generateSkillDef('IMMORTAL_FURY', false, Faction.MOLTEN, 'Immortal Fury',
 		'When you respawn, gain Armor (3) and Strength Up (3).', [], 5, undefined, undefined, undefined
 	),
@@ -187,8 +198,8 @@ export const Skills: {[key: string]: ISkillDef} = {
 		name: 'Agni Burst',
 		desc: `Attack all nearby enemies. Take 10 damage.`,
 		keywords: [],
-		apCost: 6,
-		cooldown: 6,
+		apCost: 5,
+		cooldown: 5,
 		target: {
 			what: TargetWhat.NONE,
 			range: TargetRange.NEARBY

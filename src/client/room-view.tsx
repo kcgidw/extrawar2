@@ -13,6 +13,7 @@ import { SkillList } from './game-ui/skill-list';
 import { GameView } from './game-view';
 import { WaitingRoomView } from './waiting-room-view';
 import { Timer } from './timer';
+import { ALL_STEFS } from '../common/game-info/stefs';
 
 export enum MenuState {
 	WAITING_ROOM, CHOOSE_CHARACTER, CHOOSE_STARTING_LANE, CHOOSE_ACTION, CHOOSE_TARGET, WAITING, RESOLVING, GAME_OVER
@@ -305,6 +306,9 @@ export class RoomView extends React.Component<Props, State> {
 	}
 	selectAction(id: string) {
 		let actionDefId = id as string;
+		let actionDef = Skills[actionDefId];
+		let instance = this.me().state.actives.find((i) => (i.skillDefId === id));
+
 		if(!this.myTurn()) {
 			this.addErrorMessage(SOCKET_MSG.PLAYER_DECISION, `It's not your turn.`);
 			return;
@@ -313,9 +317,12 @@ export class RoomView extends React.Component<Props, State> {
 			this.addErrorMessage(SOCKET_MSG.PLAYER_DECISION, `You can't act - you're dead.`);
 			return;
 		}
+		if(actionDef.active && actionDef.cooldown > 0 && instance.cooldown === 0 && this.me().state.stefs.find((s)=>(s.stefId===ALL_STEFS.PANIC.id))) {
+			this.addErrorMessage(SOCKET_MSG.PLAYER_DECISION, `You're panicked - you can't use skills.`);
+			return;
+		}
+
 		if([MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menu) !== -1) {
-			let actionDef = Skills[actionDefId];
-			let instance = this.me().state.actives.find((i) => (i.skillDefId === id));
 			if(instance) {
 				if(instance.cooldown > 1) { // accelerate
 					this.setState({
