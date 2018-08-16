@@ -321,6 +321,10 @@ export class RoomView extends React.Component<Props, State> {
 			this.addErrorMessage(SOCKET_MSG.PLAYER_DECISION, `You're panicked - you can't use skills.`);
 			return;
 		}
+		if(actionDefId === 'MOVE' && this.me().state.stefs.find((stef)=>(stef.stefId === ALL_STEFS.TRAPPED.id))) {
+			this.addErrorMessage(SOCKET_MSG.PLAYER_DECISION, `You're trapped - you can't move yourself.`);
+			return;
+		}
 
 		if([MenuState.CHOOSE_ACTION, MenuState.CHOOSE_TARGET].indexOf(this.state.menu) !== -1) {
 			if(instance) {

@@ -233,14 +233,19 @@ export class Match implements IMatchState {
 			case(Phase.RESOLVE):
 				var causes = [];
 				var playerDecisions = this.playerDecisions;
-				var players = Object.keys(playerDecisions);
+				var players = Object.keys(playerDecisions).filter((p) => (playerDecisions[p].actionId !== undefined));
 				this.resetDecisions();
 				players.sort((usernameA: string, usernameB: string) => {
 					var playerA = this.players[usernameA];
 					var playerB = this.players[usernameB];
-					var yDiff = playerA.state.y - playerB.state.y;
-					if(yDiff !== 0) {
-						return yDiff;
+					let actionA = playerDecisions[usernameA];
+					let actionB = playerDecisions[usernameB];
+					let priorityA = playerA.state.y + (Skills[actionA.actionId].keywords.indexOf('DELAYED') >= 0 ? 100 : 0);
+					let priorityB = playerB.state.y + (Skills[actionB.actionId].keywords.indexOf('DELAYED') >= 0 ? 100 : 0);
+
+					var diff = priorityA - priorityB;
+					if(diff !== 0) {
+						return diff;
 					}
 					return 0; // TODO decide ties
 				});
@@ -429,9 +434,22 @@ export class Match implements IMatchState {
 		}
 
 		if(ent.hasPassive('EULOGY')) {
-			var teammates = this['team'+ent.team].filter((name) => (name !== ent.id));
-			for(let allyName of teammates) {
-				results = results.concat(this.applyStefToEntity(this.players[allyName], 'STR_UP', ent.state.respawn + 1, ent));
+			var teammates = findEntities(this, {
+				team: ent.team,
+				excludeEntity: ent.id
+			});
+			for(let mate of teammates) {
+				results = results.concat(this.applyStefToEntity(mate, 'STR_UP', ent.state.respawn + 1, ent));
+			}
+		}
+		if(ent.hasPassive('GRUDGE')) {
+			var nearbyEnems = findEntities(this, {
+				laneId: ent.state.y,
+				laneRange: 1, 
+				team: otherTeam(ent.team),
+			});
+			for(let enem of nearbyEnems) {
+				results = results.concat(this.applyStefToEntity(enem, 'POISON', ent.state.respawn + 1, ent));
 			}
 		}
 		
@@ -493,10 +511,12 @@ export class Match implements IMatchState {
 					endTurnCause.results = endTurnCause.results.concat(this.changeEntityHp(player, -10));
 				}
 
-				// trigger rejuvenation
 				let lane = this.lanes[player.state.y];
 				if(lane.getStef('REJUV', player.team)) {
 					endTurnCause.results = endTurnCause.results.concat(this.changeEntityHp(player, 10));
+				}
+				if(lane.getStef('SCORCHED', player.team)) {
+					endTurnCause.results = endTurnCause.results.concat(this.changeEntityHp(player, -20));
 				}
 
 				// tick respawn
@@ -558,5 +578,8 @@ export class Match implements IMatchState {
 	}
 	allPlayersReady(): boolean {
 		return Object.keys(this.playerDecisions).length === Object.keys(this.players).length;
+	}
+	getTeam(t: Team): Entity[] {
+		return this['team' + t];
 	}
 }

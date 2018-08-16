@@ -39,10 +39,23 @@ export const ALL_STEFS: {[key: string]: IStefDef} = {
 		desc: 'Recover 10 HP each cycle.',
 		isBeneficial: true,
 	},
+	'SCORCHED': {
+		id: 'SCORCHED',
+		name: 'Scorched',
+		desc: 'Take 20 damage each cycle.',
+		isBeneficial: false,
+	},
 	'PANIC': {
 		id: 'PANIC',
 		name: 'Panic',
-		desc: 'Cannot use skills.',
+		desc: 'Can\'t use skills.',
 		isBeneficial: false,
 	},
+	'TRAPPED': {
+		id: 'TRAPPED',
+		name: 'Trapped',
+		desc: 'Can\'t use the Move action.',
+		isBeneficial: false,
+	},
+	
 };

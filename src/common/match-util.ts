@@ -2,7 +2,8 @@
 import { User } from "../server/lobby/user";
 import { IMatchState, TargetRange, TargetWhat, Team } from "./game-core/common";
 import { Entity } from "./game-core/entity";
-import { ISkillDef } from "./game-info/skills";
+import { ISkillDef, ISkillInstance, Skills } from "./game-info/skills";
+import { ALL_STEFS } from "./game-info/stefs";
 
 export function isAlive(ms: IMatchState, username: string): boolean {
     return ms.players[username].state.hp > 0;
@@ -28,7 +29,7 @@ export function usernameShouldAct(ms: IMatchState, username: string): boolean {
     }
     return false;
 }
-export function findEntities(match: IMatchState, filter?: {laneId?: number, laneRange?: number, team?: Team, aliveOnly?: boolean}): Entity[] {
+export function findEntities(match: IMatchState, filter?: {laneId?: number, laneRange?: number, team?: Team, aliveOnly?: boolean, excludeEntity?: string}): Entity[] {
     var res = Object.keys(match.players).map((username) => (match.players[username]));
     if(filter) {
         if(filter.laneId !== undefined) {
@@ -41,6 +42,9 @@ export function findEntities(match: IMatchState, filter?: {laneId?: number, lane
         filter.aliveOnly = filter.aliveOnly !== undefined ? filter.aliveOnly : true;
         if(filter.aliveOnly) {
             res = res.filter((ent) => (isAlive(match, ent.id) === filter.aliveOnly));
+        }
+        if(filter.excludeEntity !== undefined) {
+            res = res.filter((ent) => (ent.id !== filter.excludeEntity));
         }
     }
     return res;
@@ -92,4 +96,15 @@ export function validLaneTarget(user: Entity, laneId: number, actionDef: ISkillD
         return false;
     }
     return inRange(user.state.y, laneId, actionDef);
+}
+
+export function skillEnabled(ent: Entity, skInst: ISkillInstance) {
+    debugger;
+    if(Skills[skInst.skillDefId].cooldown > 0 && ent.state.stefs.find((stef)=>(stef.stefId === ALL_STEFS.PANIC.id)) !== undefined) {
+        return false;
+    }
+    if(skInst.skillDefId === 'MOVE' && ent.state.stefs.find((stef)=>(stef.stefId === ALL_STEFS.TRAPPED.id)) !== undefined) {
+        return false;
+    }
+    return skInst.cooldown === 0;
 }

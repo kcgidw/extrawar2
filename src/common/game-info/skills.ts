@@ -198,13 +198,13 @@ export const Skills: {[key: string]: ISkillDef} = {
 		name: 'Agni Burst',
 		desc: `Attack all nearby enemies. Take 10 damage.`,
 		keywords: [],
-		apCost: 5,
-		cooldown: 5,
+		apCost: 6,
+		cooldown: 6,
 		target: {
 			what: TargetWhat.NONE,
 			range: TargetRange.NEARBY
 		},
-		fn: (match: Match, user: Entity, target: Entity) => {
+		fn: (match: Match, user: Entity, target) => {
 			var results: IEventResult[]  = [];
 			var tars = findEntities(match, {
 				laneId: user.state.y,
@@ -239,6 +239,20 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return {results: results};
 		}
 	},
+	'SCORCHED_EARTH': generateSkillDef('SCORCHED_EARTH', true, Faction.MOLTEN, 'Scorched Earth',
+		'Attack all enemies in your lane. Apply Scorched (2) to that lane. Take 10 damage.',
+		['SCORCHED'], 7, 7, {what: TargetWhat.LANE, range: TargetRange.IN_LANE},
+		function fn(match: Match, user: Entity, target: Lane) {
+			var results: IEventResult[]  = [];
+			var tarEnts: Entity[] = findEntities(match, { laneId: user.state.y, team: otherTeam(user.team) });
+			for(let e of tarEnts) {
+				results = results.concat(simpleAttack(match, user, e));
+			}
+			results = results.concat(match.applyStefToLane(target, otherTeam(user.team), 'SCORCHED', 2, user));
+			results = results.concat(match.changeEntityHp(user, -10));
+			return {results: results};
+		}
+	),
 	'EULOGY': generateSkillDef('EULOGY', false, Faction.ABERRANT, 'Eulogy', 
 		'When you die, apply Strength Up (X) to allies, where X = your respawn counter + 1.',
 		['STR_UP'], 3, undefined, undefined, undefined
@@ -281,6 +295,10 @@ export const Skills: {[key: string]: ISkillDef} = {
 			return {results: results};
 		}
 	),
+	'GRUDGE': generateSkillDef('GRUDGE', false, Faction.ABERRANT, 'Undying Grudge',
+		'When you die, apply Poison (X) to all nearby enemies, where X = your respawn counter + 1.',
+		['POISON'], 3, undefined, undefined, undefined
+	),
 	'INVIGORATION': generateSkillDef('INVIGORATION', false, Faction.KINDRED, 'Invigoration',
 		'When you accelerate, recover 10 HP.', [], undefined, undefined, undefined, undefined
 	),
@@ -304,6 +322,62 @@ export const Skills: {[key: string]: ISkillDef} = {
 					invokedTurn: match.turn,
 				}]
 			}));
+			return {results: results};
+		}
+	),
+	'UNIVERSE': generateSkillDef('UNIVERSE', false, Faction.ETHER, 'Universe',
+		'Reduce the off-lane damage penalty for your attacks.', [], 4, undefined, undefined, undefined
+	),
+	'WARP': generateSkillDef('WARP', true, Faction.ETHER, 'Rescue Warp',
+		'At the end of the turn, move another ally one lane towards you.',
+		['DELAYED'], 6, 6, {what: TargetWhat.ALLY, range: TargetRange.ANY},
+		function fn(match, user, target: Entity) {
+			var results: IEventResult[]  = [];
+
+			let toLane = target.state.y + Math.sign(user.state.y - target.state.y);
+			results = results.concat(match.moveEntity(target, match.lanes[toLane], 1));
+			
+			return {results: results};
+		}
+	),
+	'STASIS': generateSkillDef('STASIS', true, Faction.ETHER, 'Stasis Spell',
+		'Attack and apply Trapped (1) to any enemy.',
+		[], 6, 6, {what: TargetWhat.ENEMY, range: TargetRange.ANY},
+		function fn(match, user, target: Entity) {
+			var results: IEventResult[]  = [];
+			results = results.concat(simpleAttack(match, user, target, {
+				stefs: [{
+					invokerEntityId: user.id,
+					stefId: 'TRAPPED',
+					duration: 1,
+					invokedTurn: match.turn,
+				}]
+			}));
+			
+			return {results: results};
+		}
+	),
+	'OMNI': generateSkillDef('OMNI', true, Faction.ETHER, 'Omni',
+		'Attack all enemies outside your lane.',
+		[], 6, 6, {what: TargetWhat.NONE, range: TargetRange.ANY},
+		function fn(match, user, target) {
+			var results: IEventResult[]  = [];
+			let enems = findEntities(match, {team: otherTeam(user.team)});
+			for(let en of enems) {
+				if(en.state.y !== user.state.y) {
+					results = results.concat(simpleAttack(match, user, en));
+				}
+			}
+			
+			return {results: results};
+		}
+	),
+	'REWIND': generateSkillDef('REWIND', true, Faction.ETHER, 'Rewind',
+		'Heal any ally 30 HP.',
+		[], 4, 4, {what: TargetWhat.ALLY, range: TargetRange.ANY},
+		function fn(match, user, target: Entity) {
+			var results: IEventResult[]  = [];
+			results = results.concat(match.changeEntityHp(target, 30));
 			return {results: results};
 		}
 	),
@@ -348,7 +422,11 @@ function simpleAttack(match: Match, attacker: Entity, target: Entity, options: I
 	}
 	if(target.state.y !== attacker.state.y && !options.ignoreLanePenalty) {
 		// off-lane penalty
-		damage -= damage * 0.30;
+		let penalty = 0.30;
+		if(target.hasPassive('UNIVERSE')) {
+			penalty = 0.15;
+		}
+		damage -= damage * penalty;
 	}
 	if(target.getStef(ALL_STEFS.ARMOR)) {
 		damage -= damage * 0.25;
